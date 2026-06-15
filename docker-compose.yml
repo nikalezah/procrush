@@ -1,0 +1,17 @@
+services:
+  postgres:
+    container_name: procrush-postgres
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: procrush
+      POSTGRES_USER: procrush
+      POSTGRES_PASSWORD: procrush
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+volumes:
+  postgres_data:
+    name: procrush-postgres-data

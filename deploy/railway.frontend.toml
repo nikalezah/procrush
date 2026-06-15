@@ -1,0 +1,13 @@
+# Frontend (React + nginx) — build from repository root (monorepo paths in Dockerfile).
+# Railway service: Settings → Config file: /deploy/railway.frontend.toml, Root Directory: empty
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "deploy/Dockerfile.webReact"
+watchPatterns = [
+  "/app/webReact/**",
+  "/deploy/Dockerfile.webReact",
+  "/deploy/railway.frontend.toml",
+]
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
