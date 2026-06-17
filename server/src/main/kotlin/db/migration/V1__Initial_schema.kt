@@ -21,7 +21,7 @@ import jobs.procrush.db.tables.SurveyResultsTable
 import jobs.procrush.db.tables.SurveysTable
 import jobs.procrush.db.tables.UsersTable
 import org.flywaydb.core.api.migration.Context
-import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 
 class V1__Initial_schema : ExposedMigration() {
     override fun migrate(context: Context) {

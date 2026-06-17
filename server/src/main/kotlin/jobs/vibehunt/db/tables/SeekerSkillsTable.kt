@@ -1,8 +1,8 @@
 package jobs.procrush.db.tables
 
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
 object SeekerSkillsTable : Table("seeker_skills") {
     val seekerId = reference("seeker_id", SeekersTable, onDelete = ReferenceOption.CASCADE)

@@ -1,8 +1,7 @@
 package jobs.procrush.db.tables
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
 object OccupationsTable : LongIdTable("occupations") {
     val parentId = long("parent_id").nullable()

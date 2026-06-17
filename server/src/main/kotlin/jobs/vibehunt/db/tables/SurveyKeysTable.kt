@@ -1,8 +1,8 @@
 package jobs.procrush.db.tables
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
 object SurveyKeysTable : LongIdTable("survey_keys") {
     val surveyId = reference("survey_id", SurveysTable, onDelete = ReferenceOption.CASCADE).nullable()

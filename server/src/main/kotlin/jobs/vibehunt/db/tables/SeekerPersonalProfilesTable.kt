@@ -7,10 +7,10 @@ import jobs.procrush.models.EnergySourcesSection
 import jobs.procrush.models.PersonalityDbJson
 import jobs.procrush.models.StopFactorsSection
 import jobs.procrush.models.ThinkingCategory
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
-import org.jetbrains.exposed.sql.json.jsonb
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
+import org.jetbrains.exposed.v1.json.jsonb
 
 object SeekerPersonalProfilesTable : Table("seeker_personal_profiles") {
     val seekerId = reference("seeker_id", SeekersTable, onDelete = ReferenceOption.CASCADE)

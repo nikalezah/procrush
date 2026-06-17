@@ -1,8 +1,8 @@
 package db.migration
 
-import org.jetbrains.exposed.sql.Transaction
+import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 
-internal fun Transaction.execSqlResource(resourcePath: String) {
+internal fun JdbcTransaction.execSqlResource(resourcePath: String) {
     val sql =
         checkNotNull(V1__Initial_schema::class.java.classLoader.getResourceAsStream(resourcePath)) {
             "SQL resource not found: $resourcePath"

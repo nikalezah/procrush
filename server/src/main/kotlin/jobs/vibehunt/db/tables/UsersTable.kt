@@ -1,7 +1,7 @@
 package jobs.procrush.db.tables
 
-import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
+import org.jetbrains.exposed.v1.core.dao.id.java.UUIDTable
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
 object UsersTable : UUIDTable("users") {
     val email = varchar("email", 255).uniqueIndex()
