@@ -2,8 +2,10 @@ package jobs.procrush.db
 
 import jobs.procrush.db.tables.OccupationsTable
 import jobs.procrush.db.tables.SkillsTable
+import jobs.procrush.db.tables.SuperpowersAndTalentsTable
 import jobs.procrush.models.OccupationDto
 import jobs.procrush.models.SkillDto
+import jobs.procrush.models.SuperpowerAndTalentDto
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.eq
@@ -70,6 +72,25 @@ class ReferenceRepository {
                 .map { it.toSkillDto() }
         }
 
+    fun listSuperpowersAndTalents(): List<SuperpowerAndTalentDto> =
+        transaction {
+            SuperpowersAndTalentsTable
+                .selectAll()
+                .orderBy(SuperpowersAndTalentsTable.name to SortOrder.ASC)
+                .map { it.toSuperpowerAndTalentDto() }
+        }
+
+    fun findSuperpowersAndTalentsByNames(names: List<String>): Map<String, Long> =
+        transaction {
+            if (names.isEmpty()) return@transaction emptyMap()
+            SuperpowersAndTalentsTable
+                .selectAll()
+                .where { SuperpowersAndTalentsTable.name inList names }
+                .associate { row ->
+                    row[SuperpowersAndTalentsTable.name]!! to row[SuperpowersAndTalentsTable.id].value
+                }
+        }
+
     private fun ResultRow.toOccupationDto() =
         OccupationDto(
             id = this[OccupationsTable.id].value,
@@ -82,5 +103,11 @@ class ReferenceRepository {
         SkillDto(
             id = this[SkillsTable.id].value,
             name = this[SkillsTable.name],
+        )
+
+    private fun ResultRow.toSuperpowerAndTalentDto() =
+        SuperpowerAndTalentDto(
+            id = this[SuperpowersAndTalentsTable.id].value,
+            name = this[SuperpowersAndTalentsTable.name]!!,
         )
 }

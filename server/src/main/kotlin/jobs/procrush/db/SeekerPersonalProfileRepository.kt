@@ -11,7 +11,9 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.time.OffsetDateTime
 
-class SeekerPersonalProfileRepository {
+class SeekerPersonalProfileRepository(
+    private val superpowersRepository: SeekerSuperpowersAndTalentsRepository = SeekerSuperpowersAndTalentsRepository(),
+) {
     fun findBySeekerId(seekerId: Long): SeekerPersonalProfileRecord? =
         transaction {
             SeekerPersonalProfilesTable
@@ -61,11 +63,27 @@ class SeekerPersonalProfileRepository {
         }
     }
 
+    fun upsertProfileWithSuperpowers(
+        seekerId: Long,
+        profile: SeekerPersonalProfileRecord,
+        superpowers: List<Pair<Long, Boolean>>,
+    ) {
+        transaction {
+            upsertProfileInternal(seekerId, profile)
+            superpowersRepository.replaceForSeeker(seekerId, superpowers)
+        }
+    }
+
     fun upsertProfile(seekerId: Long, profile: SeekerPersonalProfileRecord) {
         transaction {
-            val now = OffsetDateTime.now()
-            val updated =
-                SeekerPersonalProfilesTable.update({ SeekerPersonalProfilesTable.seekerId eq seekerId }) {
+            upsertProfileInternal(seekerId, profile)
+        }
+    }
+
+    private fun upsertProfileInternal(seekerId: Long, profile: SeekerPersonalProfileRecord) {
+        val now = OffsetDateTime.now()
+        val updated =
+            SeekerPersonalProfilesTable.update({ SeekerPersonalProfilesTable.seekerId eq seekerId }) {
                     it[title] = profile.title
                     it[description] = profile.description
                     it[SeekerPersonalProfilesTable.profile] = profile.profile
@@ -122,7 +140,6 @@ class SeekerPersonalProfileRepository {
                     it[updatedAt] = now
                 }
             }
-        }
     }
 
     private fun ResultRow.toRecord(): SeekerPersonalProfileRecord =

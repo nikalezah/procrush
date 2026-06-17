@@ -1,12 +1,13 @@
 package jobs.procrush.domain
 
+import jobs.procrush.models.SuperpowerAndTalentDto
 import jobs.procrush.survey.SurveyLlmContextDto
 import kotlinx.serialization.json.Json
 
 class PersonalityPromptBuilder {
     private val json = Json { prettyPrint = true }
 
-    fun build(context: SurveyLlmContextDto): Pair<String, String> {
+    fun build(context: SurveyLlmContextDto, catalog: List<SuperpowerAndTalentDto>): Pair<String, String> {
         val systemPrompt =
             """
             Ты — опытный психолог-интерпретатор результатов личностных опросов.
@@ -50,7 +51,11 @@ class PersonalityPromptBuilder {
               "stop_factors": { "title": "Стоп-факторы", "items": [
                 { "title": "string", "description": "string — ровно 20–30 слов" },
                 { "title": "string", "description": "string — ровно 20–30 слов" }
-              ] }
+              ] },
+              "superpowers_and_talents": [
+                { "name": "string — точное название из справочника", "is_pronounced": true/false },
+                ... ровно 4–6 объектов ...
+              ]
             }
 
             Используй термины из глоссария. Опирайся на calculated_results каждого опроса.
@@ -70,11 +75,24 @@ class PersonalityPromptBuilder {
             - stop_factors.title — строго «Стоп-факторы» (не «факторы торможения» и не другие формулировки); items — ровно 2 объекта.
             - У каждого элемента: title — короткий заголовок; description — связный текст ровно из 15–25 слов (считай слова по пробелам).
 
+            Правила для superpowers_and_talents:
+            - Выбери 4–6 наиболее подходящих суперсил из справочника (не все 8).
+            - name — дословно одно из переданных названий; дубликаты запрещены.
+            - is_pronounced: true — суперсила ярко выражена; false — присутствует, но умеренно.
+            - Минимум 1 элемент с is_pronounced: true.
+            - Опирайся на результаты опросов и сформированный профиль.
+
             Финальная проверка перед ответом: один корневой объект, без хвоста после «}», без комментариев // и без trailing comma.
             """.trimIndent()
 
+        val catalogBlock =
+            catalog.joinToString("\n") { item -> "- ${item.name}" }
+
         val userPrompt =
             """
+            Справочник суперсил и талантов (выбирай только из этого списка):
+            $catalogBlock
+
             Данные для интерпретации:
 
             ${json.encodeToString(context)}

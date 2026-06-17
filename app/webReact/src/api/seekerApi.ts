@@ -1,22 +1,44 @@
-import { apiFetch } from './client'
+import {apiFetch} from './client'
 import type {
-  CompleteSurveyResponseDto,
-  CreateSeekerEducationRequest,
-  CreateSeekerExperienceRequest,
-  JobRecommendationDto,
-  PersonalityPreviewDto,
-  SeekerDashboardDto,
-  SeekerDesiredPositionsResponse,
-  SeekerEducationDto,
-  SeekerExperienceDto,
-  SeekerProfileDto,
-  SeekerSkillsResponse,
-  SurveyDetailDto,
-  SurveyGroupsResponseDto,
-  UpdateSeekerProfileRequest,
+    CompleteSurveyResponseDto,
+    CreateSeekerEducationRequest,
+    CreateSeekerExperienceRequest,
+    JobRecommendationDto,
+    PersonalityPreviewDto,
+    SeekerDashboardDto,
+    SeekerDesiredPositionsResponse,
+    SeekerEducationDto,
+    SeekerExperienceDto,
+    SeekerProfileDto,
+    SeekerSkillsResponse,
+    SuperpowerAndTalentDto,
+    SurveyDetailDto,
+    SurveyGroupsResponseDto,
+    UpdateSeekerProfileRequest,
 } from './types'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
+
+function normalizeSuperpowerItem(raw: Record<string, unknown>): SuperpowerAndTalentDto {
+  return {
+    id: Number(raw.id),
+    name: String(raw.name ?? ''),
+    isPronounced: Boolean(raw.isPronounced ?? raw.is_pronounced),
+  }
+}
+
+function normalizePersonalityPreview(raw: Record<string, unknown>): PersonalityPreviewDto {
+  const superpowersRaw = raw.superpowersAndTalents ?? raw.superpowers_and_talents
+  const superpowersAndTalents =
+    Array.isArray(superpowersRaw) ?
+      superpowersRaw.map((item) => normalizeSuperpowerItem(item as Record<string, unknown>))
+    : null
+
+  return {
+    ...(raw as unknown as PersonalityPreviewDto),
+    superpowersAndTalents,
+  }
+}
 
 export function fetchSeekerDashboard(): Promise<SeekerDashboardDto> {
   return apiFetch('/api/seeker/dashboard')
@@ -115,7 +137,7 @@ export function updateDesiredPositions(
 }
 
 export function fetchPersonalityPreview(): Promise<PersonalityPreviewDto> {
-  return apiFetch('/api/seeker/personality-preview')
+  return apiFetch<Record<string, unknown>>('/api/seeker/personality-preview').then(normalizePersonalityPreview)
 }
 
 export function triggerPersonalityGeneration(): Promise<{ status: string }> {

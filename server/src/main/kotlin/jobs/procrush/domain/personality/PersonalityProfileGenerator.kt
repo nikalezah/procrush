@@ -2,6 +2,7 @@ package jobs.procrush.domain.personality
 
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import jobs.procrush.config.LlmConfig
+import jobs.procrush.db.ReferenceRepository
 import jobs.procrush.db.SeekerPersonalProfileRepository
 import jobs.procrush.db.SeekerRepository
 import jobs.procrush.domain.PersonalityProfileMapper
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 class PersonalityProfileGenerator(
     private val seekerRepository: SeekerRepository,
     private val profileRepository: SeekerPersonalProfileRepository,
+    private val referenceRepository: ReferenceRepository,
     private val surveyService: SurveyService,
     private val llmConfig: LlmConfig,
     private val llmClient: LlmClient,
@@ -72,10 +74,17 @@ class PersonalityProfileGenerator(
         val context = surveyService.buildLlmContext(userId)
         require(context.surveys.isNotEmpty()) { "Нет завершённых опросов для интерпретации" }
 
-        val (systemPrompt, userPrompt) = promptBuilder.build(context)
+        val catalog = referenceRepository.listSuperpowersAndTalents()
+        val catalogNames = catalog.map { it.name }.toSet()
+        val (systemPrompt, userPrompt) = promptBuilder.build(context, catalog)
         val rawResponse = llmClient.chat(systemPrompt, userPrompt)
-        val output = validator.validateAndParse(rawResponse)
+        val output = validator.validateAndParse(rawResponse, catalogNames)
         val record = PersonalityProfileMapper.fromLlmOutput(seekerId, output)
-        profileRepository.upsertProfile(seekerId, record)
+        val nameToId = referenceRepository.findSuperpowersAndTalentsByNames(output.superpowersAndTalents.map { it.name })
+        val superpowerRows =
+            output.superpowersAndTalents.map { item ->
+                nameToId.getValue(item.name) to item.isPronounced
+            }
+        profileRepository.upsertProfileWithSuperpowers(seekerId, record, superpowerRows)
     }
 }

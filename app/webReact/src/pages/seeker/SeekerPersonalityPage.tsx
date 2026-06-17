@@ -5,6 +5,7 @@ import type { PersonalityPreviewDto } from '../../api/types'
 import { FormSection } from '../../components/FormSection'
 import { DiscHexagonChart } from '../../components/personality/DiscHexagonChart'
 import { PersonalityCategoryTabs } from '../../components/personality/PersonalityCategoryTabs'
+import { SuperpowersAndTalentsSection } from '../../components/personality/SuperpowersAndTalentsSection'
 
 const AXIS_LABELS: Record<string, string> = {
   axisDominance: 'Доминантность',
@@ -153,6 +154,7 @@ export function SeekerPersonalityPage() {
   ]
   const axisKeys = Object.keys(AXIS_LABELS)
   const categories = data.categories ?? []
+  const superpowersAndTalents = data.superpowersAndTalents ?? []
   const energySources = data.energySources
   const stopFactors = data.stopFactors
   const showEnergyStopSideBySide = energySources != null && stopFactors != null
@@ -191,6 +193,9 @@ export function SeekerPersonalityPage() {
           </dl>
         )}
       </FormSection>
+      {superpowersAndTalents.length > 0 && (
+        <SuperpowersAndTalentsSection items={superpowersAndTalents} />
+      )}
       {categories.length > 0 && <PersonalityCategoryTabs categories={categories} />}
       <FormSection title="Профиль DISC">
         <DiscHexagonChart

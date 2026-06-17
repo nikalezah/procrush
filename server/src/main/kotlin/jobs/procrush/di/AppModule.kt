@@ -9,6 +9,7 @@ import jobs.procrush.db.EmployerRepository
 import jobs.procrush.db.ReferenceRepository
 import jobs.procrush.db.SeekerPersonalProfileRepository
 import jobs.procrush.db.SeekerRepository
+import jobs.procrush.db.SeekerSuperpowersAndTalentsRepository
 import jobs.procrush.db.SessionRepository
 import jobs.procrush.db.SurveyRepository
 import jobs.procrush.db.UserRepository
@@ -56,12 +57,14 @@ data class AppContext(
             val surveyService = SurveyService(seekerRepository, surveyRepository)
 
             val profileRepository = SeekerPersonalProfileRepository()
+            val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
             val llmClient = LlmFactory.createClient(config.llm)
             val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val generator =
                 PersonalityProfileGenerator(
                     seekerRepository = seekerRepository,
                     profileRepository = profileRepository,
+                    referenceRepository = referenceRepository,
                     surveyService = surveyService,
                     llmConfig = config.llm,
                     llmClient = llmClient,
@@ -82,6 +85,7 @@ data class AppContext(
                 PersonalityProfileReader(
                     seekerRepository = seekerRepository,
                     profileRepository = profileRepository,
+                    superpowersRepository = superpowersRepository,
                     surveyService = surveyService,
                     generator = generator,
                 )

@@ -4,11 +4,12 @@ import jobs.procrush.llm.LlmResponseParser
 import jobs.procrush.models.PersonalityDbJson
 import jobs.procrush.models.PersonalityTrait
 import jobs.procrush.models.SeekerPersonalProfileLlmOutput
+import jobs.procrush.models.SuperpowerAndTalentLlmItem
 
 class PersonalityProfileValidator {
     private val json = PersonalityDbJson
 
-    fun validateAndParse(rawResponse: String): SeekerPersonalProfileLlmOutput {
+    fun validateAndParse(rawResponse: String, catalogNames: Set<String>): SeekerPersonalProfileLlmOutput {
         val jsonText = LlmResponseParser.extractJson(rawResponse)
         val output =
             try {
@@ -45,8 +46,24 @@ class PersonalityProfileValidator {
         validateTraits("thinking", output.thinking.traits.asList())
         output.energySources.validateStructure()
         output.stopFactors.validateStructure()
+        validateSuperpowers(output.superpowersAndTalents, catalogNames)
 
         return output
+    }
+
+    private fun validateSuperpowers(items: List<SuperpowerAndTalentLlmItem>, catalogNames: Set<String>) {
+        require(items.size in 4..6) {
+            "superpowers_and_talents должно содержать от 4 до 6 элементов, получено ${items.size}"
+        }
+        val names = items.map { it.name.trim() }
+        require(names.all { it.isNotBlank() }) { "superpowers_and_talents.name обязательно" }
+        require(names.toSet().size == names.size) { "superpowers_and_talents: дубликаты названий запрещены" }
+        names.forEach { name ->
+            require(name in catalogNames) { "superpowers_and_talents: неизвестное название «$name»" }
+        }
+        require(items.any { it.isPronounced }) {
+            "superpowers_and_talents: минимум один элемент с is_pronounced: true"
+        }
     }
 
     private fun requireScore(value: Double, field: String) {

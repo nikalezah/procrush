@@ -189,6 +189,12 @@ export interface StopFactorsSectionDto {
   items: [PersonalityItemDto, PersonalityItemDto]
 }
 
+export interface SuperpowerAndTalentDto {
+  id: number
+  name: string
+  isPronounced: boolean
+}
+
 export type PersonalityProfileStatus = 'NOT_READY' | 'PROCESSING' | 'READY' | 'FAILED'
 
 export interface PersonalityPreviewDto {
@@ -211,6 +217,7 @@ export interface PersonalityPreviewDto {
   categories?: PersonalityCategoryDto[] | null
   energySources?: EnergySourcesSectionDto | null
   stopFactors?: StopFactorsSectionDto | null
+  superpowersAndTalents?: SuperpowerAndTalentDto[] | null
 }
 
 export interface JobRecommendationDto {

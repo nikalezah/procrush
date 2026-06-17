@@ -24,6 +24,8 @@ import jobs.procrush.models.StopFactorsItems
 import jobs.procrush.models.StopFactorsSection
 import jobs.procrush.models.SucceedThrough
 import jobs.procrush.models.SucceedThroughDto
+import jobs.procrush.models.SuperpowerAndTalentDto
+import jobs.procrush.models.SuperpowerAndTalentLlmItem
 import jobs.procrush.models.ThinkingCategory
 import jobs.procrush.models.ThinkingTraits
 
@@ -440,6 +442,14 @@ object PersonalityStub {
                             ),
                         ),
                 ),
+            superpowersAndTalents =
+                listOf(
+                    SuperpowerAndTalentDto(id = 1, name = "Стратегический лидер", isPronounced = true),
+                    SuperpowerAndTalentDto(id = 3, name = "Системный анализ", isPronounced = true),
+                    SuperpowerAndTalentDto(id = 4, name = "Принятие решений", isPronounced = true),
+                    SuperpowerAndTalentDto(id = 6, name = "Работа с данными", isPronounced = false),
+                    SuperpowerAndTalentDto(id = 8, name = "Адаптивность и обучаемость", isPronounced = false),
+                ),
             testsCompleted = 1,
             testsTotal = 2,
         )
@@ -482,6 +492,14 @@ object PersonalityStub {
                 StopFactorsSection(
                     title = preview.stopFactors.title,
                     items = StopFactorsItems(stopItems[0], stopItems[1]),
+                ),
+            superpowersAndTalents =
+                listOf(
+                    SuperpowerAndTalentLlmItem(name = "Стратегический лидер", isPronounced = true),
+                    SuperpowerAndTalentLlmItem(name = "Системный анализ", isPronounced = true),
+                    SuperpowerAndTalentLlmItem(name = "Принятие решений", isPronounced = true),
+                    SuperpowerAndTalentLlmItem(name = "Работа с данными", isPronounced = false),
+                    SuperpowerAndTalentLlmItem(name = "Адаптивность и обучаемость", isPronounced = false),
                 ),
         )
     }

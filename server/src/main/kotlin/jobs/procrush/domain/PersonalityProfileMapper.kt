@@ -12,6 +12,7 @@ import jobs.procrush.models.PersonalityTraitDto
 import jobs.procrush.models.SeekerPersonalProfileLlmOutput
 import jobs.procrush.models.SeekerPersonalProfileRecord
 import jobs.procrush.models.SucceedThroughDto
+import jobs.procrush.models.SuperpowerAndTalentDto
 import jobs.procrush.models.ThinkingCategory
 
 object PersonalityProfileMapper {
@@ -19,6 +20,7 @@ object PersonalityProfileMapper {
         record: SeekerPersonalProfileRecord,
         testsCompleted: Int,
         testsTotal: Int,
+        superpowersAndTalents: List<SuperpowerAndTalentDto> = emptyList(),
     ): PersonalityPreviewDto {
         val categories = buildCategories(record)
         return PersonalityPreviewDto(
@@ -40,6 +42,7 @@ object PersonalityProfileMapper {
             categories = categories,
             energySources = record.energySources?.toSectionDto(),
             stopFactors = record.stopFactors?.toSectionDto(),
+            superpowersAndTalents = superpowersAndTalents.ifEmpty { null },
         )
     }
 

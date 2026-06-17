@@ -206,6 +206,19 @@ data class PersonalitySectionDto(
 )
 
 @Serializable
+data class SuperpowerAndTalentLlmItem(
+    val name: String,
+    @kotlinx.serialization.SerialName("is_pronounced") val isPronounced: Boolean,
+)
+
+@Serializable
+data class SuperpowerAndTalentDto(
+    val id: Long,
+    val name: String,
+    val isPronounced: Boolean? = null,
+)
+
+@Serializable
 data class SeekerPersonalProfileRecord(
     val seekerId: Long,
     val title: String?,
@@ -258,6 +271,7 @@ data class SeekerPersonalProfileLlmOutput(
     @kotlinx.serialization.SerialName("burnout_risk_stress") val burnoutRiskStress: Double? = null,
     @kotlinx.serialization.SerialName("energy_sources") val energySources: EnergySourcesSection,
     @kotlinx.serialization.SerialName("stop_factors") val stopFactors: StopFactorsSection,
+    @kotlinx.serialization.SerialName("superpowers_and_talents") val superpowersAndTalents: List<SuperpowerAndTalentLlmItem>,
 )
 
 @Serializable
@@ -315,6 +329,7 @@ data class PersonalityPreviewDto(
     val categories: List<PersonalityCategoryDto>? = null,
     val energySources: PersonalitySectionDto? = null,
     val stopFactors: PersonalitySectionDto? = null,
+    val superpowersAndTalents: List<SuperpowerAndTalentDto>? = null,
 )
 
 @Serializable

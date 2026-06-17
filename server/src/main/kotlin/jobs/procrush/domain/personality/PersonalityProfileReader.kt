@@ -2,6 +2,7 @@ package jobs.procrush.domain.personality
 
 import jobs.procrush.db.SeekerPersonalProfileRepository
 import jobs.procrush.db.SeekerRepository
+import jobs.procrush.db.SeekerSuperpowersAndTalentsRepository
 import jobs.procrush.domain.PersonalityProfileMapper
 import jobs.procrush.domain.SurveyService
 import jobs.procrush.models.PersonalityPreviewDto
@@ -11,6 +12,7 @@ import java.util.UUID
 class PersonalityProfileReader(
     private val seekerRepository: SeekerRepository,
     private val profileRepository: SeekerPersonalProfileRepository,
+    private val superpowersRepository: SeekerSuperpowersAndTalentsRepository,
     private val surveyService: SurveyService,
     private val generator: PersonalityProfileGenerator,
 ) {
@@ -43,8 +45,15 @@ class PersonalityProfileReader(
         }
 
         return when (current.generationStatus) {
-            PersonalityProfileStatus.READY ->
-                PersonalityProfileMapper.toPreview(current, groups.testsCompleted, groups.testsTotal)
+            PersonalityProfileStatus.READY -> {
+                val superpowers = superpowersRepository.findBySeekerId(seeker.id)
+                PersonalityProfileMapper.toPreview(
+                    current,
+                    groups.testsCompleted,
+                    groups.testsTotal,
+                    superpowers,
+                )
+            }
             PersonalityProfileStatus.FAILED ->
                 PersonalityPreviewDto(
                     status = PersonalityProfileStatus.FAILED,
