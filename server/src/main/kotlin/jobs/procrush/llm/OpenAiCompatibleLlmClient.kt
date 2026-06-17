@@ -18,7 +18,7 @@ class OpenAiCompatibleLlmClient(
     private val config: LlmConfig,
     httpClient: HttpClient? = null,
 ) : LlmClient {
-    private val httpClient = httpClient ?: LlmHttpClientFactory.create(config)
+    private val httpClient = httpClient ?: LlmFactory.createHttpClient(config)
 
     override suspend fun chat(systemPrompt: String, userPrompt: String): String {
         val httpResponse =

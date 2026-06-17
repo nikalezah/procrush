@@ -4,17 +4,14 @@ import jobs.procrush.db.tables.EmployerJobProfilesTable
 import jobs.procrush.db.tables.EmployersTable
 import jobs.procrush.db.tables.JobProfileSkillsTable
 import jobs.procrush.db.tables.OccupationsTable
-import jobs.procrush.db.tables.SkillsTable
 import jobs.procrush.models.CreateJobProfileRequest
 import jobs.procrush.models.EmployerProfileDto
 import jobs.procrush.models.JobProfileDto
-import jobs.procrush.models.SkillDto
 import jobs.procrush.models.UpdateEmployerProfileRequest
 import jobs.procrush.models.UpdateJobProfileRequest
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -23,7 +20,9 @@ import org.jetbrains.exposed.v1.jdbc.update
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class EmployerRepository {
+class EmployerRepository(
+    private val referenceRepository: ReferenceRepository,
+) {
     fun createForUser(userId: UUID, name: String = ""): EmployerProfileDto =
         transaction {
             val now = OffsetDateTime.now()
@@ -74,7 +73,7 @@ class EmployerRepository {
             EmployerJobProfilesTable
                 .selectAll()
                 .where { EmployerJobProfilesTable.employerId eq employerId }
-                .map { row -> row.toJobProfileDto(employerId) }
+                .map { row -> row.toJobProfileDto() }
         }
 
     fun findJobProfile(employerId: Long, jobProfileId: Long): JobProfileDto? =
@@ -86,7 +85,7 @@ class EmployerRepository {
                         (EmployerJobProfilesTable.employerId eq employerId)
                 }
                 .firstOrNull()
-                ?.toJobProfileDto(employerId)
+                ?.toJobProfileDto()
         }
 
     fun createJobProfile(employerId: Long, request: CreateJobProfileRequest): JobProfileDto =
@@ -151,16 +150,6 @@ class EmployerRepository {
             .where { JobProfileSkillsTable.jobProfileId eq jobProfileId }
             .map { it[JobProfileSkillsTable.skillId].value }
 
-    private fun getSkillsForIds(skillIds: List<Long>): List<SkillDto> =
-        if (skillIds.isEmpty()) {
-            emptyList()
-        } else {
-            SkillsTable
-                .selectAll()
-                .where { SkillsTable.id inList skillIds }
-                .map { SkillDto(it[SkillsTable.id].value, it[SkillsTable.name]) }
-        }
-
     private fun ResultRow.toDto() =
         EmployerProfileDto(
             id = this[EmployersTable.id].value,
@@ -171,7 +160,7 @@ class EmployerRepository {
             emailContact = this[EmployersTable.emailContact],
         )
 
-    private fun ResultRow.toJobProfileDto(employerId: Long): JobProfileDto {
+    private fun ResultRow.toJobProfileDto(): JobProfileDto {
         val jobProfileId = this[EmployerJobProfilesTable.id].value
         val occupationId = this[EmployerJobProfilesTable.occupationId].value
         val occupationName =
@@ -189,7 +178,7 @@ class EmployerRepository {
             description = this[EmployerJobProfilesTable.description],
             isActive = this[EmployerJobProfilesTable.isActive],
             skillIds = skillIds,
-            skills = getSkillsForIds(skillIds),
+            skills = referenceRepository.findSkillsByIds(skillIds),
         )
     }
 }

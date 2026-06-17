@@ -1,8 +1,6 @@
 package jobs.procrush.routes
 
-import io.ktor.http.Cookie
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -13,8 +11,11 @@ import io.ktor.server.routing.route
 import jobs.procrush.auth.CompleteRegistrationRequest
 import jobs.procrush.auth.DevLoginRequest
 import jobs.procrush.auth.MeResponse
+import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.SessionService
 import jobs.procrush.auth.UserAuthService
+import jobs.procrush.auth.clearSessionCookie
+import jobs.procrush.auth.setSessionCookie
 import jobs.procrush.config.AppConfig
 import java.util.UUID
 
@@ -22,6 +23,7 @@ fun Route.authRoutes(
     config: AppConfig,
     userAuthService: UserAuthService,
     sessionService: SessionService,
+    roleGuard: RoleGuard,
 ) {
     route("/api/auth") {
         post("/dev/login") {
@@ -37,15 +39,11 @@ fun Route.authRoutes(
             }
             val body = call.receive<DevLoginRequest>()
             val user =
-                try {
-                    userAuthService.findDevUser(body.email)
-                        ?: return@post call.respond(userAuthService.pendingDevRegistration(body.email))
-                } catch (e: IllegalArgumentException) {
-                    return@post call.respond(HttpStatusCode.BadRequest, mapOf("message" to (e.message ?: "Некорректный email")))
-                }
+                userAuthService.findDevUser(body.email)
+                    ?: return@post call.respond(userAuthService.pendingDevRegistration(body.email))
             val sessionToken = sessionService.createSession(UUID.fromString(user.id))
             call.setSessionCookie(config, sessionToken)
-            call.respond(userAuthService.withProfileName(user))
+            call.respond(userAuthService.enrich(user))
         }
 
         get("/me") {
@@ -68,68 +66,19 @@ fun Route.authRoutes(
                 body.email?.trim()?.lowercase()
                     ?: sessionService.resolveUser(token)?.email
                     ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Укажите email"))
-            val updated =
-                try {
-                    userAuthService.completeRegistration(email, body)
-                } catch (e: IllegalArgumentException) {
-                    return@post call.respond(HttpStatusCode.BadRequest, mapOf("message" to (e.message ?: "Некорректные данные")))
-                } catch (e: IllegalStateException) {
-                    return@post call.respond(HttpStatusCode.Conflict, mapOf("message" to (e.message ?: "Пользователь уже зарегистрирован")))
-                }
+            val updated = userAuthService.completeRegistration(email, body)
             val sessionToken = sessionService.createSession(UUID.fromString(updated.id))
             call.setSessionCookie(config, sessionToken)
-            call.respond(userAuthService.withProfileName(updated))
+            call.respond(userAuthService.enrich(updated))
         }
 
         delete("/account") {
-            val token =
-                call.request.cookies[config.sessionCookieName]
-                    ?: return@delete call.respond(HttpStatusCode.Unauthorized, "Не авторизован")
-            val user =
-                sessionService.resolveUser(token)
-                    ?: return@delete call.respond(HttpStatusCode.Unauthorized, "Не авторизован")
-            val userId =
-                try {
-                    java.util.UUID.fromString(user.id)
-                } catch (_: IllegalArgumentException) {
-                    return@delete call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный id пользователя"))
-                }
+            val user = roleGuard.requireAuth(call) ?: return@delete
+            val token = call.request.cookies[config.sessionCookieName]
             sessionService.invalidate(token)
-            try {
-                userAuthService.deleteAccount(userId)
-            } catch (e: IllegalStateException) {
-                return@delete call.respond(HttpStatusCode.NotFound, mapOf("message" to (e.message ?: "Пользователь не найден")))
-            }
+            userAuthService.deleteAccount(user.id)
             call.clearSessionCookie(config)
             call.respond(HttpStatusCode.NoContent)
         }
     }
-}
-
-private fun ApplicationCall.setSessionCookie(config: AppConfig, token: String) {
-    response.cookies.append(
-        Cookie(
-            name = config.sessionCookieName,
-            value = token,
-            httpOnly = true,
-            secure = config.cookieSecure,
-            path = "/",
-            maxAge = (config.sessionDays * 24 * 60 * 60).toInt(),
-            extensions = mapOf("SameSite" to "Lax"),
-        ),
-    )
-}
-
-private fun ApplicationCall.clearSessionCookie(config: AppConfig) {
-    response.cookies.append(
-        Cookie(
-            name = config.sessionCookieName,
-            value = "",
-            httpOnly = true,
-            secure = config.cookieSecure,
-            path = "/",
-            maxAge = 0,
-            extensions = mapOf("SameSite" to "Lax"),
-        ),
-    )
 }

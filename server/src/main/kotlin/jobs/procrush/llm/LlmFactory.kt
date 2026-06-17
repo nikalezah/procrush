@@ -6,10 +6,20 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import jobs.procrush.config.LlmConfig
+import jobs.procrush.config.LlmProvider
 import kotlinx.serialization.json.Json
 
-object LlmHttpClientFactory {
-    fun create(config: LlmConfig): HttpClient {
+object LlmFactory {
+    fun createClient(config: LlmConfig): LlmClient {
+        config.validateForGeneration()
+        return when (config.provider) {
+            LlmProvider.STUB -> StubLlmClient()
+            LlmProvider.OLLAMA -> OllamaLlmClient(config)
+            LlmProvider.OPENAI_COMPAT -> OpenAiCompatibleLlmClient(config)
+        }
+    }
+
+    fun createHttpClient(config: LlmConfig): HttpClient {
         val timeoutMs = config.requestTimeoutSeconds * 1_000
         return HttpClient(CIO) {
             install(HttpTimeout) {

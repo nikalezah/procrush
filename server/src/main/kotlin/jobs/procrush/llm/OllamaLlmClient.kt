@@ -1,11 +1,12 @@
 package jobs.procrush.llm
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import jobs.procrush.config.LlmConfig
 import kotlinx.serialization.Serializable
 
@@ -13,10 +14,10 @@ class OllamaLlmClient(
     private val config: LlmConfig,
     httpClient: HttpClient? = null,
 ) : LlmClient {
-    private val httpClient = httpClient ?: LlmHttpClientFactory.create(config)
+    private val httpClient = httpClient ?: LlmFactory.createHttpClient(config)
 
     override suspend fun chat(systemPrompt: String, userPrompt: String): String {
-        val response: OllamaChatResponse =
+        val httpResponse =
             httpClient.post("${config.apiRoot}/api/chat") {
                 contentType(ContentType.Application.Json)
                 setBody(
@@ -31,7 +32,13 @@ class OllamaLlmClient(
                         format = "json",
                     ),
                 )
-            }.body()
+            }
+        val rawBody = httpResponse.bodyAsText()
+        if (!httpResponse.status.isSuccess()) {
+            error("Ollama HTTP ${httpResponse.status.value}: ${rawBody.take(500)}")
+        }
+        val response = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+            .decodeFromString<OllamaChatResponse>(rawBody)
         return response.message?.content ?: error("Пустой ответ от Ollama")
     }
 }

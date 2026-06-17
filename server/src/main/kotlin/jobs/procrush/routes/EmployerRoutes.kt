@@ -11,7 +11,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.UserRole
-import jobs.procrush.domain.EmployerProfileService
+import jobs.procrush.domain.employer.EmployerProfileService
 import jobs.procrush.models.CreateJobProfileRequest
 import jobs.procrush.models.UpdateEmployerProfileRequest
 import jobs.procrush.models.UpdateJobProfileRequest
@@ -32,11 +32,7 @@ fun Route.employerRoutes(
         patch("/me") {
             val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@patch
             val body = call.receive<UpdateEmployerProfileRequest>()
-            try {
-                employerProfileService.updateProfile(user.id, body)
-            } catch (e: IllegalArgumentException) {
-                return@patch call.respond(HttpStatusCode.BadRequest, mapOf("message" to (e.message ?: "Некорректные данные")))
-            }
+            employerProfileService.updateProfile(user.id, body)
             call.respond(employerProfileService.getOrCreateEmployer(user.id))
         }
         get("/job-profiles") {
@@ -46,46 +42,27 @@ fun Route.employerRoutes(
         post("/job-profiles") {
             val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@post
             val body = call.receive<CreateJobProfileRequest>()
-            try {
-                val created = employerProfileService.createJobProfile(user.id, body)
-                call.respond(HttpStatusCode.Created, created)
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.BadRequest, mapOf("message" to (e.message ?: "Ошибка")))
-            }
+            val created = employerProfileService.createJobProfile(user.id, body)
+            call.respond(HttpStatusCode.Created, created)
         }
         patch("/job-profiles/{id}") {
             val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@patch
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@patch call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный id"))
+            val id = call.requireLongParam() ?: return@patch
             val body = call.receive<UpdateJobProfileRequest>()
-            try {
-                employerProfileService.updateJobProfile(user.id, id, body)
-                call.respond(employerProfileService.findJobProfile(user.id, id))
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.NotFound, mapOf("message" to (e.message ?: "Не найдено")))
-            }
+            employerProfileService.updateJobProfile(user.id, id, body)
+            call.respond(employerProfileService.findJobProfile(user.id, id))
         }
         delete("/job-profiles/{id}") {
             val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@delete
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@delete call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный id"))
-            try {
-                employerProfileService.deleteJobProfile(user.id, id)
-                call.respond(HttpStatusCode.NoContent)
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.NotFound, mapOf("message" to (e.message ?: "Не найдено")))
-            }
+            val id = call.requireLongParam() ?: return@delete
+            employerProfileService.deleteJobProfile(user.id, id)
+            call.respond(HttpStatusCode.NoContent)
         }
         get("/job-profiles/{id}/candidates") {
             val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@get
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный id"))
-            try {
-                employerProfileService.findJobProfile(user.id, id)
-                call.respond(employerProfileService.candidates(id))
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.NotFound, mapOf("message" to (e.message ?: "Не найдено")))
-            }
+            val id = call.requireLongParam() ?: return@get
+            employerProfileService.findJobProfile(user.id, id)
+            call.respond(employerProfileService.candidates(id))
         }
     }
 }

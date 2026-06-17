@@ -21,18 +21,6 @@ class SeekerPersonalProfileRepository {
                 ?.toRecord()
         }
 
-    fun insertProcessing(seekerId: Long) {
-        transaction {
-            val now = OffsetDateTime.now()
-            SeekerPersonalProfilesTable.insert {
-                it[SeekerPersonalProfilesTable.seekerId] = seekerId
-                it[generationStatus] = PersonalityProfileStatus.PROCESSING.name
-                it[generationError] = null
-                it[updatedAt] = now
-            }
-        }
-    }
-
     fun markProcessing(seekerId: Long) {
         transaction {
             val now = OffsetDateTime.now()

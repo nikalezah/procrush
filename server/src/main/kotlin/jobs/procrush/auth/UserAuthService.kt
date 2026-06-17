@@ -1,34 +1,30 @@
 package jobs.procrush.auth
 
-import jobs.procrush.db.EmployerRepository
-import jobs.procrush.db.SeekerRepository
 import jobs.procrush.db.UserRepository
 import jobs.procrush.domain.ProfileProvisioningService
+import jobs.procrush.domain.RegistrationConflictException
+import jobs.procrush.domain.ResourceNotFoundException
 import java.util.UUID
 
 class UserAuthService(
     private val userRepository: UserRepository,
     private val profileProvisioningService: ProfileProvisioningService,
-    private val seekerRepository: SeekerRepository,
-    private val employerRepository: EmployerRepository,
+    private val profileEnricher: UserProfileEnricher,
 ) {
     fun findDevUser(email: String): AuthUserDto? {
-        val normalizedEmail = email.trim().lowercase()
-        require(normalizedEmail.contains('@')) { "Некорректный адрес электронной почты" }
-        return userRepository.findByEmail(normalizedEmail)?.let { withProfileName(it) }
+        val normalizedEmail = EmailNormalizer.normalize(email)
+        return userRepository.findByEmail(normalizedEmail)?.let { profileEnricher.enrich(it) }
     }
 
     fun pendingDevRegistration(email: String): AuthUserDto {
-        val normalizedEmail = email.trim().lowercase()
-        require(normalizedEmail.contains('@')) { "Некорректный адрес электронной почты" }
+        val normalizedEmail = EmailNormalizer.normalize(email)
         return AuthUserDto(id = "", email = normalizedEmail, role = null)
     }
 
     fun completeRegistration(email: String, request: CompleteRegistrationRequest): AuthUserDto {
-        val normalizedEmail = email.trim().lowercase()
-        require(normalizedEmail.contains('@')) { "Некорректный адрес электронной почты" }
+        val normalizedEmail = EmailNormalizer.normalize(email)
         if (userRepository.findByEmail(normalizedEmail) != null) {
-            error("Пользователь уже зарегистрирован")
+            throw RegistrationConflictException()
         }
         val profileData = validateRegistrationProfile(request)
         val userId =
@@ -49,31 +45,16 @@ class UserAuthService(
             middleName = profileData.middleName,
             companyName = profileData.companyName,
         )
-        return withProfileName(userRepository.findById(userId) ?: error("Пользователь не найден"))
+        return profileEnricher.enrich(userRepository.findById(userId) ?: error("Пользователь не найден"))
     }
 
     fun deleteAccount(userId: UUID) {
         if (!userRepository.deleteById(userId)) {
-            error("Пользователь не найден")
+            throw ResourceNotFoundException("Пользователь не найден")
         }
     }
 
-    fun withProfileName(user: AuthUserDto): AuthUserDto {
-        val role = user.role ?: return user.copy(profileName = null)
-        val profileName =
-            when (role) {
-                UserRole.SEEKER ->
-                    seekerRepository.findByUserId(UUID.fromString(user.id))?.let { seeker ->
-                        listOf(seeker.firstName, seeker.lastName)
-                            .joinToString(" ")
-                            .trim()
-                            .ifBlank { null }
-                    }
-                UserRole.EMPLOYER ->
-                    employerRepository.findByUserId(UUID.fromString(user.id))?.name?.trim()?.ifBlank { null }
-            }
-        return user.copy(profileName = profileName)
-    }
+    fun enrich(user: AuthUserDto): AuthUserDto = profileEnricher.enrich(user)
 
     private data class RegistrationProfileData(
         val firstName: String = "",

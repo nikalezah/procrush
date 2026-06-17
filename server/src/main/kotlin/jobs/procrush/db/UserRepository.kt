@@ -23,6 +23,7 @@ class UserRepository {
                 ?.toDto()
         }
 
+    /** Reserved for future OAuth login — lookup by provider + subject. */
     fun findByAuthKey(authProvider: String, authSubject: String): AuthUserDto? =
         transaction {
             UsersTable
