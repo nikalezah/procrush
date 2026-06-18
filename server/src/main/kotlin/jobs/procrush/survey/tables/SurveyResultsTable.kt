@@ -1,0 +1,16 @@
+package jobs.procrush.survey.tables
+
+import jobs.procrush.seeker.tables.SeekersTable
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
+import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
+
+object SurveyResultsTable : LongIdTable("survey_results") {
+    val seekerId = reference("seeker_id", SeekersTable, onDelete = ReferenceOption.CASCADE).nullable()
+    val surveyId = reference("survey_id", SurveysTable, onDelete = ReferenceOption.CASCADE).nullable()
+    val answers = text("answers")
+    val calculatedResults = text("calculated_results").nullable()
+    val startedAt = timestampWithTimeZone("started_at")
+    val completedAt = timestampWithTimeZone("completed_at").nullable()
+    val updatedAt = timestampWithTimeZone("updated_at")
+}

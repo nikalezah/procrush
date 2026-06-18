@@ -9,7 +9,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import jobs.procrush.config.LlmConfig
+import jobs.procrush.bootstrap.config.LlmConfig
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

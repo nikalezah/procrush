@@ -5,8 +5,8 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
-import jobs.procrush.config.LlmConfig
-import jobs.procrush.config.LlmProvider
+import jobs.procrush.bootstrap.config.LlmConfig
+import jobs.procrush.bootstrap.config.LlmProvider
 import kotlinx.serialization.json.Json
 
 object LlmFactory {

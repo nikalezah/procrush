@@ -7,7 +7,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
-import jobs.procrush.plugins.configureSerialization
+import jobs.procrush.bootstrap.plugins.configureSerialization
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

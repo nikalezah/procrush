@@ -7,18 +7,19 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import jobs.procrush.config.AppConfig
-import jobs.procrush.db.DatabaseFactory
-import jobs.procrush.di.AppContext
-import jobs.procrush.plugins.configureCallLogging
-import jobs.procrush.plugins.configureCors
-import jobs.procrush.plugins.configureSerialization
-import jobs.procrush.plugins.configureStatusPages
-import jobs.procrush.routes.authRoutes
-import jobs.procrush.routes.employerRoutes
-import jobs.procrush.routes.referenceRoutes
-import jobs.procrush.routes.seekerProfileRoutes
-import jobs.procrush.routes.seekerSurveyRoutes
+import jobs.procrush.auth.route.authRoutes
+import jobs.procrush.bootstrap.AppContext
+import jobs.procrush.bootstrap.DatabaseFactory
+import jobs.procrush.bootstrap.config.AppConfig
+import jobs.procrush.bootstrap.plugins.configureCallLogging
+import jobs.procrush.bootstrap.plugins.configureCors
+import jobs.procrush.bootstrap.plugins.configureSerialization
+import jobs.procrush.bootstrap.plugins.configureStatusPages
+import jobs.procrush.employer.route.employerRoutes
+import jobs.procrush.personality.route.personalityProfileRoutes
+import jobs.procrush.seeker.route.seekerProfileRoutes
+import jobs.procrush.shared.route.referenceRoutes
+import jobs.procrush.survey.route.seekerSurveyRoutes
 
 fun main() {
     val config = AppConfig.fromEnvironment()
@@ -45,7 +46,8 @@ fun Application.module() {
         }
         authRoutes(app.config, app.userAuthService, app.sessionService, app.roleGuard)
         referenceRoutes(app.roleGuard, app.referenceRepository)
-        seekerProfileRoutes(app.roleGuard, app.seekerProfileService, app.personalityProfileService)
+        seekerProfileRoutes(app.roleGuard, app.seekerProfileService)
+        personalityProfileRoutes(app.roleGuard, app.personalityProfileService)
         seekerSurveyRoutes(app.roleGuard, app.surveyService, app.personalityProfileService)
         employerRoutes(app.roleGuard, app.employerProfileService)
     }
