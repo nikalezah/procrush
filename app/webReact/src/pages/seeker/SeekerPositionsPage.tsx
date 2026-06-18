@@ -1,25 +1,29 @@
-import { useEffect, useState } from 'react'
+import {useEffect, useState} from 'react'
 import {
-  fetchDesiredPositions,
-  fetchRecommendations,
-  updateDesiredPositions,
+    fetchDesiredPositions,
+    fetchRecommendations,
+    fetchSurveyGroups,
+    updateDesiredPositions,
 } from '../../api/seekerApi'
-import type { JobRecommendationDto } from '../../api/types'
-import { FormSection } from '../../components/FormSection'
-import { MatchScoreBadge } from '../../components/MatchScoreBadge'
-import { OccupationPicker } from '../../components/OccupationPicker'
+import type {JobRecommendationDto} from '../../api/types'
+import {EmptyState} from '../../components/EmptyState'
+import {FormSection} from '../../components/FormSection'
+import {MatchScoreBadge} from '../../components/MatchScoreBadge'
+import {OccupationPicker} from '../../components/OccupationPicker'
 
 export function SeekerPositionsPage() {
   const [occupationIds, setOccupationIds] = useState<number[]>([])
   const [recommendations, setRecommendations] = useState<JobRecommendationDto[]>([])
+  const [testsComplete, setTestsComplete] = useState<boolean | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    void Promise.all([fetchDesiredPositions(), fetchRecommendations()])
-      .then(([positions, recs]) => {
+    void Promise.all([fetchDesiredPositions(), fetchRecommendations(), fetchSurveyGroups()])
+      .then(([positions, recs, surveys]) => {
         setOccupationIds(positions.occupationIds)
         setRecommendations(recs)
+        setTestsComplete(surveys.testsCompleted >= surveys.testsTotal)
       })
       .catch((e: Error) => setError(e.message))
   }, [])
@@ -30,10 +34,22 @@ export function SeekerPositionsPage() {
     setError(null)
     try {
       await updateDesiredPositions(ids)
+      const recs = await fetchRecommendations()
+      setRecommendations(recs)
       setMessage('Желаемые должности сохранены')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения')
     }
+  }
+
+  function recommendationsEmptyMessage(): string {
+    if (testsComplete === false) {
+      return 'Пройдите оба теста личности, чтобы участвовать в подборе вакансий'
+    }
+    if (occupationIds.length === 0) {
+      return 'Укажите одну или несколько желаемых должностей'
+    }
+    return 'Пока нет подходящих активных вакансий'
   }
 
   return (
@@ -57,35 +73,38 @@ export function SeekerPositionsPage() {
         />
       </FormSection>
 
-      <FormSection title="Рекомендованные вакансии" description="Демо-подборка (заглушка)">
-        <div className="flex flex-col gap-3">
-          {recommendations.map((job) => (
-            <article
-              key={job.id}
-              className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 sm:flex-row sm:items-start sm:justify-between"
-            >
-              <div>
-                <h3 className="font-medium">{job.positionName}</h3>
-                <p className="text-sm text-neutral-600">{job.companyName}</p>
-                <p className="mt-2 text-sm text-neutral-700">{job.description}</p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <MatchScoreBadge
-                  score={job.matchScoreDisplay}
-                  testsCompleted={job.testsCompleted}
-                  isScoreReduced={job.isScoreReduced}
-                />
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-lg bg-neutral-200 px-3 py-1.5 text-sm text-neutral-500"
-                >
-                  Откликнуться (скоро)
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+      <FormSection title="Рекомендованные вакансии" description="Подбор на основе навыков и личностного профиля">
+        {recommendations.length === 0 ? (
+          <EmptyState
+            title="Рекомендаций пока нет"
+            description={recommendationsEmptyMessage()}
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {recommendations.map((job) => (
+              <article
+                key={job.id}
+                className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 sm:flex-row sm:items-start sm:justify-between"
+              >
+                <div>
+                  <h3 className="font-medium">{job.positionName}</h3>
+                  <p className="text-sm text-neutral-600">{job.companyName}</p>
+                  <p className="mt-2 text-sm text-neutral-700">{job.description}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <MatchScoreBadge score={job.matchScoreDisplay} />
+                  <button
+                    type="button"
+                    disabled
+                    className="rounded-lg bg-neutral-200 px-3 py-1.5 text-sm text-neutral-500"
+                  >
+                    Откликнуться (скоро)
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </FormSection>
     </div>
   )

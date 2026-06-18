@@ -61,8 +61,7 @@ fun Route.employerRoutes(
         get("/job-profiles/{id}/candidates") {
             val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@get
             val id = call.requireLongParam() ?: return@get
-            employerProfileService.findJobProfile(user.id, id)
-            call.respond(employerProfileService.candidates(id))
+            call.respond(employerProfileService.candidates(user.id, id))
         }
     }
 }

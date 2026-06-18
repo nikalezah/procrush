@@ -7,6 +7,7 @@ import jobs.procrush.db.tables.OccupationsTable
 import jobs.procrush.models.CreateJobProfileRequest
 import jobs.procrush.models.EmployerProfileDto
 import jobs.procrush.models.JobProfileDto
+import jobs.procrush.models.PersonalityAxesDto
 import jobs.procrush.models.UpdateEmployerProfileRequest
 import jobs.procrush.models.UpdateJobProfileRequest
 import org.jetbrains.exposed.v1.core.ResultRow
@@ -90,13 +91,14 @@ class EmployerRepository(
 
     fun createJobProfile(employerId: Long, request: CreateJobProfileRequest): JobProfileDto =
         transaction {
+            val personalityAxes = resolvePersonalityAxes(request.personalityAxes)
             val now = OffsetDateTime.now()
             val id =
                 EmployerJobProfilesTable.insert {
                     it[EmployerJobProfilesTable.employerId] = employerId
                     it[occupationId] = request.occupationId
                     it[description] = request.description?.trim()?.ifBlank { null }
-                    it[requiredPersonality] = null
+                    it[requiredPersonality] = PersonalityAxesDto.toJson(personalityAxes)
                     it[isActive] = request.isActive
                     it[createdAt] = now
                     it[updatedAt] = now
@@ -111,6 +113,7 @@ class EmployerRepository(
         request: UpdateJobProfileRequest,
     ): JobProfileDto? =
         transaction {
+            val personalityAxes = resolvePersonalityAxes(request.personalityAxes)
             val updated =
                 EmployerJobProfilesTable.update({
                     (EmployerJobProfilesTable.id eq jobProfileId) and
@@ -118,6 +121,7 @@ class EmployerRepository(
                 }) {
                     it[occupationId] = request.occupationId
                     it[description] = request.description?.trim()?.ifBlank { null }
+                    it[requiredPersonality] = PersonalityAxesDto.toJson(personalityAxes)
                     it[isActive] = request.isActive
                     it[updatedAt] = OffsetDateTime.now()
                 }
@@ -179,6 +183,13 @@ class EmployerRepository(
             isActive = this[EmployerJobProfilesTable.isActive],
             skillIds = skillIds,
             skills = referenceRepository.findSkillsByIds(skillIds),
+            personalityAxes = PersonalityAxesDto.fromJson(this[EmployerJobProfilesTable.requiredPersonality]),
         )
+    }
+
+    private fun resolvePersonalityAxes(axes: PersonalityAxesDto?): PersonalityAxesDto {
+        val resolved = axes ?: PersonalityAxesDto.DEFAULT
+        resolved.validate()
+        return resolved
     }
 }

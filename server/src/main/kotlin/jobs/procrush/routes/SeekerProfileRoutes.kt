@@ -112,8 +112,8 @@ fun Route.seekerProfileRoutes(
             call.respond(mapOf("status" to "PROCESSING"))
         }
         get("/recommendations") {
-            roleGuard.requireRole(call, UserRole.SEEKER) ?: return@get
-            call.respond(seekerProfileService.recommendations())
+            val user = roleGuard.requireRole(call, UserRole.SEEKER) ?: return@get
+            call.respond(seekerProfileService.recommendations(user.id))
         }
     }
 }

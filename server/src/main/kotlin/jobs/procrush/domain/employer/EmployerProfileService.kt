@@ -3,7 +3,7 @@ package jobs.procrush.domain.employer
 import jobs.procrush.db.EmployerRepository
 import jobs.procrush.db.ReferenceRepository
 import jobs.procrush.domain.ResourceNotFoundException
-import jobs.procrush.fixtures.RecommendationStubs
+import jobs.procrush.domain.matching.MatchingService
 import jobs.procrush.models.CreateJobProfileRequest
 import jobs.procrush.models.EmployerDashboardDto
 import jobs.procrush.models.JobProfileDto
@@ -14,6 +14,7 @@ import java.util.UUID
 class EmployerProfileService(
     private val employerRepository: EmployerRepository,
     private val referenceRepository: ReferenceRepository,
+    private val matchingService: MatchingService,
 ) {
     fun getOrCreateEmployer(userId: UUID) =
         employerRepository.findByUserId(userId) ?: employerRepository.createForUser(userId)
@@ -55,13 +56,22 @@ class EmployerProfileService(
     fun dashboard(userId: UUID): EmployerDashboardDto {
         val employer = getOrCreateEmployer(userId)
         val profiles = employerRepository.listJobProfiles(employer.id)
+        val activeProfiles = profiles.filter { it.isActive }
+        val totalMatchedCandidates =
+            activeProfiles.sumOf { profile ->
+                matchingService.countMatchedCandidatesForOccupation(profile.occupationId)
+            }
         return EmployerDashboardDto(
             companyName = employer.name.ifBlank { "Компания не указана" },
             jobProfilesCount = profiles.size,
-            activeJobProfilesCount = profiles.count { it.isActive },
-            totalCandidatesStub = profiles.size * 3,
+            activeJobProfilesCount = activeProfiles.size,
+            totalMatchedCandidates = totalMatchedCandidates,
         )
     }
 
-    fun candidates(jobProfileId: Long) = RecommendationStubs.candidateRecommendations(jobProfileId)
+    fun candidates(userId: UUID, jobProfileId: Long) =
+        matchingService.candidateRecommendationsForJob(
+            findJobProfile(userId, jobProfileId).occupationId,
+            jobProfileId,
+        )
 }

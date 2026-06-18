@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { fetchEmployerDashboard } from '../../api/employerApi'
-import type { EmployerDashboardDto } from '../../api/types'
+import {Link} from 'react-router-dom'
+import {useEffect, useState} from 'react'
+import {fetchEmployerDashboard} from '../../api/employerApi'
+import type {EmployerDashboardDto} from '../../api/types'
 
 export function EmployerDashboardPage() {
   const [data, setData] = useState<EmployerDashboardDto | null>(null)
@@ -33,8 +33,7 @@ export function EmployerDashboardPage() {
         </div>
         <div className="rounded-xl border border-neutral-200 bg-white p-4">
           <p className="text-sm text-neutral-600">Подобрано кандидатов</p>
-          <p className="mt-1 text-2xl font-semibold">{data.totalCandidatesStub}</p>
-          <p className="text-xs text-neutral-500">демо-данные</p>
+          <p className="mt-1 text-2xl font-semibold">{data.totalMatchedCandidates}</p>
         </div>
       </div>
       <Link

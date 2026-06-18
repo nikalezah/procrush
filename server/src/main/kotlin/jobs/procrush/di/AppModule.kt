@@ -6,6 +6,7 @@ import jobs.procrush.auth.UserAuthService
 import jobs.procrush.auth.UserProfileEnricher
 import jobs.procrush.config.AppConfig
 import jobs.procrush.db.EmployerRepository
+import jobs.procrush.db.MatchingRepository
 import jobs.procrush.db.ReferenceRepository
 import jobs.procrush.db.SeekerPersonalProfileRepository
 import jobs.procrush.db.SeekerRepository
@@ -18,6 +19,7 @@ import jobs.procrush.domain.PersonalityPromptBuilder
 import jobs.procrush.domain.ProfileProvisioningService
 import jobs.procrush.domain.SurveyService
 import jobs.procrush.domain.employer.EmployerProfileService
+import jobs.procrush.domain.matching.MatchingService
 import jobs.procrush.domain.personality.PersonalityGenerationCoordinator
 import jobs.procrush.domain.personality.PersonalityProfileGenerator
 import jobs.procrush.domain.personality.PersonalityProfileReader
@@ -96,8 +98,18 @@ data class AppContext(
                     surveyService = surveyService,
                 )
 
-            val seekerProfileService = SeekerProfileService(seekerRepository, referenceRepository)
-            val employerProfileService = EmployerProfileService(employerRepository, referenceRepository)
+            val matchingRepository = MatchingRepository(referenceRepository)
+            val matchingService =
+                MatchingService(
+                    seekerRepository = seekerRepository,
+                    matchingRepository = matchingRepository,
+                    surveyService = surveyService,
+                )
+
+            val seekerProfileService =
+                SeekerProfileService(seekerRepository, referenceRepository, matchingService)
+            val employerProfileService =
+                EmployerProfileService(employerRepository, referenceRepository, matchingService)
 
             sessionRepository.purgeExpired()
 

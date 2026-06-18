@@ -128,6 +128,25 @@ export interface JobProfileDto {
   isActive: boolean
   skillIds: number[]
   skills: SkillDto[]
+  personalityAxes: PersonalityAxesDto
+}
+
+export interface PersonalityAxesDto {
+  axisDominance: number
+  axisInfluence: number
+  axisStability: number
+  axisIntegrity: number
+  axisAutonomy: number
+  axisPace: number
+}
+
+export const DEFAULT_PERSONALITY_AXES: PersonalityAxesDto = {
+  axisDominance: 0.5,
+  axisInfluence: 0.5,
+  axisStability: 0.5,
+  axisIntegrity: 0.5,
+  axisAutonomy: 0.5,
+  axisPace: 0.5,
 }
 
 export interface CreateJobProfileRequest {
@@ -135,6 +154,7 @@ export interface CreateJobProfileRequest {
   description?: string | null
   isActive?: boolean
   skillIds?: number[]
+  personalityAxes?: PersonalityAxesDto | null
 }
 
 export interface SucceedThroughDto {
@@ -227,8 +247,6 @@ export interface JobRecommendationDto {
   description: string
   matchScore: number
   matchScoreDisplay: number
-  testsCompleted: number
-  isScoreReduced: boolean
 }
 
 export interface CandidateRecommendationDto {
@@ -239,8 +257,6 @@ export interface CandidateRecommendationDto {
   skills: string[]
   matchScore: number
   matchScoreDisplay: number
-  testsCompleted: number
-  isScoreReduced: boolean
 }
 
 export interface SeekerDashboardDto {
@@ -254,7 +270,7 @@ export interface EmployerDashboardDto {
   companyName: string
   jobProfilesCount: number
   activeJobProfilesCount: number
-  totalCandidatesStub: number
+  totalMatchedCandidates: number
 }
 
 export type SurveyStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'

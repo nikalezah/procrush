@@ -3,7 +3,7 @@ package jobs.procrush.domain.seeker
 import jobs.procrush.db.ReferenceRepository
 import jobs.procrush.db.SeekerRepository
 import jobs.procrush.domain.ResourceNotFoundException
-import jobs.procrush.fixtures.RecommendationStubs
+import jobs.procrush.domain.matching.MatchingService
 import jobs.procrush.models.CreateSeekerEducationRequest
 import jobs.procrush.models.CreateSeekerExperienceRequest
 import jobs.procrush.models.SeekerDashboardDto
@@ -17,6 +17,7 @@ import java.util.UUID
 class SeekerProfileService(
     private val seekerRepository: SeekerRepository,
     private val referenceRepository: ReferenceRepository,
+    private val matchingService: MatchingService,
 ) {
     fun getOrCreateSeeker(userId: UUID) =
         seekerRepository.findByUserId(userId) ?: seekerRepository.createForUser(userId)
@@ -109,13 +110,15 @@ class SeekerProfileService(
         if (skillIds.isNotEmpty()) filled++
         if (desired.isNotEmpty()) filled++
 
+        val recommendations = matchingService.jobRecommendationsForSeeker(userId)
+
         return SeekerDashboardDto(
             profileCompletionPercent = (filled * 100) / total,
             desiredPositionsCount = desired.size,
             experienceCount = experience.size,
-            recommendationsPreview = RecommendationStubs.jobRecommendations().take(2),
+            recommendationsPreview = recommendations.take(2),
         )
     }
 
-    fun recommendations() = RecommendationStubs.jobRecommendations()
+    fun recommendations(userId: UUID) = matchingService.jobRecommendationsForSeeker(userId)
 }

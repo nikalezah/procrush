@@ -1,21 +1,21 @@
-import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import {
-  createJobProfile,
-  deleteJobProfile,
-  fetchJobProfiles,
-} from '../../api/employerApi'
-import { fetchOccupations } from '../../api/referenceApi'
-import type { CreateJobProfileRequest, JobProfileDto, OccupationDto } from '../../api/types'
-import { EmptyState } from '../../components/EmptyState'
-import { FormSection } from '../../components/FormSection'
-import { SkillPicker } from '../../components/SkillPicker'
+import {Link} from 'react-router-dom'
+import {useEffect, useState} from 'react'
+import {createJobProfile, deleteJobProfile, fetchJobProfiles, updateJobProfile,} from '../../api/employerApi'
+import {fetchOccupations} from '../../api/referenceApi'
+import type {CreateJobProfileRequest, JobProfileDto, OccupationDto, PersonalityAxesDto} from '../../api/types'
+import {DEFAULT_PERSONALITY_AXES} from '../../api/types'
+import {EmptyState} from '../../components/EmptyState'
+import {FormSection} from '../../components/FormSection'
+import {PersonalityAxesEditor} from '../../components/PersonalityAxesEditor'
+import {AXIS_KEYS, AXIS_LABELS} from '../../components/personality/personalityLabels'
+import {SkillPicker} from '../../components/SkillPicker'
 
 export function EmployerProfilesPage() {
   const [profiles, setProfiles] = useState<JobProfileDto[]>([])
   const [occupations, setOccupations] = useState<OccupationDto[]>([])
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [editingProfile, setEditingProfile] = useState<JobProfileDto | null>(null)
 
   useEffect(() => {
     void Promise.all([fetchJobProfiles(), fetchOccupations(true)])
@@ -30,6 +30,12 @@ export function EmployerProfilesPage() {
     const created = await createJobProfile(body)
     setProfiles((prev) => [...prev, created])
     setShowForm(false)
+  }
+
+  async function handleUpdate(id: number, body: CreateJobProfileRequest) {
+    const updated = await updateJobProfile(id, body)
+    setProfiles((prev) => prev.map((p) => (p.id === id ? updated : p)))
+    setEditingProfile(null)
   }
 
   async function handleDelete(id: number) {
@@ -48,7 +54,10 @@ export function EmployerProfilesPage() {
         </div>
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            setEditingProfile(null)
+            setShowForm((v) => !v)
+          }}
           className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
         >
           {showForm ? 'Отмена' : 'Создать профиль'}
@@ -56,8 +65,18 @@ export function EmployerProfilesPage() {
       </div>
       {error != null && <p className="text-sm text-red-600">{error}</p>}
 
-      {showForm && (
+      {showForm && editingProfile == null && (
         <JobProfileForm occupations={occupations} onSubmit={(body) => void handleCreate(body)} />
+      )}
+
+      {editingProfile != null && (
+        <JobProfileForm
+          key={editingProfile.id}
+          occupations={occupations}
+          initialProfile={editingProfile}
+          onSubmit={(body) => void handleUpdate(editingProfile.id, body)}
+          onCancel={() => setEditingProfile(null)}
+        />
       )}
 
       {profiles.length === 0 ? (
@@ -91,6 +110,16 @@ export function EmployerProfilesPage() {
                   <p className="mt-2 text-xs text-neutral-500">
                     {profile.isActive ? 'Активен' : 'Неактивен'}
                   </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {AXIS_KEYS.slice(0, 3).map((key) => (
+                      <span
+                        key={key}
+                        className="rounded-full bg-neutral-50 px-2 py-0.5 text-xs text-neutral-600"
+                      >
+                        {AXIS_LABELS[key]}: {Math.round(profile.personalityAxes[key] * 100)}%
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Link
@@ -99,6 +128,16 @@ export function EmployerProfilesPage() {
                   >
                     Кандидаты
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false)
+                      setEditingProfile(profile)
+                    }}
+                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+                  >
+                    Редактировать
+                  </button>
                   <button
                     type="button"
                     onClick={() => void handleDelete(profile.id)}
@@ -118,22 +157,39 @@ export function EmployerProfilesPage() {
 
 function JobProfileForm({
   occupations,
+  initialProfile,
   onSubmit,
+  onCancel,
 }: {
   occupations: OccupationDto[]
+  initialProfile?: JobProfileDto
   onSubmit: (body: CreateJobProfileRequest) => void
+  onCancel?: () => void
 }) {
-  const [occupationId, setOccupationId] = useState<number>(occupations[0]?.id ?? 0)
-  const [description, setDescription] = useState('')
-  const [skillIds, setSkillIds] = useState<number[]>([])
+  const isEditing = initialProfile != null
+  const [occupationId, setOccupationId] = useState<number>(
+    initialProfile?.occupationId ?? occupations[0]?.id ?? 0,
+  )
+  const [description, setDescription] = useState(initialProfile?.description ?? '')
+  const [skillIds, setSkillIds] = useState<number[]>(initialProfile?.skillIds ?? [])
+  const [isActive, setIsActive] = useState(initialProfile?.isActive ?? true)
+  const [personalityAxes, setPersonalityAxes] = useState<PersonalityAxesDto>(
+    initialProfile?.personalityAxes ?? DEFAULT_PERSONALITY_AXES,
+  )
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    onSubmit({ occupationId, description: description || null, skillIds, isActive: true })
+    onSubmit({
+      occupationId,
+      description: description || null,
+      skillIds,
+      isActive,
+      personalityAxes,
+    })
   }
 
   return (
-    <FormSection title="Новый профиль">
+    <FormSection title={isEditing ? 'Редактирование профиля' : 'Новый профиль'}>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Должность</span>
@@ -165,12 +221,37 @@ function JobProfileForm({
             <SkillPicker selectedIds={skillIds} onChange={setSkillIds} />
           </div>
         </div>
-        <button
-          type="submit"
-          className="self-start rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
-        >
-          Сохранить профиль
-        </button>
+        <div>
+          <span className="text-sm font-medium">Личностные характеристики</span>
+          <div className="mt-2">
+            <PersonalityAxesEditor value={personalityAxes} onChange={setPersonalityAxes} />
+          </div>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+          />
+          Профиль активен (участвует в подборе)
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
+          >
+            {isEditing ? 'Сохранить изменения' : 'Сохранить профиль'}
+          </button>
+          {onCancel != null && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm"
+            >
+              Отмена
+            </button>
+          )}
+        </div>
       </form>
     </FormSection>
   )

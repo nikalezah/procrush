@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { fetchSeekerDashboard } from '../../api/seekerApi'
-import type { SeekerDashboardDto } from '../../api/types'
-import { MatchScoreBadge } from '../../components/MatchScoreBadge'
+import {Link} from 'react-router-dom'
+import {useEffect, useState} from 'react'
+import {fetchSeekerDashboard} from '../../api/seekerApi'
+import type {SeekerDashboardDto} from '../../api/types'
+import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 
 export function SeekerDashboardPage() {
   const [data, setData] = useState<SeekerDashboardDto | null>(null)
@@ -45,7 +45,7 @@ export function SeekerDashboardPage() {
           <div>
             <p className="font-medium text-amber-900">Личностное тестирование</p>
             <p className="mt-1 text-sm text-amber-800">
-              Пройдите 3 теста для более точного подбора вакансий
+              Пройдите оба теста для участия в подборе вакансий
             </p>
           </div>
           <Link
@@ -74,11 +74,7 @@ export function SeekerDashboardPage() {
                 <p className="text-sm text-neutral-600">{job.companyName}</p>
                 <p className="mt-2 text-sm text-neutral-700">{job.description}</p>
               </div>
-              <MatchScoreBadge
-                score={job.matchScoreDisplay}
-                testsCompleted={job.testsCompleted}
-                isScoreReduced={job.isScoreReduced}
-              />
+              <MatchScoreBadge score={job.matchScoreDisplay} />
             </article>
           ))}
         </div>

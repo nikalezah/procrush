@@ -140,6 +140,7 @@ data class JobProfileDto(
     val isActive: Boolean,
     val skillIds: List<Long>,
     val skills: List<SkillDto>,
+    val personalityAxes: PersonalityAxesDto,
 )
 
 @Serializable
@@ -148,6 +149,7 @@ data class CreateJobProfileRequest(
     val description: String? = null,
     val isActive: Boolean = true,
     val skillIds: List<Long> = emptyList(),
+    val personalityAxes: PersonalityAxesDto? = null,
 )
 
 @Serializable
@@ -156,6 +158,7 @@ data class UpdateJobProfileRequest(
     val description: String? = null,
     val isActive: Boolean = true,
     val skillIds: List<Long> = emptyList(),
+    val personalityAxes: PersonalityAxesDto? = null,
 )
 
 @Serializable
@@ -340,8 +343,6 @@ data class JobRecommendationDto(
     val description: String,
     val matchScore: Double,
     val matchScoreDisplay: Int,
-    val testsCompleted: Int,
-    val isScoreReduced: Boolean,
 )
 
 @Serializable
@@ -353,8 +354,6 @@ data class CandidateRecommendationDto(
     val skills: List<String>,
     val matchScore: Double,
     val matchScoreDisplay: Int,
-    val testsCompleted: Int,
-    val isScoreReduced: Boolean,
 )
 
 @Serializable
@@ -370,5 +369,5 @@ data class EmployerDashboardDto(
     val companyName: String,
     val jobProfilesCount: Int,
     val activeJobProfilesCount: Int,
-    val totalCandidatesStub: Int,
+    val totalMatchedCandidates: Int,
 )

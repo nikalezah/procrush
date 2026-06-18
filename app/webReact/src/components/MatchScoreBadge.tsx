@@ -1,31 +1,19 @@
 interface MatchScoreBadgeProps {
   score: number
-  testsCompleted: number
-  isScoreReduced: boolean
 }
 
-export function MatchScoreBadge({ score, testsCompleted, isScoreReduced }: MatchScoreBadgeProps) {
+export function MatchScoreBadge({ score }: MatchScoreBadgeProps) {
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="flex items-center gap-1">
-        {Array.from({ length: 5 }, (_, i) => (
-          <span
-            key={i}
-            className={`h-2.5 w-2.5 rounded-full ${
-              i < score ? 'bg-neutral-900' : 'bg-neutral-200'
-            }`}
+      <div className="flex items-center gap-2">
+        <div className="h-2 w-24 overflow-hidden rounded-full bg-neutral-200">
+          <div
+            className="h-full rounded-full bg-neutral-900"
+            style={{ width: `${score}%` }}
           />
-        ))}
-        <span className="ml-1 text-sm font-semibold">{score}/5</span>
+        </div>
+        <span className="text-sm font-semibold tabular-nums">{score}/100</span>
       </div>
-      {isScoreReduced && (
-        <span
-          className="text-xs text-amber-700"
-          title={`Оценка занижена: пройдено ${testsCompleted} из 3 тестов`}
-        >
-          Оценка занижена · тестов {testsCompleted}/3
-        </span>
-      )}
     </div>
   )
 }
