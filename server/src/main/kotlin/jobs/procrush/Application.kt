@@ -49,9 +49,9 @@ fun Application.module() {
         }
         authRoutes(app.config, app.userAuthService, app.sessionService, app.roleGuard)
         referenceRoutes(app.roleGuard, app.referenceRepository)
-        seekerProfileRoutes(app.roleGuard, app.seekerProfileService)
+        seekerProfileRoutes(app.roleGuard, app.seekerProfileService, app.matchInterestService)
         personalityProfileRoutes(app.roleGuard, app.personalityProfileService)
         seekerSurveyRoutes(app.roleGuard, app.surveyService, app.personalityProfileService)
-        employerRoutes(app.roleGuard, app.employerProfileService)
+        employerRoutes(app.roleGuard, app.employerProfileService, app.matchInterestService)
     }
 }

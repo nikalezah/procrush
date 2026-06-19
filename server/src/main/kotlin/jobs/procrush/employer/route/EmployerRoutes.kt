@@ -9,6 +9,9 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import io.ktor.server.sse.heartbeat
+import io.ktor.server.sse.sse
+import io.ktor.sse.ServerSentEvent
 import jobs.procrush.auth.UserRole
 import jobs.procrush.auth.service.RoleGuard
 import jobs.procrush.bootstrap.route.requireLongParam
@@ -16,10 +19,20 @@ import jobs.procrush.employer.dto.CreateJobProfileRequest
 import jobs.procrush.employer.dto.UpdateEmployerProfileRequest
 import jobs.procrush.employer.dto.UpdateJobProfileRequest
 import jobs.procrush.employer.service.EmployerProfileService
+import jobs.procrush.matching.service.MatchInterestService
+import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.seconds
+
+private val matchInterestJson =
+    Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
 fun Route.employerRoutes(
     roleGuard: RoleGuard,
     employerProfileService: EmployerProfileService,
+    matchInterestService: MatchInterestService,
 ) {
     route("/api/employer") {
         get("/dashboard") {
@@ -82,6 +95,23 @@ fun Route.employerRoutes(
             val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@get
             val id = call.requireLongParam() ?: return@get
             call.respond(employerProfileService.interestsOutsideRecommendations(user.id, id))
+        }
+        get("/match-interests/count") {
+            val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@get
+            call.respond(matchInterestService.actionableCountForEmployer(user.id))
+        }
+        sse("/match-interests/events") {
+            val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@sse
+            heartbeat {
+                period = 30.seconds
+                event = ServerSentEvent(comments = "keepalive")
+            }
+            matchInterestService.streamEvents(user.id) { event ->
+                send(
+                    data = matchInterestJson.encodeToString(event),
+                    event = "match-interest",
+                )
+            }
         }
     }
 }

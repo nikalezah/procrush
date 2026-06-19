@@ -1,20 +1,27 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { AppShell } from './components/AppShell'
-import { LoadingSpinner } from './components/LoadingSpinner'
-import { ProtectedRoute } from './components/ProtectedRoute'
-import { AuthProvider, useAuth } from './hooks/useAuth'
-import { EmployerCandidatesPage } from './pages/employer/EmployerCandidatesPage'
-import { EmployerDashboardPage } from './pages/employer/EmployerDashboardPage'
-import { EmployerProfilesPage } from './pages/employer/EmployerProfilesPage'
-import { LoginPage } from './pages/LoginPage'
-import { RoleSelectionPage } from './pages/RoleSelectionPage'
-import { SeekerDashboardPage } from './pages/seeker/SeekerDashboardPage'
-import { SeekerPersonalityPage } from './pages/seeker/SeekerPersonalityPage'
-import { SeekerTestTakePage } from './pages/seeker/SeekerTestTakePage'
-import { SeekerTestsListPage } from './pages/seeker/SeekerTestsListPage'
-import { SeekerPositionsPage } from './pages/seeker/SeekerPositionsPage'
-import { SeekerProfilePage } from './pages/seeker/SeekerProfilePage'
-import { SettingsPage } from './pages/shared/SettingsPage'
+import {BrowserRouter, Navigate, Route, Routes, useLocation} from 'react-router-dom'
+import type {NavItem} from './components/AppShell'
+import {AppShell} from './components/AppShell'
+import {LoadingSpinner} from './components/LoadingSpinner'
+import {ProtectedRoute} from './components/ProtectedRoute'
+import {AuthProvider, useAuth} from './hooks/useAuth'
+import {EmployerCandidatesPage} from './pages/employer/EmployerCandidatesPage'
+import {EmployerDashboardPage} from './pages/employer/EmployerDashboardPage'
+import {EmployerProfilesPage} from './pages/employer/EmployerProfilesPage'
+import {LoginPage} from './pages/LoginPage'
+import {RoleSelectionPage} from './pages/RoleSelectionPage'
+import {SeekerDashboardPage} from './pages/seeker/SeekerDashboardPage'
+import {SeekerPersonalityPage} from './pages/seeker/SeekerPersonalityPage'
+import {SeekerTestTakePage} from './pages/seeker/SeekerTestTakePage'
+import {SeekerTestsListPage} from './pages/seeker/SeekerTestsListPage'
+import {SeekerPositionsPage} from './pages/seeker/SeekerPositionsPage'
+import {SeekerProfilePage} from './pages/seeker/SeekerProfilePage'
+import {SettingsPage} from './pages/shared/SettingsPage'
+import {
+  EmployerMatchInterestEventsProvider,
+  SeekerMatchInterestEventsProvider,
+  useMatchInterestEvents,
+} from './hooks/useMatchInterestEvents'
+import type {AuthUserDto} from './api/types'
 
 const SEEKER_NAV = [
   { to: '/seeker', label: 'Дашборд', end: true },
@@ -86,18 +93,43 @@ function AuthFlow() {
   }
 }
 
+function SeekerAppContent({
+  user,
+  onLogout,
+}: {
+  user: AuthUserDto
+  onLogout: () => void
+}) {
+  const { badgeCount } = useMatchInterestEvents()
+  const navItems: NavItem[] = SEEKER_NAV.map((item) =>
+    item.to === '/seeker/positions' ? { ...item, badge: badgeCount } : item,
+  )
+  return <AppShell user={user} role="SEEKER" navItems={navItems} onLogout={onLogout} />
+}
+
+function EmployerAppContent({
+  user,
+  onLogout,
+}: {
+  user: AuthUserDto
+  onLogout: () => void
+}) {
+  const { badgeCount } = useMatchInterestEvents()
+  const navItems: NavItem[] = EMPLOYER_NAV.map((item) =>
+    item.to === '/employer/profiles' ? { ...item, badge: badgeCount } : item,
+  )
+  return <AppShell user={user} role="EMPLOYER" navItems={navItems} onLogout={onLogout} />
+}
+
 function SeekerLayout() {
   const { state, signOut } = useAuth()
   if (state.kind === 'loading') return <LoadingSpinner />
   return (
     <ProtectedRoute state={state} requiredRole="SEEKER">
       {state.kind === 'authenticated' ? (
-        <AppShell
-          user={state.user}
-          role="SEEKER"
-          navItems={SEEKER_NAV}
-          onLogout={() => void signOut()}
-        />
+        <SeekerMatchInterestEventsProvider>
+          <SeekerAppContent user={state.user} onLogout={() => void signOut()} />
+        </SeekerMatchInterestEventsProvider>
       ) : null}
     </ProtectedRoute>
   )
@@ -109,12 +141,9 @@ function EmployerLayout() {
   return (
     <ProtectedRoute state={state} requiredRole="EMPLOYER">
       {state.kind === 'authenticated' ? (
-        <AppShell
-          user={state.user}
-          role="EMPLOYER"
-          navItems={EMPLOYER_NAV}
-          onLogout={() => void signOut()}
-        />
+        <EmployerMatchInterestEventsProvider>
+          <EmployerAppContent user={state.user} onLogout={() => void signOut()} />
+        </EmployerMatchInterestEventsProvider>
       ) : null}
     </ProtectedRoute>
   )

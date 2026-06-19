@@ -242,6 +242,18 @@ export interface PersonalityPreviewDto {
 
 export type InterestStatus = 'NONE' | 'RESPONDED' | 'INCOMING' | 'MUTUAL'
 
+export interface MatchInterestEventDto {
+  jobProfileId: number
+  seekerId: number
+  interestStatus: InterestStatus
+  employerContact?: EmployerContactDto | null
+  seekerContact?: SeekerContactDto | null
+}
+
+export interface MatchInterestCountDto {
+  count: number
+}
+
 export interface EmployerContactDto {
   companyName: string
   phone?: string | null

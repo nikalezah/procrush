@@ -63,6 +63,16 @@ class SeekerRepository {
                 ?.toDto()
         }
 
+    fun findUserIdBySeekerId(seekerId: Long): UUID? =
+        transaction {
+            SeekersTable
+                .selectAll()
+                .where { SeekersTable.id eq seekerId }
+                .firstOrNull()
+                ?.get(SeekersTable.userId)
+                ?.value
+        }
+
     fun updateProfile(seekerId: Long, request: UpdateSeekerProfileRequest): SeekerProfileDto? =
         transaction {
             val updated =

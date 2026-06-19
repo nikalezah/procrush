@@ -1,7 +1,7 @@
 import {Link, useParams} from 'react-router-dom'
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {fetchCandidatesOverview, fetchEmployerInterests, respondToCandidate,} from '../../api/employerApi'
-import type {CandidateRecommendationDto, EmployerInterestsResponseDto} from '../../api/types'
+import type {CandidateRecommendationDto, EmployerInterestsResponseDto, MatchInterestEventDto} from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
 import {FormSection} from '../../components/FormSection'
@@ -9,18 +9,37 @@ import {InterestStatusBadge} from '../../components/InterestStatusBadge'
 import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 import {RespondButton} from '../../components/RespondButton'
 import {Spinner} from '../../components/Spinner'
+import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
+
+function patchEmployerCandidateFromEvent(
+  candidate: CandidateRecommendationDto,
+  event: MatchInterestEventDto,
+): CandidateRecommendationDto {
+  if (candidate.id !== event.seekerId) return candidate
+  return {
+    ...candidate,
+    interestStatus: event.interestStatus,
+    contactInfo: event.seekerContact ?? null,
+  }
+}
 
 function CandidateRecommendationCard({
   candidate,
   respondingId,
+  highlighted,
   onRespond,
 }: {
   candidate: CandidateRecommendationDto
   respondingId: number | null
+  highlighted?: boolean
   onRespond: (seekerId: number) => void
 }) {
   return (
-    <li className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between">
+    <li
+      className={`flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between ${
+        highlighted ? 'ring-2 ring-amber-300' : ''
+      }`}
+    >
       <div>
         <h3 className="font-medium">
           {candidate.firstName} {candidate.lastName}
@@ -53,6 +72,7 @@ function CandidateRecommendationCard({
 export function EmployerCandidatesPage() {
   const { id } = useParams<{ id: string }>()
   const profileId = Number(id)
+  const {lastEvent, lastEventId} = useMatchInterestEvents()
   const [candidates, setCandidates] = useState<CandidateRecommendationDto[]>([])
   const [interests, setInterests] = useState<EmployerInterestsResponseDto>({
     respondedOutside: [],
@@ -60,8 +80,10 @@ export function EmployerCandidatesPage() {
   })
   const [loading, setLoading] = useState(true)
   const [respondingId, setRespondingId] = useState<number | null>(null)
+  const [highlightedId, setHighlightedId] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const lastHandledEventId = useRef(0)
 
   async function loadData(jobProfileId: number) {
     const overview = await fetchCandidatesOverview(jobProfileId)
@@ -75,7 +97,25 @@ export function EmployerCandidatesPage() {
     void loadData(profileId)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
+    return () => setHighlightedId(null)
   }, [profileId])
+
+  useEffect(() => {
+    if (lastEvent == null || lastEventId === lastHandledEventId.current) return
+    if (lastEvent.jobProfileId !== profileId) return
+    lastHandledEventId.current = lastEventId
+
+    setCandidates((prev) =>
+      prev.map((candidate) => patchEmployerCandidateFromEvent(candidate, lastEvent)),
+    )
+    void fetchEmployerInterests(profileId).then(setInterests).catch(() => {
+      // ignore refresh errors
+    })
+
+    setHighlightedId(lastEvent.seekerId)
+    const timer = window.setTimeout(() => setHighlightedId(null), 2000)
+    return () => window.clearTimeout(timer)
+  }, [lastEvent, lastEventId, profileId])
 
   async function handleRespond(seekerId: number) {
     if (Number.isNaN(profileId)) return
@@ -130,6 +170,7 @@ export function EmployerCandidatesPage() {
               key={candidate.id}
               candidate={candidate}
               respondingId={respondingId}
+              highlighted={highlightedId === candidate.id}
               onRespond={(seekerId) => void handleRespond(seekerId)}
             />
           ))}

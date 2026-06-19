@@ -11,6 +11,7 @@ import jobs.procrush.bootstrap.modules.PersonalityModule
 import jobs.procrush.bootstrap.modules.SeekerModule
 import jobs.procrush.bootstrap.modules.SurveyModule
 import jobs.procrush.employer.service.EmployerProfileService
+import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.personality.service.PersonalityProfileService
 import jobs.procrush.seeker.service.SeekerProfileService
 import jobs.procrush.shared.repository.ReferenceRepository
@@ -25,6 +26,7 @@ data class AppContext(
     val employerProfileService: EmployerProfileService,
     val surveyService: SurveyService,
     val personalityProfileService: PersonalityProfileService,
+    val matchInterestService: MatchInterestService,
     val referenceRepository: ReferenceRepository,
 ) {
     companion object {
@@ -48,6 +50,7 @@ data class AppContext(
                 employerProfileService = employer.employerProfileService,
                 surveyService = survey.surveyService,
                 personalityProfileService = personality.personalityProfileService,
+                matchInterestService = matching.matchInterestService,
                 referenceRepository = auth.referenceRepository,
             )
         }

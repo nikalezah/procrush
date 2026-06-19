@@ -55,6 +55,16 @@ class EmployerRepository(
                 ?.toDto()
         }
 
+    fun findUserIdByEmployerId(employerId: Long): UUID? =
+        transaction {
+            EmployersTable
+                .selectAll()
+                .where { EmployersTable.id eq employerId }
+                .firstOrNull()
+                ?.get(EmployersTable.userId)
+                ?.value
+        }
+
     fun updateProfile(employerId: Long, request: UpdateEmployerProfileRequest): EmployerProfileDto? =
         transaction {
             val updated =

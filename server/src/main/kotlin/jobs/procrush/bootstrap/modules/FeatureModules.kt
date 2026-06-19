@@ -93,12 +93,14 @@ data class PersonalityModule(
 data class MatchingModule(
     val matchingService: jobs.procrush.matching.service.MatchingService,
     val matchInterestService: jobs.procrush.matching.service.MatchInterestService,
+    val matchInterestNotifier: jobs.procrush.matching.service.MatchInterestNotifier,
 ) {
     companion object {
         fun create(auth: AuthModule, survey: SurveyModule): MatchingModule {
             val matchingRepository =
                 jobs.procrush.matching.repository.MatchingRepository(auth.referenceRepository)
             val matchInterestRepository = jobs.procrush.matching.repository.MatchInterestRepository()
+            val matchInterestNotifier = jobs.procrush.matching.service.MatchInterestNotifier()
             val matchingService =
                 jobs.procrush.matching.service.MatchingService(
                     seekerRepository = auth.seekerRepository,
@@ -113,10 +115,12 @@ data class MatchingModule(
                     matchingRepository = matchingRepository,
                     matchInterestRepository = matchInterestRepository,
                     surveyService = survey.surveyService,
+                    notifier = matchInterestNotifier,
                 )
             return MatchingModule(
                 matchingService = matchingService,
                 matchInterestService = matchInterestService,
+                matchInterestNotifier = matchInterestNotifier,
             )
         }
     }

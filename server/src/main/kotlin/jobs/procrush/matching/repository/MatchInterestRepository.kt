@@ -1,5 +1,6 @@
 package jobs.procrush.matching.repository
 
+import jobs.procrush.employer.tables.EmployerJobProfilesTable
 import jobs.procrush.employer.tables.EmployersTable
 import jobs.procrush.matching.dto.EmployerContactDto
 import jobs.procrush.matching.dto.SeekerContactDto
@@ -19,12 +20,13 @@ import org.jetbrains.exposed.v1.jdbc.update
 import java.time.OffsetDateTime
 
 class MatchInterestRepository {
-    fun recordSeekerResponse(seekerId: Long, jobProfileId: Long): MatchInterestRecord =
+    fun recordSeekerResponse(seekerId: Long, jobProfileId: Long): Pair<MatchInterestRecord, Boolean> =
         transaction {
             val now = OffsetDateTime.now()
             val existing = findRecord(seekerId, jobProfileId)
             if (existing != null) {
-                if (existing.seekerRespondedAt == null) {
+                val isNewResponse = existing.seekerRespondedAt == null
+                if (isNewResponse) {
                     JobMatchInterestsTable.update({
                         (JobMatchInterestsTable.seekerId eq seekerId) and
                             (JobMatchInterestsTable.jobProfileId eq jobProfileId)
@@ -32,7 +34,7 @@ class MatchInterestRepository {
                         it[seekerRespondedAt] = now
                     }
                 }
-                findRecord(seekerId, jobProfileId)!!
+                findRecord(seekerId, jobProfileId)!! to isNewResponse
             } else {
                 JobMatchInterestsTable.insert {
                     it[JobMatchInterestsTable.seekerId] = seekerId
@@ -40,16 +42,17 @@ class MatchInterestRepository {
                     it[seekerRespondedAt] = now
                     it[employerRespondedAt] = null
                 }
-                findRecord(seekerId, jobProfileId)!!
+                findRecord(seekerId, jobProfileId)!! to true
             }
         }
 
-    fun recordEmployerResponse(seekerId: Long, jobProfileId: Long): MatchInterestRecord =
+    fun recordEmployerResponse(seekerId: Long, jobProfileId: Long): Pair<MatchInterestRecord, Boolean> =
         transaction {
             val now = OffsetDateTime.now()
             val existing = findRecord(seekerId, jobProfileId)
             if (existing != null) {
-                if (existing.employerRespondedAt == null) {
+                val isNewResponse = existing.employerRespondedAt == null
+                if (isNewResponse) {
                     JobMatchInterestsTable.update({
                         (JobMatchInterestsTable.seekerId eq seekerId) and
                             (JobMatchInterestsTable.jobProfileId eq jobProfileId)
@@ -57,7 +60,7 @@ class MatchInterestRepository {
                         it[employerRespondedAt] = now
                     }
                 }
-                findRecord(seekerId, jobProfileId)!!
+                findRecord(seekerId, jobProfileId)!! to isNewResponse
             } else {
                 JobMatchInterestsTable.insert {
                     it[JobMatchInterestsTable.seekerId] = seekerId
@@ -65,8 +68,33 @@ class MatchInterestRepository {
                     it[seekerRespondedAt] = null
                     it[employerRespondedAt] = now
                 }
-                findRecord(seekerId, jobProfileId)!!
+                findRecord(seekerId, jobProfileId)!! to true
             }
+        }
+
+    fun countActionableForSeeker(seekerId: Long): Int =
+        transaction {
+            JobMatchInterestsTable
+                .selectAll()
+                .where {
+                    (JobMatchInterestsTable.seekerId eq seekerId) and
+                        JobMatchInterestsTable.employerRespondedAt.isNotNull()
+                }
+                .count()
+                .toInt()
+        }
+
+    fun countActionableForEmployer(employerId: Long): Int =
+        transaction {
+            JobMatchInterestsTable
+                .innerJoin(EmployerJobProfilesTable)
+                .selectAll()
+                .where {
+                    (EmployerJobProfilesTable.employerId eq employerId) and
+                        JobMatchInterestsTable.seekerRespondedAt.isNotNull()
+                }
+                .count()
+                .toInt()
         }
 
     fun findBySeekerAndJobProfiles(

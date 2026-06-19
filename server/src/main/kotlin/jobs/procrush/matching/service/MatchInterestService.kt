@@ -7,6 +7,8 @@ import jobs.procrush.matching.dto.EmployerInterestsResponseDto
 import jobs.procrush.matching.dto.InterestStatus
 import jobs.procrush.matching.dto.InterestStatusCalculator
 import jobs.procrush.matching.dto.JobRecommendationDto
+import jobs.procrush.matching.dto.MatchInterestCountDto
+import jobs.procrush.matching.dto.MatchInterestEventDto
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
 import jobs.procrush.matching.model.MatchInterestRecord
 import jobs.procrush.matching.repository.MatchInterestRepository
@@ -23,26 +25,61 @@ class MatchInterestService(
     private val matchingRepository: MatchingRepository,
     private val matchInterestRepository: MatchInterestRepository,
     private val surveyService: SurveyService,
+    private val notifier: MatchInterestNotifier,
 ) {
     fun seekerRespond(userId: UUID, jobProfileId: Long): JobRecommendationDto {
         val seekerId = requireSeekerEligibleForJob(userId, jobProfileId)
-        matchInterestRepository.recordSeekerResponse(seekerId, jobProfileId)
+        val (interest, isNewResponse) = matchInterestRepository.recordSeekerResponse(seekerId, jobProfileId)
+        if (isNewResponse) {
+            notifyEmployerOfSeekerResponse(seekerId, jobProfileId, interest)
+        }
         val recommendation =
             matchingService.jobRecommendationForSeeker(seekerId, jobProfileId)
                 ?: matchingService.jobRecommendationFallback(jobProfileId)
                 ?: throw ResourceNotFoundException("Вакансия не найдена")
-        return enrichJobRecommendation(seekerId, recommendation)
+        return enrichJobRecommendation(seekerId, recommendation, interest)
     }
 
     fun employerRespond(userId: UUID, jobProfileId: Long, seekerId: Long): CandidateRecommendationDto {
-        val employerId = requireEmployerOwnsJobProfile(userId, jobProfileId)
+        requireEmployerOwnsJobProfile(userId, jobProfileId)
         requireSeekerEligibleForOccupation(seekerId, jobProfileId)
-        matchInterestRepository.recordEmployerResponse(seekerId, jobProfileId)
+        val (interest, isNewResponse) = matchInterestRepository.recordEmployerResponse(seekerId, jobProfileId)
+        if (isNewResponse) {
+            notifySeekerOfEmployerResponse(seekerId, jobProfileId, interest)
+        }
         val recommendation =
             matchingService.candidateRecommendationForJob(seekerId, jobProfileId)
                 ?: matchingService.candidateRecommendationFallback(seekerId, jobProfileId)
                 ?: throw ResourceNotFoundException("Кандидат не найден")
-        return enrichCandidateRecommendation(jobProfileId, recommendation)
+        return enrichCandidateRecommendation(jobProfileId, recommendation, interest)
+    }
+
+    fun actionableCountForSeeker(userId: UUID): MatchInterestCountDto {
+        val seeker =
+            seekerRepository.findByUserId(userId)
+                ?: return MatchInterestCountDto(0)
+        return MatchInterestCountDto(matchInterestRepository.countActionableForSeeker(seeker.id))
+    }
+
+    fun actionableCountForEmployer(userId: UUID): MatchInterestCountDto {
+        val employer =
+            employerRepository.findByUserId(userId)
+                ?: return MatchInterestCountDto(0)
+        return MatchInterestCountDto(matchInterestRepository.countActionableForEmployer(employer.id))
+    }
+
+    suspend fun streamEvents(
+        userId: UUID,
+        onEvent: suspend (MatchInterestEventDto) -> Unit,
+    ) {
+        val channel = notifier.subscribe(userId)
+        try {
+            for (event in channel) {
+                onEvent(event)
+            }
+        } finally {
+            notifier.unsubscribe(userId, channel)
+        }
     }
 
     fun enrichJobRecommendations(
@@ -149,6 +186,65 @@ class MatchInterestService(
         return EmployerInterestsResponseDto(
             respondedOutside = respondedOutside,
             mutualOutside = mutualOutside,
+        )
+    }
+
+    private fun notifyEmployerOfSeekerResponse(
+        seekerId: Long,
+        jobProfileId: Long,
+        interest: MatchInterestRecord,
+    ) {
+        val job = matchingRepository.findJobProfileById(jobProfileId) ?: return
+        val employerUserId = employerRepository.findUserIdByEmployerId(job.employerId) ?: return
+        val status =
+            InterestStatusCalculator.forEmployer(
+                interest.seekerResponded,
+                interest.employerResponded,
+            )
+        if (status != InterestStatus.INCOMING && status != InterestStatus.MUTUAL) return
+
+        val base =
+            matchingService.candidateRecommendationForJob(seekerId, jobProfileId)
+                ?: matchingService.candidateRecommendationFallback(seekerId, jobProfileId)
+                ?: return
+        val enriched = enrichCandidateRecommendation(jobProfileId, base, interest)
+        notifier.notify(
+            employerUserId,
+            MatchInterestEventDto(
+                jobProfileId = jobProfileId,
+                seekerId = seekerId,
+                interestStatus = enriched.interestStatus,
+                seekerContact = enriched.contactInfo,
+            ),
+        )
+    }
+
+    private fun notifySeekerOfEmployerResponse(
+        seekerId: Long,
+        jobProfileId: Long,
+        interest: MatchInterestRecord,
+    ) {
+        val seekerUserId = seekerRepository.findUserIdBySeekerId(seekerId) ?: return
+        val status =
+            InterestStatusCalculator.forSeeker(
+                interest.seekerResponded,
+                interest.employerResponded,
+            )
+        if (status != InterestStatus.INCOMING && status != InterestStatus.MUTUAL) return
+
+        val base =
+            matchingService.jobRecommendationForSeeker(seekerId, jobProfileId)
+                ?: matchingService.jobRecommendationFallback(jobProfileId)
+                ?: return
+        val enriched = enrichJobRecommendation(seekerId, base, interest)
+        notifier.notify(
+            seekerUserId,
+            MatchInterestEventDto(
+                jobProfileId = jobProfileId,
+                seekerId = seekerId,
+                interestStatus = enriched.interestStatus,
+                employerContact = enriched.contactInfo,
+            ),
         )
     }
 

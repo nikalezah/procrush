@@ -1,12 +1,14 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import type { AuthUserDto, UserRole } from '../api/types'
-import { displayRoleLabel } from '../lib/roleLabels'
-import { BrandTitle } from './BrandTitle'
+import {NavLink, Outlet} from 'react-router-dom'
+import type {AuthUserDto, UserRole} from '../api/types'
+import {displayRoleLabel} from '../lib/roleLabels'
+import {BrandTitle} from './BrandTitle'
+import {NavBadge} from './NavBadge'
 
-interface NavItem {
+export interface NavItem {
   to: string
   label: string
   end?: boolean
+  badge?: number
 }
 
 interface AppShellProps {
@@ -39,6 +41,7 @@ export function AppShell({ user, role, navItems, onLogout }: AppShellProps) {
               }
             >
               {item.label}
+              {item.badge != null && item.badge > 0 ? <NavBadge count={item.badge} /> : null}
             </NavLink>
           ))}
         </nav>

@@ -1,6 +1,11 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions,} from '../../api/seekerApi'
-import type {JobRecommendationDto, OccupationDto, SeekerInterestsResponseDto,} from '../../api/types'
+import type {
+  JobRecommendationDto,
+  MatchInterestEventDto,
+  OccupationDto,
+  SeekerInterestsResponseDto,
+} from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
 import {FormSection} from '../../components/FormSection'
@@ -9,18 +14,37 @@ import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 import {OccupationPicker} from '../../components/OccupationPicker'
 import {RespondButton} from '../../components/RespondButton'
 import {Spinner} from '../../components/Spinner'
+import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
+
+function patchSeekerJobFromEvent(
+  job: JobRecommendationDto,
+  event: MatchInterestEventDto,
+): JobRecommendationDto {
+  if (job.id !== event.jobProfileId) return job
+  return {
+    ...job,
+    interestStatus: event.interestStatus,
+    contactInfo: event.employerContact ?? null,
+  }
+}
 
 function JobRecommendationCard({
   job,
   respondingId,
+  highlighted,
   onRespond,
 }: {
   job: JobRecommendationDto
   respondingId: number | null
+  highlighted?: boolean
   onRespond: (jobProfileId: number) => void
 }) {
   return (
-    <article className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 sm:flex-row sm:items-start sm:justify-between">
+    <article
+      className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 sm:flex-row sm:items-start sm:justify-between ${
+        highlighted ? 'ring-2 ring-amber-300' : ''
+      }`}
+    >
       <div>
         <h3 className="font-medium">{job.positionName}</h3>
         <p className="text-sm text-neutral-600">{job.companyName}</p>
@@ -43,6 +67,7 @@ function JobRecommendationCard({
 }
 
 export function SeekerPositionsPage() {
+  const {lastEvent, lastEventId} = useMatchInterestEvents()
   const [occupationIds, setOccupationIds] = useState<number[]>([])
   const [occupations, setOccupations] = useState<OccupationDto[]>([])
   const [recommendations, setRecommendations] = useState<JobRecommendationDto[]>([])
@@ -53,8 +78,10 @@ export function SeekerPositionsPage() {
   const [testsComplete, setTestsComplete] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(true)
   const [respondingId, setRespondingId] = useState<number | null>(null)
+  const [highlightedId, setHighlightedId] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const lastHandledEventId = useRef(0)
 
   async function loadData() {
     const overview = await fetchPositionsOverview()
@@ -70,7 +97,22 @@ export function SeekerPositionsPage() {
     void loadData()
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
+    return () => setHighlightedId(null)
   }, [])
+
+  useEffect(() => {
+    if (lastEvent == null || lastEventId === lastHandledEventId.current) return
+    lastHandledEventId.current = lastEventId
+
+    setRecommendations((prev) => prev.map((job) => patchSeekerJobFromEvent(job, lastEvent)))
+    void fetchSeekerInterests().then(setInterests).catch(() => {
+      // ignore refresh errors
+    })
+
+    setHighlightedId(lastEvent.jobProfileId)
+    const timer = window.setTimeout(() => setHighlightedId(null), 2000)
+    return () => window.clearTimeout(timer)
+  }, [lastEvent, lastEventId])
 
   async function savePositions(ids: number[]) {
     setOccupationIds(ids)
@@ -159,6 +201,7 @@ export function SeekerPositionsPage() {
                 key={job.id}
                 job={job}
                 respondingId={respondingId}
+                highlighted={highlightedId === job.id}
                 onRespond={(id) => void handleRespond(id)}
               />
             ))}
