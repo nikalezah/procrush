@@ -92,18 +92,32 @@ data class PersonalityModule(
 
 data class MatchingModule(
     val matchingService: jobs.procrush.matching.service.MatchingService,
+    val matchInterestService: jobs.procrush.matching.service.MatchInterestService,
 ) {
     companion object {
         fun create(auth: AuthModule, survey: SurveyModule): MatchingModule {
             val matchingRepository =
                 jobs.procrush.matching.repository.MatchingRepository(auth.referenceRepository)
+            val matchInterestRepository = jobs.procrush.matching.repository.MatchInterestRepository()
             val matchingService =
                 jobs.procrush.matching.service.MatchingService(
                     seekerRepository = auth.seekerRepository,
                     matchingRepository = matchingRepository,
                     surveyService = survey.surveyService,
                 )
-            return MatchingModule(matchingService = matchingService)
+            val matchInterestService =
+                jobs.procrush.matching.service.MatchInterestService(
+                    seekerRepository = auth.seekerRepository,
+                    employerRepository = auth.employerRepository,
+                    matchingService = matchingService,
+                    matchingRepository = matchingRepository,
+                    matchInterestRepository = matchInterestRepository,
+                    surveyService = survey.surveyService,
+                )
+            return MatchingModule(
+                matchingService = matchingService,
+                matchInterestService = matchInterestService,
+            )
         }
     }
 }
@@ -118,6 +132,7 @@ data class SeekerModule(
                     auth.seekerRepository,
                     auth.referenceRepository,
                     matching.matchingService,
+                    matching.matchInterestService,
                 )
             return SeekerModule(seekerProfileService = seekerProfileService)
         }
@@ -134,6 +149,7 @@ data class EmployerModule(
                     auth.employerRepository,
                     auth.referenceRepository,
                     matching.matchingService,
+                    matching.matchInterestService,
                 )
             return EmployerModule(employerProfileService = employerProfileService)
         }

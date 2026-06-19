@@ -64,5 +64,19 @@ fun Route.employerRoutes(
             val id = call.requireLongParam() ?: return@get
             call.respond(employerProfileService.candidates(user.id, id))
         }
+        post("/job-profiles/{id}/candidates/{seekerId}/respond") {
+            val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@post
+            val jobProfileId = call.requireLongParam() ?: return@post
+            val seekerId = call.requireLongParam("seekerId") ?: return@post
+            call.respond(
+                HttpStatusCode.Created,
+                employerProfileService.respondToCandidate(user.id, jobProfileId, seekerId),
+            )
+        }
+        get("/job-profiles/{id}/interests") {
+            val user = roleGuard.requireRole(call, UserRole.EMPLOYER) ?: return@get
+            val id = call.requireLongParam() ?: return@get
+            call.respond(employerProfileService.interestsOutsideRecommendations(user.id, id))
+        }
     }
 }

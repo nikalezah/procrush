@@ -1,5 +1,7 @@
 package jobs.procrush.seeker.service
 
+import jobs.procrush.matching.dto.SeekerInterestsResponseDto
+import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.matching.service.MatchingService
 import jobs.procrush.seeker.dto.CreateSeekerEducationRequest
 import jobs.procrush.seeker.dto.CreateSeekerExperienceRequest
@@ -18,6 +20,7 @@ class SeekerProfileService(
     private val seekerRepository: SeekerRepository,
     private val referenceRepository: ReferenceRepository,
     private val matchingService: MatchingService,
+    private val matchInterestService: MatchInterestService,
 ) {
     fun getOrCreateSeeker(userId: UUID) =
         seekerRepository.findByUserId(userId) ?: seekerRepository.createForUser(userId)
@@ -120,5 +123,20 @@ class SeekerProfileService(
         )
     }
 
-    fun recommendations(userId: UUID) = matchingService.jobRecommendationsForSeeker(userId)
+    fun recommendations(userId: UUID): List<jobs.procrush.matching.dto.JobRecommendationDto> {
+        val seeker = getOrCreateSeeker(userId)
+        val recommendations = matchingService.jobRecommendationsForSeeker(userId)
+        return matchInterestService.enrichJobRecommendations(seeker.id, recommendations)
+    }
+
+    fun respondToJob(userId: UUID, jobProfileId: Long) =
+        matchInterestService.seekerRespond(userId, jobProfileId)
+
+    fun interestsOutsideRecommendations(userId: UUID): SeekerInterestsResponseDto {
+        val recommendations = matchingService.jobRecommendationsForSeeker(userId)
+        return matchInterestService.seekerInterestsOutsideRecommendations(
+            userId,
+            recommendations.map { it.id }.toSet(),
+        )
+    }
 }

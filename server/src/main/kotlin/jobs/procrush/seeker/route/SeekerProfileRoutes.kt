@@ -105,5 +105,17 @@ fun Route.seekerProfileRoutes(
             val user = roleGuard.requireRole(call, UserRole.SEEKER) ?: return@get
             call.respond(seekerProfileService.recommendations(user.id))
         }
+        post("/recommendations/{jobProfileId}/respond") {
+            val user = roleGuard.requireRole(call, UserRole.SEEKER) ?: return@post
+            val jobProfileId = call.requireLongParam("jobProfileId") ?: return@post
+            call.respond(
+                HttpStatusCode.Created,
+                seekerProfileService.respondToJob(user.id, jobProfileId),
+            )
+        }
+        get("/interests") {
+            val user = roleGuard.requireRole(call, UserRole.SEEKER) ?: return@get
+            call.respond(seekerProfileService.interestsOutsideRecommendations(user.id))
+        }
     }
 }

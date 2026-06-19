@@ -6,6 +6,8 @@ import jobs.procrush.employer.dto.JobProfileDto
 import jobs.procrush.employer.dto.UpdateEmployerProfileRequest
 import jobs.procrush.employer.dto.UpdateJobProfileRequest
 import jobs.procrush.employer.repository.EmployerRepository
+import jobs.procrush.matching.dto.EmployerInterestsResponseDto
+import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.matching.service.MatchingService
 import jobs.procrush.shared.ResourceNotFoundException
 import jobs.procrush.shared.repository.ReferenceRepository
@@ -15,6 +17,7 @@ class EmployerProfileService(
     private val employerRepository: EmployerRepository,
     private val referenceRepository: ReferenceRepository,
     private val matchingService: MatchingService,
+    private val matchInterestService: MatchInterestService,
 ) {
     fun getOrCreateEmployer(userId: UUID) =
         employerRepository.findByUserId(userId) ?: employerRepository.createForUser(userId)
@@ -69,9 +72,24 @@ class EmployerProfileService(
         )
     }
 
-    fun candidates(userId: UUID, jobProfileId: Long) =
-        matchingService.candidateRecommendationsForJob(
-            findJobProfile(userId, jobProfileId).occupationId,
+    fun candidates(userId: UUID, jobProfileId: Long): List<jobs.procrush.matching.dto.CandidateRecommendationDto> {
+        val jobProfile = findJobProfile(userId, jobProfileId)
+        val candidates =
+            matchingService.candidateRecommendationsForJob(jobProfile.occupationId, jobProfileId)
+        return matchInterestService.enrichCandidateRecommendations(jobProfileId, candidates)
+    }
+
+    fun respondToCandidate(userId: UUID, jobProfileId: Long, seekerId: Long) =
+        matchInterestService.employerRespond(userId, jobProfileId, seekerId)
+
+    fun interestsOutsideRecommendations(userId: UUID, jobProfileId: Long): EmployerInterestsResponseDto {
+        val jobProfile = findJobProfile(userId, jobProfileId)
+        val candidates =
+            matchingService.candidateRecommendationsForJob(jobProfile.occupationId, jobProfileId)
+        return matchInterestService.employerInterestsOutsideRecommendations(
+            userId,
             jobProfileId,
+            candidates.map { it.id }.toSet(),
         )
+    }
 }

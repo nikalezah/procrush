@@ -47,6 +47,46 @@ class MatchingService(
             .sortedByDescending { it.matchScore }
     }
 
+    fun jobRecommendationForSeeker(seekerId: Long, jobProfileId: Long): JobRecommendationDto? {
+        val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
+        val seekerContext = matchingRepository.getSeekerMatchingContext(seekerId) ?: return null
+        return scoreJob(job, seekerContext)
+    }
+
+    fun candidateRecommendationForJob(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
+        val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
+        val seeker =
+            matchingRepository.findSeekerMatchCandidate(seekerId, job.occupationId) ?: return null
+        return scoreCandidate(seeker, job)
+    }
+
+    fun jobRecommendationFallback(jobProfileId: Long): JobRecommendationDto? {
+        val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
+        return JobRecommendationDto(
+            id = job.jobProfileId,
+            companyName = job.companyName,
+            positionName = job.occupationName,
+            description = job.description.orEmpty(),
+            matchScore = 0.0,
+            matchScoreDisplay = 0,
+        )
+    }
+
+    fun candidateRecommendationFallback(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
+        val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
+        val seeker =
+            matchingRepository.findSeekerMatchCandidate(seekerId, job.occupationId) ?: return null
+        return CandidateRecommendationDto(
+            id = seeker.seekerId,
+            firstName = seeker.firstName,
+            lastName = seeker.lastName,
+            positionName = seeker.occupationName,
+            skills = seeker.skillNames,
+            matchScore = 0.0,
+            matchScoreDisplay = 0,
+        )
+    }
+
     fun countMatchedCandidatesForOccupation(occupationId: Long): Int =
         matchingRepository.countMatchableSeekers(occupationId)
 

@@ -1,21 +1,22 @@
 import {apiFetch} from './client'
 import type {
-    CompleteSurveyResponseDto,
-    CreateSeekerEducationRequest,
-    CreateSeekerExperienceRequest,
-    JobRecommendationDto,
-    PersonalityPreviewDto,
-    PersonalityProfileStatus,
-    SeekerDashboardDto,
-    SeekerDesiredPositionsResponse,
-    SeekerEducationDto,
-    SeekerExperienceDto,
-    SeekerProfileDto,
-    SeekerSkillsResponse,
-    SuperpowerAndTalentDto,
-    SurveyDetailDto,
-    SurveyGroupsResponseDto,
-    UpdateSeekerProfileRequest,
+  CompleteSurveyResponseDto,
+  CreateSeekerEducationRequest,
+  CreateSeekerExperienceRequest,
+  JobRecommendationDto,
+  PersonalityPreviewDto,
+  PersonalityProfileStatus,
+  SeekerDashboardDto,
+  SeekerDesiredPositionsResponse,
+  SeekerEducationDto,
+  SeekerExperienceDto,
+  SeekerInterestsResponseDto,
+  SeekerProfileDto,
+  SeekerSkillsResponse,
+  SuperpowerAndTalentDto,
+  SurveyDetailDto,
+  SurveyGroupsResponseDto,
+  UpdateSeekerProfileRequest,
 } from './types'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
@@ -167,6 +168,14 @@ export function subscribePersonalityStatusEvents(
 
 export function fetchRecommendations(): Promise<JobRecommendationDto[]> {
   return apiFetch('/api/seeker/recommendations')
+}
+
+export function respondToJob(jobProfileId: number): Promise<JobRecommendationDto> {
+  return apiFetch(`/api/seeker/recommendations/${jobProfileId}/respond`, { method: 'POST' })
+}
+
+export function fetchSeekerInterests(): Promise<SeekerInterestsResponseDto> {
+  return apiFetch('/api/seeker/interests')
 }
 
 export function fetchSurveyGroups(): Promise<SurveyGroupsResponseDto> {

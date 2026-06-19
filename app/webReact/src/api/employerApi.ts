@@ -1,11 +1,12 @@
-import { apiFetch } from './client'
+import {apiFetch} from './client'
 import type {
-  CandidateRecommendationDto,
-  CreateJobProfileRequest,
-  EmployerDashboardDto,
-  EmployerProfileDto,
-  JobProfileDto,
-  UpdateEmployerProfileRequest,
+    CandidateRecommendationDto,
+    CreateJobProfileRequest,
+    EmployerDashboardDto,
+    EmployerInterestsResponseDto,
+    EmployerProfileDto,
+    JobProfileDto,
+    UpdateEmployerProfileRequest,
 } from './types'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
@@ -52,4 +53,17 @@ export function deleteJobProfile(id: number): Promise<void> {
 
 export function fetchCandidates(jobProfileId: number): Promise<CandidateRecommendationDto[]> {
   return apiFetch(`/api/employer/job-profiles/${jobProfileId}/candidates`)
+}
+
+export function respondToCandidate(
+  jobProfileId: number,
+  seekerId: number,
+): Promise<CandidateRecommendationDto> {
+  return apiFetch(`/api/employer/job-profiles/${jobProfileId}/candidates/${seekerId}/respond`, {
+    method: 'POST',
+  })
+}
+
+export function fetchEmployerInterests(jobProfileId: number): Promise<EmployerInterestsResponseDto> {
+  return apiFetch(`/api/employer/job-profiles/${jobProfileId}/interests`)
 }

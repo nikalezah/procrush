@@ -240,6 +240,23 @@ export interface PersonalityPreviewDto {
   superpowersAndTalents?: SuperpowerAndTalentDto[] | null
 }
 
+export type InterestStatus = 'NONE' | 'RESPONDED' | 'INCOMING' | 'MUTUAL'
+
+export interface EmployerContactDto {
+  companyName: string
+  phone?: string | null
+  emailContact?: string | null
+  website?: string | null
+}
+
+export interface SeekerContactDto {
+  firstName: string
+  lastName: string
+  phone?: string | null
+  telegram?: string | null
+  linkedin?: string | null
+}
+
 export interface JobRecommendationDto {
   id: number
   companyName: string
@@ -247,6 +264,8 @@ export interface JobRecommendationDto {
   description: string
   matchScore: number
   matchScoreDisplay: number
+  interestStatus?: InterestStatus
+  contactInfo?: EmployerContactDto | null
 }
 
 export interface CandidateRecommendationDto {
@@ -257,6 +276,18 @@ export interface CandidateRecommendationDto {
   skills: string[]
   matchScore: number
   matchScoreDisplay: number
+  interestStatus?: InterestStatus
+  contactInfo?: SeekerContactDto | null
+}
+
+export interface SeekerInterestsResponseDto {
+  respondedOutside: JobRecommendationDto[]
+  mutualOutside: JobRecommendationDto[]
+}
+
+export interface EmployerInterestsResponseDto {
+  respondedOutside: CandidateRecommendationDto[]
+  mutualOutside: CandidateRecommendationDto[]
 }
 
 export interface SeekerDashboardDto {

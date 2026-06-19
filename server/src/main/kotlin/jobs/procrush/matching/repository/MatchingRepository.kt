@@ -28,6 +28,31 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 class MatchingRepository(
     private val referenceRepository: ReferenceRepository,
 ) {
+    fun findJobProfileById(jobProfileId: Long): JobMatchCandidate? =
+        transaction {
+            EmployerJobProfilesTable
+                .selectAll()
+                .where { EmployerJobProfilesTable.id eq jobProfileId }
+                .firstOrNull()
+                ?.toJobMatchCandidate()
+        }
+
+    fun findSeekerMatchCandidate(seekerId: Long, occupationId: Long): SeekerMatchCandidate? =
+        transaction {
+            val occupationName =
+                OccupationsTable
+                    .selectAll()
+                    .where { OccupationsTable.id eq occupationId }
+                    .firstOrNull()
+                    ?.get(OccupationsTable.name)
+                    ?: "—"
+            SeekersTable
+                .selectAll()
+                .where { SeekersTable.id eq seekerId }
+                .firstOrNull()
+                ?.toSeekerMatchCandidate(occupationId, occupationName)
+        }
+
     fun findMatchableJobProfiles(occupationIds: List<Long>): List<JobMatchCandidate> {
         if (occupationIds.isEmpty()) return emptyList()
         return transaction {
@@ -194,10 +219,12 @@ class MatchingRepository(
 
         return JobMatchCandidate(
             jobProfileId = jobProfileId,
+            employerId = employerId,
             companyName = companyName,
             occupationId = occupationId,
             occupationName = occupationName,
             description = this[EmployerJobProfilesTable.description],
+            isActive = this[EmployerJobProfilesTable.isActive],
             skillIds = getJobProfileSkillIds(jobProfileId),
             personalityAxes = PersonalityAxesDto.fromJson(this[EmployerJobProfilesTable.requiredPersonality]),
         )
