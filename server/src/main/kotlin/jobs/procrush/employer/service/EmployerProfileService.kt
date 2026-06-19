@@ -6,6 +6,7 @@ import jobs.procrush.employer.dto.JobProfileDto
 import jobs.procrush.employer.dto.UpdateEmployerProfileRequest
 import jobs.procrush.employer.dto.UpdateJobProfileRequest
 import jobs.procrush.employer.repository.EmployerRepository
+import jobs.procrush.matching.dto.EmployerCandidatesOverviewDto
 import jobs.procrush.matching.dto.EmployerInterestsResponseDto
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.matching.service.MatchingService
@@ -60,9 +61,13 @@ class EmployerProfileService(
         val employer = getOrCreateEmployer(userId)
         val profiles = employerRepository.listJobProfiles(employer.id)
         val activeProfiles = profiles.filter { it.isActive }
+        val countsByOccupation =
+            matchingService.countMatchedCandidatesForOccupations(
+                activeProfiles.map { it.occupationId }.distinct(),
+            )
         val totalMatchedCandidates =
             activeProfiles.sumOf { profile ->
-                matchingService.countMatchedCandidatesForOccupation(profile.occupationId)
+                countsByOccupation[profile.occupationId] ?: 0
             }
         return EmployerDashboardDto(
             companyName = employer.name.ifBlank { "Компания не указана" },
@@ -90,6 +95,23 @@ class EmployerProfileService(
             userId,
             jobProfileId,
             candidates.map { it.id }.toSet(),
+        )
+    }
+
+    fun candidatesOverview(userId: UUID, jobProfileId: Long): EmployerCandidatesOverviewDto {
+        val jobProfile = findJobProfile(userId, jobProfileId)
+        val candidates =
+            matchingService.candidateRecommendationsForJob(jobProfile.occupationId, jobProfileId)
+        val enriched = matchInterestService.enrichCandidateRecommendations(jobProfileId, candidates)
+        val interests =
+            matchInterestService.employerInterestsOutsideRecommendations(
+                userId,
+                jobProfileId,
+                enriched.map { it.id }.toSet(),
+            )
+        return EmployerCandidatesOverviewDto(
+            candidates = enriched,
+            interests = interests,
         )
     }
 }

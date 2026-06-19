@@ -126,13 +126,14 @@ data class SeekerModule(
     val seekerProfileService: jobs.procrush.seeker.service.SeekerProfileService,
 ) {
     companion object {
-        fun create(auth: AuthModule, matching: MatchingModule): SeekerModule {
+        fun create(auth: AuthModule, matching: MatchingModule, survey: SurveyModule): SeekerModule {
             val seekerProfileService =
                 jobs.procrush.seeker.service.SeekerProfileService(
                     auth.seekerRepository,
                     auth.referenceRepository,
                     matching.matchingService,
                     matching.matchInterestService,
+                    survey.surveyService,
                 )
             return SeekerModule(seekerProfileService = seekerProfileService)
         }

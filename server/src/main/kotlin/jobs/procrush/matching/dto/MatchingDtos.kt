@@ -55,3 +55,9 @@ data class EmployerInterestsResponseDto(
     val respondedOutside: List<CandidateRecommendationDto>,
     val mutualOutside: List<CandidateRecommendationDto>,
 )
+
+@Serializable
+data class EmployerCandidatesOverviewDto(
+    val candidates: List<CandidateRecommendationDto>,
+    val interests: EmployerInterestsResponseDto,
+)

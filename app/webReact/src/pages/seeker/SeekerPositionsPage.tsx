@@ -1,13 +1,6 @@
 import {useEffect, useState} from 'react'
-import {
-  fetchDesiredPositions,
-  fetchRecommendations,
-  fetchSeekerInterests,
-  fetchSurveyGroups,
-  respondToJob,
-  updateDesiredPositions,
-} from '../../api/seekerApi'
-import type {JobRecommendationDto, SeekerInterestsResponseDto} from '../../api/types'
+import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions,} from '../../api/seekerApi'
+import type {JobRecommendationDto, OccupationDto, SeekerInterestsResponseDto,} from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
 import {FormSection} from '../../components/FormSection'
@@ -15,6 +8,7 @@ import {InterestStatusBadge} from '../../components/InterestStatusBadge'
 import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 import {OccupationPicker} from '../../components/OccupationPicker'
 import {RespondButton} from '../../components/RespondButton'
+import {Spinner} from '../../components/Spinner'
 
 function JobRecommendationCard({
   job,
@@ -50,31 +44,32 @@ function JobRecommendationCard({
 
 export function SeekerPositionsPage() {
   const [occupationIds, setOccupationIds] = useState<number[]>([])
+  const [occupations, setOccupations] = useState<OccupationDto[]>([])
   const [recommendations, setRecommendations] = useState<JobRecommendationDto[]>([])
   const [interests, setInterests] = useState<SeekerInterestsResponseDto>({
     respondedOutside: [],
     mutualOutside: [],
   })
   const [testsComplete, setTestsComplete] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(true)
   const [respondingId, setRespondingId] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function loadData() {
-    const [positions, recs, outside, surveys] = await Promise.all([
-      fetchDesiredPositions(),
-      fetchRecommendations(),
-      fetchSeekerInterests(),
-      fetchSurveyGroups(),
-    ])
-    setOccupationIds(positions.occupationIds)
-    setRecommendations(recs)
-    setInterests(outside)
-    setTestsComplete(surveys.testsCompleted >= surveys.testsTotal)
+    const overview = await fetchPositionsOverview()
+    setOccupationIds(overview.occupationIds)
+    setOccupations(overview.occupations)
+    setRecommendations(overview.recommendations)
+    setInterests(overview.interests)
+    setTestsComplete(overview.testsComplete)
   }
 
   useEffect(() => {
-    void loadData().catch((e: Error) => setError(e.message))
+    setLoading(true)
+    void loadData()
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
   async function savePositions(ids: number[]) {
@@ -83,10 +78,13 @@ export function SeekerPositionsPage() {
     setError(null)
     try {
       await updateDesiredPositions(ids)
+      setLoading(true)
       await loadData()
       setMessage('Желаемые должности сохранены')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -118,6 +116,14 @@ export function SeekerPositionsPage() {
     return 'Пока нет подходящих активных вакансий'
   }
 
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -135,6 +141,7 @@ export function SeekerPositionsPage() {
       >
         <OccupationPicker
           selectedIds={occupationIds}
+          occupations={occupations}
           onChange={(ids) => void savePositions(ids)}
         />
       </FormSection>

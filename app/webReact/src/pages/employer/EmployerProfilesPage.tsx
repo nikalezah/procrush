@@ -9,21 +9,25 @@ import {FormSection} from '../../components/FormSection'
 import {PersonalityAxesEditor} from '../../components/PersonalityAxesEditor'
 import {AXIS_KEYS, AXIS_LABELS} from '../../components/personality/personalityLabels'
 import {SkillPicker} from '../../components/SkillPicker'
+import {Spinner} from '../../components/Spinner'
 
 export function EmployerProfilesPage() {
   const [profiles, setProfiles] = useState<JobProfileDto[]>([])
   const [occupations, setOccupations] = useState<OccupationDto[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingProfile, setEditingProfile] = useState<JobProfileDto | null>(null)
 
   useEffect(() => {
+    setLoading(true)
     void Promise.all([fetchJobProfiles(), fetchOccupations(true)])
       .then(([p, o]) => {
         setProfiles(p)
         setOccupations(o)
       })
       .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
   async function handleCreate(body: CreateJobProfileRequest) {
@@ -41,6 +45,14 @@ export function EmployerProfilesPage() {
   async function handleDelete(id: number) {
     await deleteJobProfile(id)
     setProfiles((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    )
   }
 
   return (

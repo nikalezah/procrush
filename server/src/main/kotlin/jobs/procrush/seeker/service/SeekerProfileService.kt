@@ -7,6 +7,7 @@ import jobs.procrush.seeker.dto.CreateSeekerEducationRequest
 import jobs.procrush.seeker.dto.CreateSeekerExperienceRequest
 import jobs.procrush.seeker.dto.SeekerDashboardDto
 import jobs.procrush.seeker.dto.SeekerDesiredPositionsResponse
+import jobs.procrush.seeker.dto.SeekerPositionsOverviewDto
 import jobs.procrush.seeker.dto.SeekerSkillsResponse
 import jobs.procrush.seeker.dto.UpdateSeekerEducationRequest
 import jobs.procrush.seeker.dto.UpdateSeekerExperienceRequest
@@ -14,6 +15,7 @@ import jobs.procrush.seeker.dto.UpdateSeekerProfileRequest
 import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.shared.ResourceNotFoundException
 import jobs.procrush.shared.repository.ReferenceRepository
+import jobs.procrush.survey.service.SurveyService
 import java.util.UUID
 
 class SeekerProfileService(
@@ -21,6 +23,7 @@ class SeekerProfileService(
     private val referenceRepository: ReferenceRepository,
     private val matchingService: MatchingService,
     private val matchInterestService: MatchInterestService,
+    private val surveyService: SurveyService,
 ) {
     fun getOrCreateSeeker(userId: UUID) =
         seekerRepository.findByUserId(userId) ?: seekerRepository.createForUser(userId)
@@ -137,6 +140,28 @@ class SeekerProfileService(
         return matchInterestService.seekerInterestsOutsideRecommendations(
             userId,
             recommendations.map { it.id }.toSet(),
+        )
+    }
+
+    fun positionsOverview(userId: UUID): SeekerPositionsOverviewDto {
+        val seeker = getOrCreateSeeker(userId)
+        val surveyGroups = surveyService.listGroups(userId)
+        val testsComplete = surveyGroups.testsCompleted >= surveyGroups.testsTotal
+        val occupationIds = seekerRepository.getDesiredOccupationIds(seeker.id)
+        val occupations = referenceRepository.listOccupations(leafOnly = true)
+        val recommendations = matchingService.jobRecommendationsForSeeker(userId)
+        val enriched = matchInterestService.enrichJobRecommendations(seeker.id, recommendations)
+        val interests =
+            matchInterestService.seekerInterestsOutsideRecommendations(
+                userId,
+                enriched.map { it.id }.toSet(),
+            )
+        return SeekerPositionsOverviewDto(
+            occupationIds = occupationIds,
+            occupations = occupations,
+            recommendations = enriched,
+            interests = interests,
+            testsComplete = testsComplete,
         )
     }
 }

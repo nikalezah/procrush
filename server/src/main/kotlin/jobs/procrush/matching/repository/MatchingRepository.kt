@@ -39,18 +39,8 @@ class MatchingRepository(
 
     fun findSeekerMatchCandidate(seekerId: Long, occupationId: Long): SeekerMatchCandidate? =
         transaction {
-            val occupationName =
-                OccupationsTable
-                    .selectAll()
-                    .where { OccupationsTable.id eq occupationId }
-                    .firstOrNull()
-                    ?.get(OccupationsTable.name)
-                    ?: "—"
-            SeekersTable
-                .selectAll()
-                .where { SeekersTable.id eq seekerId }
-                .firstOrNull()
-                ?.toSeekerMatchCandidate(occupationId, occupationName)
+            val occupationName = resolveOccupationName(occupationId)
+            buildSeekerMatchCandidates(listOf(seekerId), occupationId, occupationName).firstOrNull()
         }
 
     fun findMatchableJobProfiles(occupationIds: List<Long>): List<JobMatchCandidate> {
@@ -79,33 +69,53 @@ class MatchingRepository(
                             (SeekerDesiredPositionsTable.seekerId inList eligibleSeekerIds.toList())
                     }
                     .map { it[SeekerDesiredPositionsTable.seekerId].value }
-                    .toSet()
+                    .distinct()
 
             if (seekerIdsForOccupation.isEmpty()) return@transaction emptyList()
 
-            val occupationName =
-                OccupationsTable
-                    .selectAll()
-                    .where { OccupationsTable.id eq occupationId }
-                    .firstOrNull()
-                    ?.get(OccupationsTable.name)
-                    ?: "—"
-
-            seekerIdsForOccupation.mapNotNull { seekerId ->
-                SeekersTable
-                    .selectAll()
-                    .where { SeekersTable.id eq seekerId }
-                    .firstOrNull()
-                    ?.toSeekerMatchCandidate(occupationId, occupationName)
-            }
+            val occupationName = resolveOccupationName(occupationId)
+            buildSeekerMatchCandidates(seekerIdsForOccupation, occupationId, occupationName)
         }
 
-    fun countMatchableSeekers(occupationId: Long): Int = findMatchableSeekers(occupationId).size
+    fun countMatchableSeekers(occupationId: Long): Int =
+        countMatchableSeekersByOccupations(listOf(occupationId))[occupationId] ?: 0
 
-    fun getSeekerMatchingContext(seekerId: Long): SeekerMatchingContext? =
-        transaction {
+    fun countMatchableSeekersByOccupations(occupationIds: List<Long>): Map<Long, Int> {
+        if (occupationIds.isEmpty()) return emptyMap()
+        return transaction {
             val eligibleSeekerIds = findSeekerIdsWithAllTestsCompleteInTx()
-            if (seekerId !in eligibleSeekerIds) return@transaction null
+            if (eligibleSeekerIds.isEmpty()) {
+                return@transaction occupationIds.associateWith { 0 }
+            }
+
+            val distinctSeekersByOccupation = mutableMapOf<Long, MutableSet<Long>>()
+            SeekerDesiredPositionsTable
+                .selectAll()
+                .where {
+                    (SeekerDesiredPositionsTable.occupationId inList occupationIds) and
+                        (SeekerDesiredPositionsTable.seekerId inList eligibleSeekerIds.toList())
+                }
+                .forEach { row ->
+                    val occupationId = row[SeekerDesiredPositionsTable.occupationId].value
+                    val seekerId = row[SeekerDesiredPositionsTable.seekerId].value
+                    distinctSeekersByOccupation
+                        .getOrPut(occupationId) { mutableSetOf() }
+                        .add(seekerId)
+                }
+
+            occupationIds.associateWith { distinctSeekersByOccupation[it]?.size ?: 0 }
+        }
+    }
+
+    fun getSeekerMatchingContext(
+        seekerId: Long,
+        testsAlreadyComplete: Boolean = false,
+    ): SeekerMatchingContext? =
+        transaction {
+            if (!testsAlreadyComplete) {
+                val eligibleSeekerIds = findSeekerIdsWithAllTestsCompleteInTx()
+                if (seekerId !in eligibleSeekerIds) return@transaction null
+            }
 
             val skillIds = getSeekerSkillIds(seekerId)
             val personalityRow =
@@ -114,74 +124,155 @@ class MatchingRepository(
                     .where { SeekerPersonalProfilesTable.seekerId eq seekerId }
                     .firstOrNull()
 
-            val status =
-                personalityRow?.get(SeekerPersonalProfilesTable.generationStatus)?.let {
-                    runCatching { PersonalityProfileStatus.valueOf(it) }.getOrNull()
-                }
-            val axesFromRow =
-                personalityRow?.let { row ->
-                    listOf(
-                        row[SeekerPersonalProfilesTable.axisDominance]?.toDouble(),
-                        row[SeekerPersonalProfilesTable.axisInfluence]?.toDouble(),
-                        row[SeekerPersonalProfilesTable.axisStability]?.toDouble(),
-                        row[SeekerPersonalProfilesTable.axisIntegrity]?.toDouble(),
-                        row[SeekerPersonalProfilesTable.axisAutonomy]?.toDouble(),
-                        row[SeekerPersonalProfilesTable.axisPace]?.toDouble(),
-                    ).all { it != null }
-                } == true
-            val personalityReady = status == PersonalityProfileStatus.READY && axesFromRow
-            val personalityAxes =
-                if (personalityReady && personalityRow != null) {
-                    PersonalityAxesDto(
-                        axisDominance = personalityRow[SeekerPersonalProfilesTable.axisDominance]!!.toDouble(),
-                        axisInfluence = personalityRow[SeekerPersonalProfilesTable.axisInfluence]!!.toDouble(),
-                        axisStability = personalityRow[SeekerPersonalProfilesTable.axisStability]!!.toDouble(),
-                        axisIntegrity = personalityRow[SeekerPersonalProfilesTable.axisIntegrity]!!.toDouble(),
-                        axisAutonomy = personalityRow[SeekerPersonalProfilesTable.axisAutonomy]!!.toDouble(),
-                        axisPace = personalityRow[SeekerPersonalProfilesTable.axisPace]!!.toDouble(),
-                    )
-                } else {
-                    null
-                }
-            SeekerMatchingContext(
-                skillIds = skillIds,
-                personalityAxes = personalityAxes,
-                personalityReady = personalityReady,
-            )
+            buildSeekerMatchingContext(skillIds, personalityRow)
         }
 
     fun findSeekerIdsWithAllTestsComplete(): Set<Long> =
         transaction { findSeekerIdsWithAllTestsCompleteInTx() }
 
     private fun findSeekerIdsWithAllTestsCompleteInTx(): Set<Long> {
-            val requiredSurveyIds =
-                SurveysTable
-                    .selectAll()
-                    .where {
-                        SurveysTable.groupCode inList
-                            listOf(SurveyFlowRules.CORE_GROUP, SurveyFlowRules.GROUP_64QN)
-                    }
-                    .map { it[SurveysTable.id].value }
-                    .toSet()
+        val requiredSurveyIds =
+            SurveysTable
+                .selectAll()
+                .where {
+                    SurveysTable.groupCode inList
+                        listOf(SurveyFlowRules.CORE_GROUP, SurveyFlowRules.GROUP_64QN)
+                }
+                .map { it[SurveysTable.id].value }
+                .toSet()
 
-            if (requiredSurveyIds.isEmpty()) return emptySet()
+        if (requiredSurveyIds.isEmpty()) return emptySet()
 
-            val completedBySeeker =
-                SurveyResultsTable
-                    .selectAll()
-                    .where { SurveyResultsTable.completedAt.isNotNull() }
-                    .mapNotNull { row ->
-                        val seekerId = row[SurveyResultsTable.seekerId]?.value ?: return@mapNotNull null
-                        val surveyId = row[SurveyResultsTable.surveyId]?.value ?: return@mapNotNull null
-                        seekerId to surveyId
-                    }
-                    .groupBy({ it.first }, { it.second })
-                    .mapValues { (_, surveyIds) -> surveyIds.toSet() }
+        val completedBySeeker =
+            SurveyResultsTable
+                .selectAll()
+                .where {
+                    SurveyResultsTable.completedAt.isNotNull() and
+                        (SurveyResultsTable.surveyId inList requiredSurveyIds.toList())
+                }
+                .mapNotNull { row ->
+                    val seekerId = row[SurveyResultsTable.seekerId]?.value ?: return@mapNotNull null
+                    val surveyId = row[SurveyResultsTable.surveyId]?.value ?: return@mapNotNull null
+                    seekerId to surveyId
+                }
+                .groupBy({ it.first }, { it.second })
+                .mapValues { (_, surveyIds) -> surveyIds.toSet() }
 
-            return completedBySeeker
-                .filter { (_, completedSurveyIds) -> requiredSurveyIds.all { it in completedSurveyIds } }
-                .keys
+        return completedBySeeker
+            .filter { (_, completedSurveyIds) -> requiredSurveyIds.all { it in completedSurveyIds } }
+            .keys
     }
+
+    private fun buildSeekerMatchCandidates(
+        seekerIds: List<Long>,
+        occupationId: Long,
+        occupationName: String,
+    ): List<SeekerMatchCandidate> {
+        if (seekerIds.isEmpty()) return emptyList()
+
+        val seekerRows =
+            SeekersTable
+                .selectAll()
+                .where { SeekersTable.id inList seekerIds }
+                .associateBy { it[SeekersTable.id].value }
+
+        val personalityRows =
+            SeekerPersonalProfilesTable
+                .selectAll()
+                .where { SeekerPersonalProfilesTable.seekerId inList seekerIds }
+                .associateBy { it[SeekerPersonalProfilesTable.seekerId].value }
+
+        val skillsBySeeker =
+            SeekerSkillsTable
+                .selectAll()
+                .where { SeekerSkillsTable.seekerId inList seekerIds }
+                .groupBy(
+                    { it[SeekerSkillsTable.seekerId].value },
+                    { it[SeekerSkillsTable.skillId].value },
+                )
+
+        val allSkillIds = skillsBySeeker.values.flatten().toSet()
+        val skillNameById =
+            if (allSkillIds.isEmpty()) {
+                emptyMap()
+            } else {
+                referenceRepository.findSkillsByIds(allSkillIds.toList()).associate { it.id to it.name }
+            }
+
+        return seekerIds.mapNotNull { seekerId ->
+            val row = seekerRows[seekerId] ?: return@mapNotNull null
+            val skillIds = skillsBySeeker[seekerId]?.toSet() ?: emptySet()
+            val skillNames = skillIds.mapNotNull { skillNameById[it] }
+            val personality = resolvePersonality(personalityRows[seekerId])
+
+            SeekerMatchCandidate(
+                seekerId = seekerId,
+                firstName = row[SeekersTable.firstName],
+                lastName = row[SeekersTable.lastName],
+                occupationId = occupationId,
+                occupationName = occupationName,
+                skillIds = skillIds,
+                skillNames = skillNames,
+                personalityAxes = personality.first,
+                personalityReady = personality.second,
+            )
+        }
+    }
+
+    private fun buildSeekerMatchingContext(
+        skillIds: Set<Long>,
+        personalityRow: ResultRow?,
+    ): SeekerMatchingContext {
+        val personality = resolvePersonality(personalityRow)
+        return SeekerMatchingContext(
+            skillIds = skillIds,
+            personalityAxes = personality.first,
+            personalityReady = personality.second,
+        )
+    }
+
+    private fun resolvePersonality(personalityRow: ResultRow?): Pair<PersonalityAxesDto?, Boolean> {
+        if (personalityRow == null) return null to false
+
+        val status =
+            personalityRow[SeekerPersonalProfilesTable.generationStatus]?.let {
+                runCatching { PersonalityProfileStatus.valueOf(it) }.getOrNull()
+            }
+        val axesFromRow =
+            listOf(
+                personalityRow[SeekerPersonalProfilesTable.axisDominance]?.toDouble(),
+                personalityRow[SeekerPersonalProfilesTable.axisInfluence]?.toDouble(),
+                personalityRow[SeekerPersonalProfilesTable.axisStability]?.toDouble(),
+                personalityRow[SeekerPersonalProfilesTable.axisIntegrity]?.toDouble(),
+                personalityRow[SeekerPersonalProfilesTable.axisAutonomy]?.toDouble(),
+                personalityRow[SeekerPersonalProfilesTable.axisPace]?.toDouble(),
+            ).all { it != null }
+
+        val personalityReady = status == PersonalityProfileStatus.READY && axesFromRow
+        val personalityAxes =
+            if (personalityReady) {
+                PersonalityAxesDto(
+                    axisDominance = personalityRow[SeekerPersonalProfilesTable.axisDominance]!!.toDouble(),
+                    axisInfluence = personalityRow[SeekerPersonalProfilesTable.axisInfluence]!!.toDouble(),
+                    axisStability = personalityRow[SeekerPersonalProfilesTable.axisStability]!!.toDouble(),
+                    axisIntegrity = personalityRow[SeekerPersonalProfilesTable.axisIntegrity]!!.toDouble(),
+                    axisAutonomy = personalityRow[SeekerPersonalProfilesTable.axisAutonomy]!!.toDouble(),
+                    axisPace = personalityRow[SeekerPersonalProfilesTable.axisPace]!!.toDouble(),
+                )
+            } else {
+                null
+            }
+
+        return personalityAxes to personalityReady
+    }
+
+    private fun resolveOccupationName(occupationId: Long): String =
+        OccupationsTable
+            .selectAll()
+            .where { OccupationsTable.id eq occupationId }
+            .firstOrNull()
+            ?.get(OccupationsTable.name)
+            ?: "—"
 
     private fun getJobProfileSkillIds(jobProfileId: Long): Set<Long> =
         JobProfileSkillsTable
@@ -209,13 +300,7 @@ class MatchingRepository(
                 ?.get(EmployersTable.name)
                 ?.ifBlank { "Компания не указана" }
                 ?: "—"
-        val occupationName =
-            OccupationsTable
-                .selectAll()
-                .where { OccupationsTable.id eq occupationId }
-                .firstOrNull()
-                ?.get(OccupationsTable.name)
-                ?: "—"
+        val occupationName = resolveOccupationName(occupationId)
 
         return JobMatchCandidate(
             jobProfileId = jobProfileId,
@@ -227,63 +312,6 @@ class MatchingRepository(
             isActive = this[EmployerJobProfilesTable.isActive],
             skillIds = getJobProfileSkillIds(jobProfileId),
             personalityAxes = PersonalityAxesDto.fromJson(this[EmployerJobProfilesTable.requiredPersonality]),
-        )
-    }
-
-    private fun ResultRow.toSeekerMatchCandidate(
-        occupationId: Long,
-        occupationName: String,
-    ): SeekerMatchCandidate {
-        val seekerId = this[SeekersTable.id].value
-        val personalityRow =
-            SeekerPersonalProfilesTable
-                .selectAll()
-                .where { SeekerPersonalProfilesTable.seekerId eq seekerId }
-                .firstOrNull()
-
-        val status =
-            personalityRow?.get(SeekerPersonalProfilesTable.generationStatus)?.let {
-                runCatching { PersonalityProfileStatus.valueOf(it) }.getOrNull()
-            }
-        val skillIds = getSeekerSkillIds(seekerId)
-        val skillNames = referenceRepository.findSkillsByIds(skillIds.toList()).map { it.name }
-        val axesFromRow =
-            personalityRow?.let { row ->
-                listOf(
-                    row[SeekerPersonalProfilesTable.axisDominance]?.toDouble(),
-                    row[SeekerPersonalProfilesTable.axisInfluence]?.toDouble(),
-                    row[SeekerPersonalProfilesTable.axisStability]?.toDouble(),
-                    row[SeekerPersonalProfilesTable.axisIntegrity]?.toDouble(),
-                    row[SeekerPersonalProfilesTable.axisAutonomy]?.toDouble(),
-                    row[SeekerPersonalProfilesTable.axisPace]?.toDouble(),
-                ).all { it != null }
-            } == true
-
-        val personalityReady = status == PersonalityProfileStatus.READY && axesFromRow
-        val personalityAxes =
-            if (personalityReady && personalityRow != null) {
-                PersonalityAxesDto(
-                    axisDominance = personalityRow[SeekerPersonalProfilesTable.axisDominance]!!.toDouble(),
-                    axisInfluence = personalityRow[SeekerPersonalProfilesTable.axisInfluence]!!.toDouble(),
-                    axisStability = personalityRow[SeekerPersonalProfilesTable.axisStability]!!.toDouble(),
-                    axisIntegrity = personalityRow[SeekerPersonalProfilesTable.axisIntegrity]!!.toDouble(),
-                    axisAutonomy = personalityRow[SeekerPersonalProfilesTable.axisAutonomy]!!.toDouble(),
-                    axisPace = personalityRow[SeekerPersonalProfilesTable.axisPace]!!.toDouble(),
-                )
-            } else {
-                null
-            }
-
-        return SeekerMatchCandidate(
-            seekerId = seekerId,
-            firstName = this[SeekersTable.firstName],
-            lastName = this[SeekersTable.lastName],
-            occupationId = occupationId,
-            occupationName = occupationName,
-            skillIds = skillIds,
-            skillNames = skillNames,
-            personalityAxes = personalityAxes,
-            personalityReady = personalityReady,
         )
     }
 }

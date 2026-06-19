@@ -1,6 +1,7 @@
 package jobs.procrush.seeker.dto
 
 import jobs.procrush.matching.dto.JobRecommendationDto
+import jobs.procrush.matching.dto.SeekerInterestsResponseDto
 import jobs.procrush.shared.dto.OccupationDto
 import jobs.procrush.shared.dto.SkillDto
 import kotlinx.serialization.Serializable
@@ -107,4 +108,13 @@ data class SeekerDashboardDto(
     val desiredPositionsCount: Int,
     val experienceCount: Int,
     val recommendationsPreview: List<JobRecommendationDto>,
+)
+
+@Serializable
+data class SeekerPositionsOverviewDto(
+    val occupationIds: List<Long>,
+    val occupations: List<OccupationDto>,
+    val recommendations: List<JobRecommendationDto>,
+    val interests: SeekerInterestsResponseDto,
+    val testsComplete: Boolean,
 )

@@ -1,6 +1,6 @@
 import {Link, useParams} from 'react-router-dom'
 import {useEffect, useState} from 'react'
-import {fetchCandidates, fetchEmployerInterests, respondToCandidate,} from '../../api/employerApi'
+import {fetchCandidatesOverview, fetchEmployerInterests, respondToCandidate,} from '../../api/employerApi'
 import type {CandidateRecommendationDto, EmployerInterestsResponseDto} from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
@@ -8,6 +8,7 @@ import {FormSection} from '../../components/FormSection'
 import {InterestStatusBadge} from '../../components/InterestStatusBadge'
 import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 import {RespondButton} from '../../components/RespondButton'
+import {Spinner} from '../../components/Spinner'
 
 function CandidateRecommendationCard({
   candidate,
@@ -57,22 +58,23 @@ export function EmployerCandidatesPage() {
     respondedOutside: [],
     mutualOutside: [],
   })
+  const [loading, setLoading] = useState(true)
   const [respondingId, setRespondingId] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function loadData(jobProfileId: number) {
-    const [list, outside] = await Promise.all([
-      fetchCandidates(jobProfileId),
-      fetchEmployerInterests(jobProfileId),
-    ])
-    setCandidates(list)
-    setInterests(outside)
+    const overview = await fetchCandidatesOverview(jobProfileId)
+    setCandidates(overview.candidates)
+    setInterests(overview.interests)
   }
 
   useEffect(() => {
     if (Number.isNaN(profileId)) return
-    void loadData(profileId).catch((e: Error) => setError(e.message))
+    setLoading(true)
+    void loadData(profileId)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false))
   }, [profileId])
 
   async function handleRespond(seekerId: number) {
@@ -92,6 +94,14 @@ export function EmployerCandidatesPage() {
     } finally {
       setRespondingId(null)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    )
   }
 
   return (

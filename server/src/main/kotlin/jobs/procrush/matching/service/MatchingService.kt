@@ -24,7 +24,9 @@ class MatchingService(
         val occupationIds = seekerRepository.getDesiredOccupationIds(seeker.id)
         if (occupationIds.isEmpty()) return emptyList()
 
-        val seekerContext = matchingRepository.getSeekerMatchingContext(seeker.id) ?: return emptyList()
+        val seekerContext =
+            matchingRepository.getSeekerMatchingContext(seeker.id, testsAlreadyComplete = true)
+                ?: return emptyList()
 
         return matchingRepository
             .findMatchableJobProfiles(occupationIds)
@@ -89,6 +91,9 @@ class MatchingService(
 
     fun countMatchedCandidatesForOccupation(occupationId: Long): Int =
         matchingRepository.countMatchableSeekers(occupationId)
+
+    fun countMatchedCandidatesForOccupations(occupationIds: List<Long>): Map<Long, Int> =
+        matchingRepository.countMatchableSeekersByOccupations(occupationIds)
 
     private fun scoreJob(
         job: JobMatchCandidate,

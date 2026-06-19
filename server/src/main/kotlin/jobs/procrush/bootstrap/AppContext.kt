@@ -34,7 +34,7 @@ data class AppContext(
             val personality = PersonalityModule.create(config, auth, survey)
             survey.attachPersonalityCoordinator(personality.coordinator)
             val matching = MatchingModule.create(auth, survey)
-            val seeker = SeekerModule.create(auth, matching)
+            val seeker = SeekerModule.create(auth, matching, survey)
             val employer = EmployerModule.create(auth, matching)
 
             auth.sessionRepository.purgeExpired()

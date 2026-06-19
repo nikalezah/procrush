@@ -1,22 +1,23 @@
 import {apiFetch} from './client'
 import type {
-  CompleteSurveyResponseDto,
-  CreateSeekerEducationRequest,
-  CreateSeekerExperienceRequest,
-  JobRecommendationDto,
-  PersonalityPreviewDto,
-  PersonalityProfileStatus,
-  SeekerDashboardDto,
-  SeekerDesiredPositionsResponse,
-  SeekerEducationDto,
-  SeekerExperienceDto,
-  SeekerInterestsResponseDto,
-  SeekerProfileDto,
-  SeekerSkillsResponse,
-  SuperpowerAndTalentDto,
-  SurveyDetailDto,
-  SurveyGroupsResponseDto,
-  UpdateSeekerProfileRequest,
+    CompleteSurveyResponseDto,
+    CreateSeekerEducationRequest,
+    CreateSeekerExperienceRequest,
+    JobRecommendationDto,
+    PersonalityPreviewDto,
+    PersonalityProfileStatus,
+    SeekerDashboardDto,
+    SeekerDesiredPositionsResponse,
+    SeekerEducationDto,
+    SeekerExperienceDto,
+    SeekerInterestsResponseDto,
+    SeekerPositionsOverviewDto,
+    SeekerProfileDto,
+    SeekerSkillsResponse,
+    SuperpowerAndTalentDto,
+    SurveyDetailDto,
+    SurveyGroupsResponseDto,
+    UpdateSeekerProfileRequest,
 } from './types'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
@@ -126,6 +127,10 @@ export function updateSeekerSkills(skillIds: number[]): Promise<SeekerSkillsResp
 
 export function fetchDesiredPositions(): Promise<SeekerDesiredPositionsResponse> {
   return apiFetch('/api/seeker/desired-positions')
+}
+
+export function fetchPositionsOverview(): Promise<SeekerPositionsOverviewDto> {
+  return apiFetch('/api/seeker/positions-overview')
 }
 
 export function updateDesiredPositions(

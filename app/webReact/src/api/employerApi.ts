@@ -2,6 +2,7 @@ import {apiFetch} from './client'
 import type {
     CandidateRecommendationDto,
     CreateJobProfileRequest,
+    EmployerCandidatesOverviewDto,
     EmployerDashboardDto,
     EmployerInterestsResponseDto,
     EmployerProfileDto,
@@ -53,6 +54,10 @@ export function deleteJobProfile(id: number): Promise<void> {
 
 export function fetchCandidates(jobProfileId: number): Promise<CandidateRecommendationDto[]> {
   return apiFetch(`/api/employer/job-profiles/${jobProfileId}/candidates`)
+}
+
+export function fetchCandidatesOverview(jobProfileId: number): Promise<EmployerCandidatesOverviewDto> {
+  return apiFetch(`/api/employer/job-profiles/${jobProfileId}/candidates-overview`)
 }
 
 export function respondToCandidate(

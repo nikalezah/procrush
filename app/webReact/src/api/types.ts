@@ -290,6 +290,19 @@ export interface EmployerInterestsResponseDto {
   mutualOutside: CandidateRecommendationDto[]
 }
 
+export interface SeekerPositionsOverviewDto {
+  occupationIds: number[]
+  occupations: OccupationDto[]
+  recommendations: JobRecommendationDto[]
+  interests: SeekerInterestsResponseDto
+  testsComplete: boolean
+}
+
+export interface EmployerCandidatesOverviewDto {
+  candidates: CandidateRecommendationDto[]
+  interests: EmployerInterestsResponseDto
+}
+
 export interface SeekerDashboardDto {
   profileCompletionPercent: number
   desiredPositionsCount: number

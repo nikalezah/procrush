@@ -96,6 +96,10 @@ fun Route.seekerProfileRoutes(
             val user = roleGuard.requireRole(call, UserRole.SEEKER) ?: return@get
             call.respond(seekerProfileService.getDesiredPositions(user.id))
         }
+        get("/positions-overview") {
+            val user = roleGuard.requireRole(call, UserRole.SEEKER) ?: return@get
+            call.respond(seekerProfileService.positionsOverview(user.id))
+        }
         put("/desired-positions") {
             val user = roleGuard.requireRole(call, UserRole.SEEKER) ?: return@put
             val body = call.receive<UpdateSeekerDesiredPositionsRequest>()

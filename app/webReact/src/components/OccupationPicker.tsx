@@ -1,22 +1,35 @@
-import { useEffect, useState } from 'react'
-import { fetchOccupations } from '../api/referenceApi'
-import type { OccupationDto } from '../api/types'
+import {useEffect, useState} from 'react'
+import {fetchOccupations} from '../api/referenceApi'
+import type {OccupationDto} from '../api/types'
+import {Spinner} from './Spinner'
 
 interface OccupationPickerProps {
   selectedIds: number[]
   onChange: (ids: number[]) => void
   disabled?: boolean
+  occupations?: OccupationDto[]
 }
 
-export function OccupationPicker({ selectedIds, onChange, disabled }: OccupationPickerProps) {
-  const [occupations, setOccupations] = useState<OccupationDto[]>([])
-  const [loading, setLoading] = useState(true)
+export function OccupationPicker({
+  selectedIds,
+  onChange,
+  disabled,
+  occupations: occupationsProp,
+}: OccupationPickerProps) {
+  const [occupations, setOccupations] = useState<OccupationDto[]>(occupationsProp ?? [])
+  const [loading, setLoading] = useState(occupationsProp == null)
 
   useEffect(() => {
+    if (occupationsProp != null) {
+      setOccupations(occupationsProp)
+      setLoading(false)
+      return
+    }
+    setLoading(true)
     void fetchOccupations(true)
       .then(setOccupations)
       .finally(() => setLoading(false))
-  }, [])
+  }, [occupationsProp])
 
   function toggle(id: number) {
     if (disabled) return
@@ -27,7 +40,13 @@ export function OccupationPicker({ selectedIds, onChange, disabled }: Occupation
     }
   }
 
-  if (loading) return <p className="text-sm text-neutral-500">Загрузка должностей…</p>
+  if (loading) {
+    return (
+      <div className="flex justify-center py-4">
+        <Spinner size="sm" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-wrap gap-2">
