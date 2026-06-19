@@ -6,6 +6,7 @@ import jobs.procrush.auth.tables.UsersTable
 import jobs.procrush.employer.tables.EmployerJobProfilesTable
 import jobs.procrush.employer.tables.EmployersTable
 import jobs.procrush.employer.tables.JobProfileSkillsTable
+import jobs.procrush.matching.tables.JobMatchInterestsTable
 import jobs.procrush.seeker.tables.SeekerDesiredPositionsTable
 import jobs.procrush.seeker.tables.SeekerEducationTable
 import jobs.procrush.seeker.tables.SeekerExperienceTable
@@ -46,6 +47,7 @@ class V1__Initial_schema : ExposedMigration() {
                 SurveyResultsTable,
                 SurveyKeysTable,
                 GlossaryTermsTable,
+                JobMatchInterestsTable,
             )
             val roles = UserRole.entries.joinToString(", ") { "'${it.name}'" }
             exec(
@@ -60,6 +62,18 @@ class V1__Initial_schema : ExposedMigration() {
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_survey_results_seeker_survey_completed
                 ON survey_results (seeker_id, survey_id)
                 WHERE completed_at IS NOT NULL;
+                """.trimIndent(),
+            )
+            exec(
+                """
+                CREATE INDEX IF NOT EXISTS idx_job_match_interests_seeker
+                ON job_match_interests (seeker_id);
+                """.trimIndent(),
+            )
+            exec(
+                """
+                CREATE INDEX IF NOT EXISTS idx_job_match_interests_job_profile
+                ON job_match_interests (job_profile_id);
                 """.trimIndent(),
             )
             execSqlResource("db/seed/init_inserts.sql")
