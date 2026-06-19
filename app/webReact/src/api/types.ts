@@ -320,6 +320,7 @@ export interface SeekerDashboardDto {
   desiredPositionsCount: number
   experienceCount: number
   recommendationsPreview: JobRecommendationDto[]
+  testsComplete: boolean
 }
 
 export interface EmployerDashboardDto {

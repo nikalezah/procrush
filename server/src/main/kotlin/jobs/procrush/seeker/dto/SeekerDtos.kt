@@ -108,6 +108,7 @@ data class SeekerDashboardDto(
     val desiredPositionsCount: Int,
     val experienceCount: Int,
     val recommendationsPreview: List<JobRecommendationDto>,
+    val testsComplete: Boolean,
 )
 
 @Serializable

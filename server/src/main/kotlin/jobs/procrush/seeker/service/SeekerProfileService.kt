@@ -117,12 +117,15 @@ class SeekerProfileService(
         if (desired.isNotEmpty()) filled++
 
         val recommendations = matchingService.jobRecommendationsForSeeker(userId)
+        val surveyGroups = surveyService.listGroups(userId)
+        val testsComplete = surveyGroups.testsCompleted >= surveyGroups.testsTotal
 
         return SeekerDashboardDto(
             profileCompletionPercent = (filled * 100) / total,
             desiredPositionsCount = desired.size,
             experienceCount = experience.size,
             recommendationsPreview = recommendations.take(2),
+            testsComplete = testsComplete,
         )
     }
 

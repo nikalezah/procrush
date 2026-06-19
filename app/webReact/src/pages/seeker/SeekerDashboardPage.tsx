@@ -40,22 +40,24 @@ export function SeekerDashboardPage() {
           <p className="mt-1 text-2xl font-semibold">{data.desiredPositionsCount}</p>
         </div>
       </div>
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-medium text-amber-900">Личностное тестирование</p>
-            <p className="mt-1 text-sm text-amber-800">
-              Пройдите оба теста для участия в подборе вакансий
-            </p>
+      {!data.testsComplete && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-medium text-amber-900">Личностное тестирование</p>
+              <p className="mt-1 text-sm text-amber-800">
+                Пройдите оба теста для участия в подборе вакансий
+              </p>
+            </div>
+            <Link
+              to="/seeker/personality/tests"
+              className="rounded-lg bg-amber-900 px-4 py-2 text-sm font-medium text-white"
+            >
+              Пройти тесты
+            </Link>
           </div>
-          <Link
-            to="/seeker/personality/tests"
-            className="rounded-lg bg-amber-900 px-4 py-2 text-sm font-medium text-white"
-          >
-            Пройти тесты
-          </Link>
         </div>
-      </div>
+      )}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Рекомендации</h2>
