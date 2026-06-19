@@ -28,6 +28,7 @@ class PersonalityProfileGenerator(
     private val llmClient: LlmClient,
     private val promptBuilder: PersonalityPromptBuilder,
     private val validator: PersonalityProfileValidator,
+    private val notifier: PersonalityGenerationNotifier,
     private val scope: CoroutineScope,
 ) {
     private val logger = LoggerFactory.getLogger(PersonalityProfileGenerator::class.java)
@@ -62,6 +63,7 @@ class PersonalityProfileGenerator(
                                 else -> e.message ?: "Неизвестная ошибка"
                             }
                         profileRepository.markFailed(seekerId, message)
+                        notifier.notify(userId, PersonalityProfileStatus.FAILED)
                     } finally {
                         activeJobs.remove(seekerId, job)
                     }
@@ -86,5 +88,6 @@ class PersonalityProfileGenerator(
                 nameToId.getValue(item.name) to item.isPronounced
             }
         profileRepository.upsertProfileWithSuperpowers(seekerId, record, superpowerRows)
+        notifier.notify(userId, PersonalityProfileStatus.READY)
     }
 }

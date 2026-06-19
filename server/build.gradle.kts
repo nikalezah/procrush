@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.ktor.serverCors)
     implementation(libs.ktor.serverCallLogging)
     implementation(libs.ktor.serverStatusPages)
+    implementation(libs.ktor.serverSse)
     implementation(libs.ktor.serialization.kotlinxJson)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)

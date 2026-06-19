@@ -5,6 +5,7 @@ import type {
     CreateSeekerExperienceRequest,
     JobRecommendationDto,
     PersonalityPreviewDto,
+    PersonalityProfileStatus,
     SeekerDashboardDto,
     SeekerDesiredPositionsResponse,
     SeekerEducationDto,
@@ -142,6 +143,26 @@ export function fetchPersonalityPreview(): Promise<PersonalityPreviewDto> {
 
 export function triggerPersonalityGeneration(): Promise<{ status: string }> {
   return apiFetch('/api/seeker/personality/generate', { method: 'POST' })
+}
+
+export function subscribePersonalityStatusEvents(
+  onStatus: (status: PersonalityProfileStatus) => void,
+  onError?: () => void,
+): () => void {
+  const eventSource = new EventSource('/api/seeker/personality-preview/events')
+  eventSource.addEventListener('personality-status', (event) => {
+    try {
+      const payload = JSON.parse(event.data) as { status: PersonalityProfileStatus }
+      onStatus(payload.status)
+    } catch {
+      // ignore malformed payloads
+    }
+  })
+  eventSource.onerror = () => {
+    eventSource.close()
+    onError?.()
+  }
+  return () => eventSource.close()
 }
 
 export function fetchRecommendations(): Promise<JobRecommendationDto[]> {

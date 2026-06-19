@@ -5,6 +5,7 @@ import jobs.procrush.llm.LlmFactory
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
 import jobs.procrush.personality.service.PersonalityGenerationCoordinator
+import jobs.procrush.personality.service.PersonalityGenerationNotifier
 import jobs.procrush.personality.service.PersonalityProfileGenerator
 import jobs.procrush.personality.service.PersonalityProfileReader
 import jobs.procrush.personality.service.PersonalityProfileService
@@ -45,6 +46,7 @@ data class PersonalityModule(
             val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
             val llmClient = LlmFactory.createClient(config.llm)
             val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val generationNotifier = PersonalityGenerationNotifier()
             val generator =
                 PersonalityProfileGenerator(
                     seekerRepository = auth.seekerRepository,
@@ -55,6 +57,7 @@ data class PersonalityModule(
                     llmClient = llmClient,
                     promptBuilder = PersonalityPromptBuilder(),
                     validator = PersonalityProfileValidator(),
+                    notifier = generationNotifier,
                     scope = coroutineScope,
                 )
             val coordinator =
@@ -77,6 +80,7 @@ data class PersonalityModule(
                     reader = reader,
                     coordinator = coordinator,
                     surveyService = survey.surveyService,
+                    notifier = generationNotifier,
                 )
             return PersonalityModule(
                 coordinator = coordinator,

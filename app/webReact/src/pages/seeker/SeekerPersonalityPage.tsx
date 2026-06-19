@@ -1,11 +1,15 @@
-import { Link } from 'react-router-dom'
-import { useCallback, useEffect, useState } from 'react'
-import { fetchPersonalityPreview, triggerPersonalityGeneration } from '../../api/seekerApi'
-import type { PersonalityPreviewDto } from '../../api/types'
-import { FormSection } from '../../components/FormSection'
-import { DiscHexagonChart } from '../../components/personality/DiscHexagonChart'
-import { PersonalityCategoryTabs } from '../../components/personality/PersonalityCategoryTabs'
-import { SuperpowersAndTalentsSection } from '../../components/personality/SuperpowersAndTalentsSection'
+import {Link} from 'react-router-dom'
+import {useCallback, useEffect, useState} from 'react'
+import {
+    fetchPersonalityPreview,
+    subscribePersonalityStatusEvents,
+    triggerPersonalityGeneration
+} from '../../api/seekerApi'
+import type {PersonalityPreviewDto} from '../../api/types'
+import {FormSection} from '../../components/FormSection'
+import {DiscHexagonChart} from '../../components/personality/DiscHexagonChart'
+import {PersonalityCategoryTabs} from '../../components/personality/PersonalityCategoryTabs'
+import {SuperpowersAndTalentsSection} from '../../components/personality/SuperpowersAndTalentsSection'
 
 const AXIS_LABELS: Record<string, string> = {
   axisDominance: 'Доминантность',
@@ -15,8 +19,6 @@ const AXIS_LABELS: Record<string, string> = {
   axisAutonomy: 'Автономность',
   axisPace: 'Темп',
 }
-
-const POLL_INTERVAL_MS = 4000
 
 export function SeekerPersonalityPage() {
   const [data, setData] = useState<PersonalityPreviewDto | null>(null)
@@ -36,12 +38,14 @@ export function SeekerPersonalityPage() {
   useEffect(() => {
     if (data == null) return
     if (data.testsCompleted < data.testsTotal) return
-    if (data.status === 'READY' || data.status === 'NOT_READY' || data.status === 'FAILED') return
+    if (data.status !== 'PROCESSING') return
 
-    const interval = window.setInterval(() => {
+    const refresh = () => {
       void load().catch((e: Error) => setError(e.message))
-    }, POLL_INTERVAL_MS)
-    return () => window.clearInterval(interval)
+    }
+
+    const unsubscribe = subscribePersonalityStatusEvents(refresh, refresh)
+    return unsubscribe
   }, [data?.status, data?.testsCompleted, data?.testsTotal, load])
 
   async function handleRetry() {

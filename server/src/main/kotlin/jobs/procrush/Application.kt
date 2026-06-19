@@ -1,12 +1,14 @@
 package jobs.procrush
 
 import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import io.ktor.server.sse.SSE
 import jobs.procrush.auth.route.authRoutes
 import jobs.procrush.bootstrap.AppContext
 import jobs.procrush.bootstrap.DatabaseFactory
@@ -36,6 +38,7 @@ fun Application.module() {
     configureStatusPages()
     configureCallLogging()
     configureCors(config)
+    install(SSE)
 
     routing {
         get("/") {
