@@ -21,6 +21,7 @@ import {
   SeekerMatchInterestEventsProvider,
   useMatchInterestEvents,
 } from './hooks/useMatchInterestEvents'
+import {PersonalityReadyEventsProvider, usePersonalityReadyEvents,} from './hooks/usePersonalityReadyEvents'
 import type {AuthUserDto} from './api/types'
 
 const SEEKER_NAV = [
@@ -100,10 +101,13 @@ function SeekerAppContent({
   user: AuthUserDto
   onLogout: () => void
 }) {
-  const { badgeCount } = useMatchInterestEvents()
-  const navItems: NavItem[] = SEEKER_NAV.map((item) =>
-    item.to === '/seeker/positions' ? { ...item, badge: badgeCount } : item,
-  )
+  const { badgeCount: matchBadgeCount } = useMatchInterestEvents()
+  const { badgeCount: personalityBadgeCount } = usePersonalityReadyEvents()
+  const navItems: NavItem[] = SEEKER_NAV.map((item) => {
+    if (item.to === '/seeker/positions') return { ...item, badge: matchBadgeCount }
+    if (item.to === '/seeker/personality') return { ...item, badge: personalityBadgeCount }
+    return item
+  })
   return <AppShell user={user} role="SEEKER" navItems={navItems} onLogout={onLogout} />
 }
 
@@ -128,7 +132,9 @@ function SeekerLayout() {
     <ProtectedRoute state={state} requiredRole="SEEKER">
       {state.kind === 'authenticated' ? (
         <SeekerMatchInterestEventsProvider>
-          <SeekerAppContent user={state.user} onLogout={() => void signOut()} />
+          <PersonalityReadyEventsProvider>
+            <SeekerAppContent user={state.user} onLogout={() => void signOut()} />
+          </PersonalityReadyEventsProvider>
         </SeekerMatchInterestEventsProvider>
       ) : null}
     </ProtectedRoute>
