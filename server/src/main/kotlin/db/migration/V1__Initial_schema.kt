@@ -77,6 +77,7 @@ class V1__Initial_schema : ExposedMigration() {
                 """.trimIndent(),
             )
             execSqlResource("db/seed/init_inserts.sql")
+            execSqlResource("db/seed/test_users.sql")
         }
     }
 }
