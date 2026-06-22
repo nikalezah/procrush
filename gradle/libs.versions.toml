@@ -11,6 +11,7 @@ androidx-lifecycle = "2.11.0-beta01"
 androidx-testExt = "1.3.0"
 composeMultiplatform = "1.11.1"
 junit = "4.13.2"
+junit-jupiter = "5.12.2"
 kotlin = "2.4.0"
 kotlin-wrappers = "2026.6.4"
 kotlinx-coroutines = "1.11.0"
@@ -24,11 +25,14 @@ java-jwt = "4.5.2"
 jwks-rsa = "0.24.1"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.8.0"
+lettuce = "6.7.1.RELEASE"
+testcontainers = "1.21.3"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-testExt-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-testExt" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso" }
@@ -73,6 +77,9 @@ ktor-serverStatusPages = { module = "io.ktor:ktor-server-status-pages-jvm", vers
 ktor-serverCallLogging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
 ktor-serverSse = { module = "io.ktor:ktor-server-sse-jvm", version.ref = "ktor" }
 ktor-clientLogging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+lettuce-core = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-redis = { module = "com.redis:testcontainers-redis", version = "2.2.4" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

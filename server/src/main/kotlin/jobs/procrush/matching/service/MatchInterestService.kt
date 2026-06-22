@@ -1,6 +1,7 @@
 package jobs.procrush.matching.service
 
 import jobs.procrush.employer.repository.EmployerRepository
+import jobs.procrush.matching.cache.CachedMatchingService
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.EmployerContactDto
 import jobs.procrush.matching.dto.EmployerInterestsResponseDto
@@ -21,11 +22,11 @@ import java.util.UUID
 class MatchInterestService(
     private val seekerRepository: SeekerRepository,
     private val employerRepository: EmployerRepository,
-    private val matchingService: MatchingService,
+    private val matchingService: CachedMatchingService,
     private val matchingRepository: MatchingRepository,
     private val matchInterestRepository: MatchInterestRepository,
     private val surveyService: SurveyService,
-    private val notifier: MatchInterestNotifier,
+    private val notifier: RedisMatchInterestNotifier,
 ) {
     fun seekerRespond(userId: UUID, jobProfileId: Long): JobRecommendationDto {
         val seekerId = requireSeekerEligibleForJob(userId, jobProfileId)

@@ -1,18 +1,26 @@
 package jobs.procrush.matching.service
 
+import jobs.procrush.bootstrap.redis.RedisTestSupport
 import jobs.procrush.matching.dto.InterestStatus
 import jobs.procrush.matching.dto.MatchInterestEventDto
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.UUID
-import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class MatchInterestNotifierTest {
-    private val notifier = MatchInterestNotifier()
+@Testcontainers
+class RedisMatchInterestNotifierTest : RedisTestSupport() {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private lateinit var notifier: RedisMatchInterestNotifier
     private val userId = UUID.randomUUID()
 
     private val sampleEvent =
@@ -21,6 +29,17 @@ class MatchInterestNotifierTest {
             seekerId = 2L,
             interestStatus = InterestStatus.INCOMING,
         )
+
+    @BeforeEach
+    fun setUp() {
+        notifier =
+            RedisMatchInterestNotifier(
+                redis = redisClient(),
+                config = redisConfig(),
+                scope = scope,
+            )
+        notifier.start()
+    }
 
     @Test
     fun notifyDeliversEventToSubscriber() =

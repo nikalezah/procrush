@@ -15,8 +15,8 @@ class MatchingService(
     private val seekerRepository: SeekerRepository,
     private val matchingRepository: MatchingRepository,
     private val surveyService: SurveyService,
-) {
-    fun jobRecommendationsForSeeker(userId: UUID): List<JobRecommendationDto> {
+) : MatchingQueries {
+    override fun jobRecommendationsForSeeker(userId: UUID): List<JobRecommendationDto> {
         val seeker = seekerRepository.findByUserId(userId) ?: return emptyList()
         val surveyGroups = surveyService.listGroups(userId)
         if (surveyGroups.testsCompleted < surveyGroups.testsTotal) return emptyList()
@@ -34,7 +34,7 @@ class MatchingService(
             .sortedByDescending { it.matchScore }
     }
 
-    fun candidateRecommendationsForJob(
+    override fun candidateRecommendationsForJob(
         occupationId: Long,
         jobProfileId: Long,
     ): List<CandidateRecommendationDto> {
@@ -49,20 +49,20 @@ class MatchingService(
             .sortedByDescending { it.matchScore }
     }
 
-    fun jobRecommendationForSeeker(seekerId: Long, jobProfileId: Long): JobRecommendationDto? {
+    override fun jobRecommendationForSeeker(seekerId: Long, jobProfileId: Long): JobRecommendationDto? {
         val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
         val seekerContext = matchingRepository.getSeekerMatchingContext(seekerId) ?: return null
         return scoreJob(job, seekerContext)
     }
 
-    fun candidateRecommendationForJob(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
+    override fun candidateRecommendationForJob(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
         val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
         val seeker =
             matchingRepository.findSeekerMatchCandidate(seekerId, job.occupationId) ?: return null
         return scoreCandidate(seeker, job)
     }
 
-    fun jobRecommendationFallback(jobProfileId: Long): JobRecommendationDto? {
+    override fun jobRecommendationFallback(jobProfileId: Long): JobRecommendationDto? {
         val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
         return JobRecommendationDto(
             id = job.jobProfileId,
@@ -74,7 +74,7 @@ class MatchingService(
         )
     }
 
-    fun candidateRecommendationFallback(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
+    override fun candidateRecommendationFallback(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
         val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
         val seeker =
             matchingRepository.findSeekerMatchCandidate(seekerId, job.occupationId) ?: return null
@@ -89,10 +89,10 @@ class MatchingService(
         )
     }
 
-    fun countMatchedCandidatesForOccupation(occupationId: Long): Int =
+    override fun countMatchedCandidatesForOccupation(occupationId: Long): Int =
         matchingRepository.countMatchableSeekers(occupationId)
 
-    fun countMatchedCandidatesForOccupations(occupationIds: List<Long>): Map<Long, Int> =
+    override fun countMatchedCandidatesForOccupations(occupationIds: List<Long>): Map<Long, Int> =
         matchingRepository.countMatchableSeekersByOccupations(occupationIds)
 
     private fun scoreJob(

@@ -10,6 +10,7 @@ import jobs.procrush.bootstrap.modules.MatchingModule
 import jobs.procrush.bootstrap.modules.PersonalityModule
 import jobs.procrush.bootstrap.modules.SeekerModule
 import jobs.procrush.bootstrap.modules.SurveyModule
+import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.service.EmployerProfileService
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.personality.service.PersonalityProfileService
@@ -19,6 +20,7 @@ import jobs.procrush.survey.service.SurveyService
 
 data class AppContext(
     val config: AppConfig,
+    val redisModule: RedisModule,
     val userAuthService: UserAuthService,
     val sessionService: SessionService,
     val roleGuard: RoleGuard,
@@ -29,13 +31,26 @@ data class AppContext(
     val matchInterestService: MatchInterestService,
     val referenceRepository: ReferenceRepository,
 ) {
+    fun close() {
+        redisModule.close()
+    }
+
     companion object {
         fun create(config: AppConfig): AppContext {
-            val auth = AuthModule.create(config)
+            val redis = RedisModule.create(config)
+            val auth = AuthModule.create(config, redis)
             val survey = SurveyModule.create(auth)
-            val personality = PersonalityModule.create(config, auth, survey)
+            val matching = MatchingModule.create(auth, survey, redis, config)
+            redis.attachMatchInterestNotifier(matching.matchInterestNotifier)
+            val personality =
+                PersonalityModule.create(
+                    config = config,
+                    auth = auth,
+                    survey = survey,
+                    redis = redis,
+                    matchingCacheInvalidator = matching.cacheInvalidator,
+                )
             survey.attachPersonalityCoordinator(personality.coordinator)
-            val matching = MatchingModule.create(auth, survey)
             val seeker = SeekerModule.create(auth, matching, survey)
             val employer = EmployerModule.create(auth, matching)
 
@@ -43,6 +58,7 @@ data class AppContext(
 
             return AppContext(
                 config = config,
+                redisModule = redis,
                 userAuthService = auth.userAuthService,
                 sessionService = auth.sessionService,
                 roleGuard = auth.roleGuard,

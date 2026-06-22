@@ -3,6 +3,7 @@ package jobs.procrush.bootstrap.config
 data class AppConfig(
     val port: Int,
     val database: DatabaseConfig,
+    val redis: RedisConfig,
     val webOrigins: List<String>,
     val sessionCookieName: String,
     val sessionDays: Long,
@@ -28,6 +29,7 @@ data class AppConfig(
             return AppConfig(
                 port = Env.env("PORT", "8080", dotEnv).toIntOrNull() ?: 8080,
                 database = database,
+                redis = RedisConfig.fromEnvironment(dotEnv),
                 webOrigins = webOrigins,
                 sessionCookieName = Env.env("SESSION_COOKIE_NAME", "procrush_session", dotEnv),
                 sessionDays = Env.env("SESSION_DAYS", "30", dotEnv).toLong(),

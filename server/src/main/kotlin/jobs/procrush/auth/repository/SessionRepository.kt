@@ -13,8 +13,8 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class SessionRepository {
-    fun create(userId: UUID, rawToken: String, expiresAt: OffsetDateTime) {
+class SessionRepository : SessionStore {
+    override fun create(userId: UUID, rawToken: String, expiresAt: OffsetDateTime) {
         transaction {
             SessionsTable.insert {
                 it[SessionsTable.userId] = userId
@@ -25,7 +25,7 @@ class SessionRepository {
         }
     }
 
-    fun findUserIdByToken(rawToken: String): UUID? =
+    override fun findUserIdByToken(rawToken: String): UUID? =
         transaction {
             val now = OffsetDateTime.now()
             SessionsTable
@@ -39,7 +39,20 @@ class SessionRepository {
                 ?.value
         }
 
-    fun deleteByToken(rawToken: String) {
+    fun findExpiresAtByTokenHash(tokenHash: String): OffsetDateTime? =
+        transaction {
+            val now = OffsetDateTime.now()
+            SessionsTable
+                .selectAll()
+                .where {
+                    (SessionsTable.tokenHash eq tokenHash) and
+                        (SessionsTable.expiresAt greaterEq now)
+                }
+                .firstOrNull()
+                ?.get(SessionsTable.expiresAt)
+        }
+
+    override fun deleteByToken(rawToken: String) {
         transaction {
             SessionsTable.deleteWhere {
                 SessionsTable.tokenHash eq SessionTokenHasher.hash(rawToken)
@@ -47,7 +60,7 @@ class SessionRepository {
         }
     }
 
-    fun purgeExpired() {
+    override fun purgeExpired() {
         transaction {
             SessionsTable.deleteWhere {
                 SessionsTable.expiresAt less OffsetDateTime.now()

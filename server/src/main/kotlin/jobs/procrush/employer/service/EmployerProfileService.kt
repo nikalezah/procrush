@@ -6,10 +6,11 @@ import jobs.procrush.employer.dto.JobProfileDto
 import jobs.procrush.employer.dto.UpdateEmployerProfileRequest
 import jobs.procrush.employer.dto.UpdateJobProfileRequest
 import jobs.procrush.employer.repository.EmployerRepository
+import jobs.procrush.matching.cache.CachedMatchingService
+import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.dto.EmployerCandidatesOverviewDto
 import jobs.procrush.matching.dto.EmployerInterestsResponseDto
 import jobs.procrush.matching.service.MatchInterestService
-import jobs.procrush.matching.service.MatchingService
 import jobs.procrush.shared.ResourceNotFoundException
 import jobs.procrush.shared.repository.ReferenceRepository
 import java.util.UUID
@@ -17,8 +18,9 @@ import java.util.UUID
 class EmployerProfileService(
     private val employerRepository: EmployerRepository,
     private val referenceRepository: ReferenceRepository,
-    private val matchingService: MatchingService,
+    private val matchingService: CachedMatchingService,
     private val matchInterestService: MatchInterestService,
+    private val matchingCacheInvalidator: MatchingCacheInvalidator,
 ) {
     fun getOrCreateEmployer(userId: UUID) =
         employerRepository.findByUserId(userId) ?: employerRepository.createForUser(userId)
@@ -37,7 +39,9 @@ class EmployerProfileService(
     fun createJobProfile(userId: UUID, request: CreateJobProfileRequest): JobProfileDto {
         referenceRepository.findOccupationById(request.occupationId)
             ?: throw IllegalArgumentException("Должность не найдена")
-        return employerRepository.createJobProfile(getOrCreateEmployer(userId).id, request)
+        val created = employerRepository.createJobProfile(getOrCreateEmployer(userId).id, request)
+        matchingCacheInvalidator.invalidateJobCandidates(created.id)
+        return created
     }
 
     fun updateJobProfile(userId: UUID, jobProfileId: Long, request: UpdateJobProfileRequest) {
@@ -45,12 +49,14 @@ class EmployerProfileService(
             ?: throw IllegalArgumentException("Должность не найдена")
         employerRepository.updateJobProfile(getOrCreateEmployer(userId).id, jobProfileId, request)
             ?: throw ResourceNotFoundException("Профиль не найден")
+        matchingCacheInvalidator.invalidateJobCandidates(jobProfileId)
     }
 
     fun deleteJobProfile(userId: UUID, jobProfileId: Long) {
         if (!employerRepository.deleteJobProfile(getOrCreateEmployer(userId).id, jobProfileId)) {
             throw ResourceNotFoundException("Профиль не найден")
         }
+        matchingCacheInvalidator.invalidateJobCandidates(jobProfileId)
     }
 
     fun findJobProfile(userId: UUID, jobProfileId: Long) =

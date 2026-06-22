@@ -12,6 +12,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
 
+  redis:
+    container_name: procrush-redis
+    image: redis:8-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
     name: procrush-postgres-data
+  redis_data:
+    name: procrush-redis-data

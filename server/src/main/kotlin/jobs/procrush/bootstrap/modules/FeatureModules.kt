@@ -1,7 +1,9 @@
 package jobs.procrush.bootstrap.modules
 
 import jobs.procrush.bootstrap.config.AppConfig
+import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.llm.LlmFactory
+import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
 import jobs.procrush.personality.service.PersonalityGenerationCoordinator
@@ -41,6 +43,8 @@ data class PersonalityModule(
             config: AppConfig,
             auth: AuthModule,
             survey: SurveyModule,
+            redis: RedisModule,
+            matchingCacheInvalidator: MatchingCacheInvalidator,
         ): PersonalityModule {
             val profileRepository = SeekerPersonalProfileRepository()
             val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
@@ -58,6 +62,9 @@ data class PersonalityModule(
                     promptBuilder = PersonalityPromptBuilder(),
                     validator = PersonalityProfileValidator(),
                     notifier = generationNotifier,
+                    distributedLock = redis.distributedLock,
+                    redisConfig = config.redis,
+                    matchingCacheInvalidator = matchingCacheInvalidator,
                     scope = coroutineScope,
                 )
             val coordinator =
@@ -66,6 +73,7 @@ data class PersonalityModule(
                     profileRepository = profileRepository,
                     surveyService = survey.surveyService,
                     generator = generator,
+                    matchingCacheInvalidator = matchingCacheInvalidator,
                 )
             val reader =
                 PersonalityProfileReader(
@@ -91,21 +99,42 @@ data class PersonalityModule(
 }
 
 data class MatchingModule(
-    val matchingService: jobs.procrush.matching.service.MatchingService,
+    val matchingService: jobs.procrush.matching.cache.CachedMatchingService,
     val matchInterestService: jobs.procrush.matching.service.MatchInterestService,
-    val matchInterestNotifier: jobs.procrush.matching.service.MatchInterestNotifier,
+    val matchInterestNotifier: jobs.procrush.matching.service.RedisMatchInterestNotifier,
+    val cacheInvalidator: MatchingCacheInvalidator,
 ) {
     companion object {
-        fun create(auth: AuthModule, survey: SurveyModule): MatchingModule {
+        fun create(
+            auth: AuthModule,
+            survey: SurveyModule,
+            redis: RedisModule,
+            config: AppConfig,
+        ): MatchingModule {
             val matchingRepository =
                 jobs.procrush.matching.repository.MatchingRepository(auth.referenceRepository)
             val matchInterestRepository = jobs.procrush.matching.repository.MatchInterestRepository()
-            val matchInterestNotifier = jobs.procrush.matching.service.MatchInterestNotifier()
-            val matchingService =
+            val cacheInvalidator =
+                MatchingCacheInvalidator(redis.client, config.redis)
+            val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val matchInterestNotifier =
+                jobs.procrush.matching.service.RedisMatchInterestNotifier(
+                    redis = redis.client,
+                    config = config.redis,
+                    scope = coroutineScope,
+                )
+            val coreMatchingService =
                 jobs.procrush.matching.service.MatchingService(
                     seekerRepository = auth.seekerRepository,
                     matchingRepository = matchingRepository,
                     surveyService = survey.surveyService,
+                )
+            val matchingService =
+                jobs.procrush.matching.cache.CachedMatchingService(
+                    delegate = coreMatchingService,
+                    resolveSeekerId = { userId -> auth.seekerRepository.findByUserId(userId)?.id },
+                    redis = redis.client,
+                    config = config.redis,
                 )
             val matchInterestService =
                 jobs.procrush.matching.service.MatchInterestService(
@@ -117,10 +146,12 @@ data class MatchingModule(
                     surveyService = survey.surveyService,
                     notifier = matchInterestNotifier,
                 )
+            matchInterestNotifier.start()
             return MatchingModule(
                 matchingService = matchingService,
                 matchInterestService = matchInterestService,
                 matchInterestNotifier = matchInterestNotifier,
+                cacheInvalidator = cacheInvalidator,
             )
         }
     }
@@ -130,7 +161,11 @@ data class SeekerModule(
     val seekerProfileService: jobs.procrush.seeker.service.SeekerProfileService,
 ) {
     companion object {
-        fun create(auth: AuthModule, matching: MatchingModule, survey: SurveyModule): SeekerModule {
+        fun create(
+            auth: AuthModule,
+            matching: MatchingModule,
+            survey: SurveyModule,
+        ): SeekerModule {
             val seekerProfileService =
                 jobs.procrush.seeker.service.SeekerProfileService(
                     auth.seekerRepository,
@@ -138,6 +173,7 @@ data class SeekerModule(
                     matching.matchingService,
                     matching.matchInterestService,
                     survey.surveyService,
+                    matching.cacheInvalidator,
                 )
             return SeekerModule(seekerProfileService = seekerProfileService)
         }
@@ -155,6 +191,7 @@ data class EmployerModule(
                     auth.referenceRepository,
                     matching.matchingService,
                     matching.matchInterestService,
+                    matching.cacheInvalidator,
                 )
             return EmployerModule(employerProfileService = employerProfileService)
         }

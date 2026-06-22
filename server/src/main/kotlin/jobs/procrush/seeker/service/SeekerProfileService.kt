@@ -1,8 +1,9 @@
 package jobs.procrush.seeker.service
 
+import jobs.procrush.matching.cache.CachedMatchingService
+import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
 import jobs.procrush.matching.service.MatchInterestService
-import jobs.procrush.matching.service.MatchingService
 import jobs.procrush.seeker.dto.CreateSeekerEducationRequest
 import jobs.procrush.seeker.dto.CreateSeekerExperienceRequest
 import jobs.procrush.seeker.dto.SeekerDashboardDto
@@ -21,9 +22,10 @@ import java.util.UUID
 class SeekerProfileService(
     private val seekerRepository: SeekerRepository,
     private val referenceRepository: ReferenceRepository,
-    private val matchingService: MatchingService,
+    private val matchingService: CachedMatchingService,
     private val matchInterestService: MatchInterestService,
     private val surveyService: SurveyService,
+    private val matchingCacheInvalidator: MatchingCacheInvalidator,
 ) {
     fun getOrCreateSeeker(userId: UUID) =
         seekerRepository.findByUserId(userId) ?: seekerRepository.createForUser(userId)
@@ -80,6 +82,7 @@ class SeekerProfileService(
     fun setSkills(userId: UUID, skillIds: List<Long>): SeekerSkillsResponse {
         val seeker = getOrCreateSeeker(userId)
         seekerRepository.setSkillIds(seeker.id, skillIds)
+        matchingCacheInvalidator.invalidateSeekerJobs(seeker.id)
         return getSkills(userId)
     }
 
@@ -97,6 +100,7 @@ class SeekerProfileService(
                 ?: throw IllegalArgumentException("Должность не найдена: $id")
         }
         seekerRepository.setDesiredOccupationIds(seeker.id, occupationIds)
+        matchingCacheInvalidator.invalidateSeekerJobs(seeker.id)
         return getDesiredPositions(userId)
     }
 

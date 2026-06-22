@@ -1,7 +1,7 @@
 package jobs.procrush.auth.service
 
 import jobs.procrush.auth.AuthUserDto
-import jobs.procrush.auth.repository.SessionRepository
+import jobs.procrush.auth.repository.SessionStore
 import jobs.procrush.auth.repository.UserRepository
 import jobs.procrush.bootstrap.config.AppConfig
 import java.security.SecureRandom
@@ -11,7 +11,7 @@ import java.util.UUID
 
 class SessionService(
     private val config: AppConfig,
-    private val sessionRepository: SessionRepository,
+    private val sessionRepository: SessionStore,
     private val userRepository: UserRepository,
     private val enrichUser: (AuthUserDto) -> AuthUserDto = { it },
 ) {

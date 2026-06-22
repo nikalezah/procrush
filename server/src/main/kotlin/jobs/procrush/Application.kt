@@ -1,5 +1,6 @@
 package jobs.procrush
 
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
@@ -33,6 +34,9 @@ fun Application.module() {
     val config = AppConfig.fromEnvironment()
     DatabaseFactory.init(config)
     val app = AppContext.create(config)
+    monitor.subscribe(io.ktor.server.application.ApplicationStopped) {
+        app.close()
+    }
 
     configureSerialization()
     configureStatusPages()
@@ -45,7 +49,15 @@ fun Application.module() {
             call.respondText("ProCrush API")
         }
         get("/health") {
-            call.respond(mapOf("status" to "ok"))
+            val redisStatus =
+                runCatching { app.redisModule.client.ping() }
+                    .map { if (it.equals("PONG", ignoreCase = true)) "ok" else "down" }
+                    .getOrElse { "down" }
+            if (redisStatus == "ok") {
+                call.respond(mapOf("status" to "ok", "redis" to "ok"))
+            } else {
+                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("status" to "degraded", "redis" to "down"))
+            }
         }
         authRoutes(app.config, app.userAuthService, app.sessionService, app.roleGuard)
         referenceRoutes(app.roleGuard, app.referenceRepository)

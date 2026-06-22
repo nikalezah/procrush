@@ -2,7 +2,10 @@ package jobs.procrush.personality.service
 
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import jobs.procrush.bootstrap.config.LlmConfig
+import jobs.procrush.bootstrap.config.RedisConfig
+import jobs.procrush.bootstrap.redis.RedisDistributedLock
 import jobs.procrush.llm.LlmClient
+import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.dto.SeekerPersonalProfileRecord
 import jobs.procrush.personality.llm.PersonalityProfileMapper
@@ -13,11 +16,9 @@ import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.shared.repository.ReferenceRepository
 import jobs.procrush.survey.service.SurveyService
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
 class PersonalityProfileGenerator(
     private val seekerRepository: SeekerRepository,
@@ -29,46 +30,45 @@ class PersonalityProfileGenerator(
     private val promptBuilder: PersonalityPromptBuilder,
     private val validator: PersonalityProfileValidator,
     private val notifier: PersonalityGenerationNotifier,
+    private val distributedLock: RedisDistributedLock,
+    private val redisConfig: RedisConfig,
+    private val matchingCacheInvalidator: MatchingCacheInvalidator,
     private val scope: CoroutineScope,
 ) {
     private val logger = LoggerFactory.getLogger(PersonalityProfileGenerator::class.java)
-    private val activeJobs = ConcurrentHashMap<Long, Job>()
-    private val generationLocks = ConcurrentHashMap<Long, Any>()
 
-    fun isJobActive(seekerId: Long): Boolean = activeJobs[seekerId]?.isActive == true
+    fun isJobActive(seekerId: Long): Boolean =
+        distributedLock.isHeld(personalityLockKey(seekerId))
 
     fun isStale(record: SeekerPersonalProfileRecord): Boolean =
-        !isJobActive(record.seekerId) && record.generationStatus == PersonalityProfileStatus.PROCESSING
+        record.generationStatus == PersonalityProfileStatus.PROCESSING &&
+            !isJobActive(record.seekerId)
 
     fun startGeneration(seekerId: Long, userId: UUID) {
-        val lock = generationLocks.computeIfAbsent(seekerId) { Any() }
-        synchronized(lock) {
-            if (activeJobs[seekerId]?.isActive == true) return
+        val lockKey = personalityLockKey(seekerId)
+        val lockHandle =
+            distributedLock.tryAcquire(lockKey, redisConfig.personalityLockTtlSeconds)
+                ?: return
 
-            profileRepository.markProcessing(seekerId)
+        profileRepository.markProcessing(seekerId)
 
-            lateinit var job: Job
-            job =
-                scope.launch {
-                    try {
-                        generateProfile(seekerId, userId)
-                    } catch (e: Exception) {
-                        logger.error("Personality profile generation failed for seeker $seekerId", e)
-                        if (activeJobs[seekerId] !== job) return@launch
-                        val message =
-                            when (e) {
-                                is HttpRequestTimeoutException ->
-                                    "Превышено время ожидания ответа LLM (${llmConfig.requestTimeoutSeconds} с). " +
-                                        "Попробуйте ещё раз или увеличьте LLM_REQUEST_TIMEOUT_SECONDS."
-                                else -> e.message ?: "Неизвестная ошибка"
-                            }
-                        profileRepository.markFailed(seekerId, message)
-                        notifier.notify(userId, PersonalityProfileStatus.FAILED)
-                    } finally {
-                        activeJobs.remove(seekerId, job)
+        scope.launch {
+            try {
+                generateProfile(seekerId, userId)
+            } catch (e: Exception) {
+                logger.error("Personality profile generation failed for seeker $seekerId", e)
+                val message =
+                    when (e) {
+                        is HttpRequestTimeoutException ->
+                            "Превышено время ожидания ответа LLM (${llmConfig.requestTimeoutSeconds} с). " +
+                                "Попробуйте ещё раз или увеличьте LLM_REQUEST_TIMEOUT_SECONDS."
+                        else -> e.message ?: "Неизвестная ошибка"
                     }
-                }
-            activeJobs[seekerId] = job
+                profileRepository.markFailed(seekerId, message)
+                notifier.notify(userId, PersonalityProfileStatus.FAILED)
+            } finally {
+                distributedLock.release(lockHandle)
+            }
         }
     }
 
@@ -88,6 +88,10 @@ class PersonalityProfileGenerator(
                 nameToId.getValue(item.name) to item.isPronounced
             }
         profileRepository.upsertProfileWithSuperpowers(seekerId, record, superpowerRows)
+        matchingCacheInvalidator.invalidateSeekerJobs(seekerId)
         notifier.notify(userId, PersonalityProfileStatus.READY)
     }
+
+    private fun personalityLockKey(seekerId: Long): String =
+        redisConfig.key("lock", "personality", seekerId.toString())
 }

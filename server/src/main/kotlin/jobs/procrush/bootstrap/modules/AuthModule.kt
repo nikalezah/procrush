@@ -1,6 +1,8 @@
 package jobs.procrush.bootstrap.modules
 
+import jobs.procrush.auth.repository.CachingSessionRepository
 import jobs.procrush.auth.repository.SessionRepository
+import jobs.procrush.auth.repository.SessionStore
 import jobs.procrush.auth.repository.UserRepository
 import jobs.procrush.auth.service.ProfileProvisioningService
 import jobs.procrush.auth.service.RoleGuard
@@ -8,13 +10,14 @@ import jobs.procrush.auth.service.SessionService
 import jobs.procrush.auth.service.UserAuthService
 import jobs.procrush.auth.service.UserProfileEnricher
 import jobs.procrush.bootstrap.config.AppConfig
+import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.shared.repository.ReferenceRepository
 
 data class AuthModule(
     val userRepository: UserRepository,
-    val sessionRepository: SessionRepository,
+    val sessionRepository: SessionStore,
     val seekerRepository: SeekerRepository,
     val referenceRepository: ReferenceRepository,
     val employerRepository: EmployerRepository,
@@ -25,9 +28,15 @@ data class AuthModule(
     val roleGuard: RoleGuard,
 ) {
     companion object {
-        fun create(config: AppConfig): AuthModule {
+        fun create(config: AppConfig, redis: RedisModule): AuthModule {
             val userRepository = UserRepository()
-            val sessionRepository = SessionRepository()
+            val delegateSessionRepository = SessionRepository()
+            val sessionRepository =
+                CachingSessionRepository(
+                    delegate = delegateSessionRepository,
+                    redis = redis.client,
+                    config = config.redis,
+                )
             val seekerRepository = SeekerRepository()
             val referenceRepository = ReferenceRepository()
             val employerRepository = EmployerRepository(referenceRepository)

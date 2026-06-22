@@ -108,16 +108,16 @@ flowchart LR
 
 ### Требования
 
-- JDK 17+, Docker (PostgreSQL)
+- JDK 17+, Docker (PostgreSQL **и Redis 8**)
 - Для React: **Node.js 20+** (см. [app/webReact/README.md](./app/webReact/README.md) при ошибке `Unexpected token '||='`)
 
 ### Аутентификация
 
 Используются **httpOnly session cookies**. Локально — dev-вход (`AUTH_DEV_MODE=true`).
 
-1. Скопируйте [`env.example`](./env.example) в `.env` (`AUTH_DEV_MODE=true`; в `WEB_ORIGIN` укажите оба origin, если работаете и с React, и с Compose).
-2. PostgreSQL: `docker compose up -d`
-3. API: `./gradlew :server:run` (миграции Flyway применяются автоматически)
+1. Скопируйте [`env.example`](./env.example) в `.env` (`AUTH_DEV_MODE=true`; `REDIS_URL=redis://localhost:6379`; в `WEB_ORIGIN` укажите оба origin, если работаете и с React, и с Compose).
+2. PostgreSQL и Redis: `docker compose up -d`
+3. API: `./gradlew :server:run` (миграции Flyway применяются автоматически; **без `REDIS_URL` сервер не стартует**)
 4. Веб-клиент:
    - **React:** `cd app/webReact && npm install && npm run dev` → http://localhost:8081
    - **Compose:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
@@ -127,6 +127,19 @@ flowchart LR
 ```bash
 docker compose down -v && docker compose up -d
 ```
+
+### Redis (обязателен)
+
+Backend использует **Redis 8** для:
+
+- кэша рекомендаций (cache-aside, TTL 10 мин);
+- distributed lock при LLM-генерации личностного профиля;
+- кэша сессий (PostgreSQL остаётся source of truth);
+- pub/sub для SSE-уведомлений о новых откликах (работает при нескольких инстансах API).
+
+Локально Redis поднимается вместе с Postgres: `docker compose up -d`. Переменная `REDIS_URL=redis://localhost:6379` обязательна (см. [`env.example`](./env.example)).
+
+Проверка: `GET /health` → `{"status":"ok","redis":"ok"}`.
 
 | Endpoint | Описание |
 |----------|----------|
@@ -156,7 +169,7 @@ docker compose down -v && docker compose up -d
 
 ## Деплой на Railway (GitHub)
 
-В одном проекте Railway три сервиса: **Postgres**, **Backend** (Ktor API), **Frontend** (React + nginx). Пользователи открывают только URL фронтенда; nginx проксирует `/api/*` на backend по приватной сети Railway. Для автоматических деплоев нужно подключить GitHub репозиторий к сервисам Backend и Frontend в настройках этих сервисов Railway. Альтернативный вариант, деплоить с локального репозитория через Railway CLI.
+В одном проекте Railway четыре сервиса: **Postgres**, **Redis**, **Backend** (Ktor API), **Frontend** (React + nginx). Пользователи открывают только URL фронтенда; nginx проксирует `/api/*` на backend по приватной сети Railway. Для автоматических деплоев нужно подключить GitHub репозиторий к сервисам Backend и Frontend в настройках этих сервисов Railway. Альтернативный вариант, деплоить с локального репозитория через Railway CLI.
 
 ### Архитектура
 
@@ -165,6 +178,7 @@ docker compose down -v && docker compose up -d
 | Backend | **пусто** (корень репо) | `/railway.toml` |
 | Frontend | **пусто** | `/deploy/railway.frontend.toml` |
 | Postgres | — | — |
+| Redis | — | — |
 
 Образы собираются **из корня репозитория** (backend нуждается в `:core` + `:server`; frontend — `deploy/Dockerfile.webReact`).
 
@@ -200,6 +214,7 @@ git push -u origin master
    | Переменная | Значение |
    |------------|----------|
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+   | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
    | `WEB_ORIGIN` | `https://${{Frontend.RAILWAY_PUBLIC_DOMAIN}}` (после появления домена у frontend) |
    | `FRONTEND_URL` | то же, что `WEB_ORIGIN` |
    | `AUTH_DEV_MODE` | `false` (prod) или `true` (staging) |
@@ -241,7 +256,7 @@ git push -u origin master
 
 | Проверка | Как |
 |----------|-----|
-| Health API | `GET https://<backend-domain>/health` → `{"status":"ok"}` |
+| Health API | `GET /health` → `{"status":"ok","redis":"ok"}` |
 | Frontend | `https://<frontend-domain>/` |
 | API через прокси | Вход при `AUTH_DEV_MODE=true` на backend |
 | Сборка | В логах деплоя — **Dockerfile**, не **Railpack** |
