@@ -14,7 +14,7 @@ class PersonalityProfileReader(
     private val profileRepository: SeekerPersonalProfileRepository,
     private val superpowersRepository: SeekerSuperpowersAndTalentsRepository,
     private val surveyService: SurveyService,
-    private val generator: PersonalityProfileGenerator,
+    private val lockGuard: PersonalityGenerationLockGuard,
 ) {
     fun getPreview(userId: UUID): PersonalityPreviewDto {
         val groups = surveyService.listGroups(userId)
@@ -35,7 +35,7 @@ class PersonalityProfileReader(
                 testsTotal = groups.testsTotal,
             )
 
-        if (generator.isJobActive(seeker.id)) {
+        if (lockGuard.isJobActive(seeker.id)) {
             return processingPreview
         }
 

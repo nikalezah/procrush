@@ -38,13 +38,13 @@ flowchart LR
 
 **2. Расчёты.** Для каждого опроса в БД хранятся ключи подсчёта (`survey_keys`). `SurveyScoringService` применяет нужную логику (`open_text`, `matrix`, `direct_sum`, `formula`) и записывает структурированный JSON в `survey_results.calculated_results`. Примеры: суммы по осям DISC, роли Белбина, нормализованные баллы шкалы 0–4.
 
-**3. Интерпретация.** Когда завершены обе группы тестов, запускается асинхронная генерация профиля (`PersonalityProfileService`):
+**3. Интерпретация.** Когда завершены обе группы тестов, API ставит задачу в очередь RabbitMQ; отдельный **personality-worker** забирает задачу и вызывает LLM:
 
 - собирается контекст: ответы, результаты расчётов и глоссарий терминов (`SurveyService.buildLlmContext`);
 - LLM получает системный промпт с требуемой JSON-схемой (`PersonalityPromptBuilder`);
 - ответ валидируется и сохраняется (`PersonalityProfileValidator`, `SeekerPersonalProfileRepository`).
 
-Статусы профиля: `NOT_READY` → `PROCESSING` → `READY` или `FAILED` (с возможностью повтора). Готовность профиля уведомляется клиенту через SSE (`/api/seeker/personality-preview/events`).
+Статусы профиля: `NOT_READY` → `PROCESSING` → `READY` или `FAILED` (с возможностью повтора). Готовность профиля уведомляется клиенту через SSE (`/api/seeker/personality-preview/events`) и Redis pub/sub (работает при API и worker на разных процессах).
 
 ### Матчинг и отклики
 
@@ -101,24 +101,26 @@ flowchart LR
 | [`app/webReact/`](./app/webReact) | Основной веб-клиент (React)                    |
 | [`app/webApp/`](./app/webApp) | Compose Web (JS), экспериментальный auth UI    |
 | [`app/androidApp/`](./app/androidApp), [`app/iosApp/`](./app/iosApp), [`app/desktopApp/`](./app/desktopApp) | Нативные оболочки KMP                          |
-| [`server/`](./server/src/main/kotlin) | Ktor API, домен, миграции Flyway, расчёты, LLM |
+| [`server/`](./server/src/main/kotlin) | Ktor API, домен, миграции Flyway, расчёты, очереди |
+| [`personality-worker/`](./personality-worker) | Worker: потребление задач RabbitMQ, вызов LLM |
 | [`deploy/`](./deploy) | Dockerfile для Railway                         |
 
 ## Локальная разработка
 
 ### Требования
 
-- JDK 17+, Docker (PostgreSQL **и Redis 8**)
+- JDK 17+, Docker (PostgreSQL, **Redis 8** и **RabbitMQ 4**)
 - Для React: **Node.js 20+** (см. [app/webReact/README.md](./app/webReact/README.md) при ошибке `Unexpected token '||='`)
 
 ### Аутентификация
 
 Используются **httpOnly session cookies**. Локально — dev-вход (`AUTH_DEV_MODE=true`).
 
-1. Скопируйте [`env.example`](./env.example) в `.env` (`AUTH_DEV_MODE=true`; `REDIS_URL=redis://localhost:6379`; в `WEB_ORIGIN` укажите оба origin, если работаете и с React, и с Compose).
-2. PostgreSQL и Redis: `docker compose up -d`
-3. API: `./gradlew :server:run` (миграции Flyway применяются автоматически; **без `REDIS_URL` сервер не стартует**)
-4. Веб-клиент:
+1. Скопируйте [`env.example`](./env.example) в `.env` (`AUTH_DEV_MODE=true`; `REDIS_URL=redis://localhost:6379`; `RABBITMQ_URL=amqp://procrush:procrush@localhost:5672/%2F`; в `WEB_ORIGIN` укажите оба origin, если работаете и с React, и с Compose).
+2. PostgreSQL, Redis и RabbitMQ: `docker compose up -d`
+3. API: `./gradlew :server:run` (миграции Flyway применяются автоматически; **без `REDIS_URL` и `RABBITMQ_URL` сервер не стартует**)
+4. **Personality worker** (обязателен для генерации профиля): `./gradlew :personality-worker:run` — в отдельном терминале
+5. Веб-клиент:
    - **React:** `cd app/webReact && npm install && npm run dev` → http://localhost:8081
    - **Compose:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
 
@@ -133,13 +135,23 @@ docker compose down -v && docker compose up -d
 Backend использует **Redis 8** для:
 
 - кэша рекомендаций (cache-aside, TTL 10 мин);
-- distributed lock при LLM-генерации личностного профиля;
+- distributed lock при LLM-генерации личностного профиля (держит worker);
 - кэша сессий (PostgreSQL остаётся source of truth);
-- pub/sub для SSE-уведомлений о новых откликах (работает при нескольких инстансах API).
+- pub/sub для SSE-уведомлений о новых откликах и статусе генерации профиля (работает при нескольких инстансах API).
 
-Локально Redis поднимается вместе с Postgres: `docker compose up -d`. Переменная `REDIS_URL=redis://localhost:6379` обязательна (см. [`env.example`](./env.example)).
+Локально Redis поднимается вместе с Postgres и RabbitMQ: `docker compose up -d`. Переменная `REDIS_URL=redis://localhost:6379` обязательна (см. [`env.example`](./env.example)).
 
-Проверка: `GET /health` → `{"status":"ok","redis":"ok"}`.
+### RabbitMQ (обязателен)
+
+**RabbitMQ** — брокер сообщений: API кладёт задачу «сгенерировать личностный профиль» в очередь `personality.generation`; worker забирает задачу и вызывает LLM.
+
+- Локально: `docker compose up -d`, UI — http://localhost:15672 (логин/пароль `procrush` / `procrush`)
+- Переменная `RABBITMQ_URL=amqp://procrush:procrush@localhost:5672/%2F` обязательна (vhost `/` кодируется как `%2F`)
+- При ошибках после 3 попыток сообщение попадает в DLQ `personality.generation.dlq`
+
+Проверка API: `GET /health` → `{"status":"ok","redis":"ok","rabbitmq":"ok"}`.
+
+Проверка worker: `GET http://localhost:8091/health` → тот же формат (`WORKER_HEALTH_PORT`, по умолчанию **8091**, не 8081 — React dev server).
 
 | Endpoint | Описание |
 |----------|----------|
@@ -152,6 +164,7 @@ Backend использует **Redis 8** для:
 
 - **React:** `cd app/webReact && npm run dev` → http://localhost:8081
 - **Server**: `./gradlew :server:run`
+- **Personality worker**: `./gradlew :personality-worker:run` → health http://localhost:8091/health
 - Android: `./gradlew :app:androidApp:assembleDebug`
 - Desktop: `./gradlew :app:desktopApp:run` (hot reload: `:app:desktopApp:hotRun --auto`)
 - iOS: открыть [`app/iosApp`](./app/iosApp) в Xcode
@@ -161,6 +174,7 @@ Backend использует **Redis 8** для:
 - Android: `./gradlew :app:shared:testAndroidHostTest`
 - Desktop: `./gradlew :app:shared:jvmTest`
 - Server: `./gradlew :server:test`
+- Personality worker: `./gradlew :personality-worker:installDist`
 - Web (Wasm): `./gradlew :app:shared:wasmJsTest`
 - Web (JS): `./gradlew :app:shared:jsTest`
 - iOS: `./gradlew :app:shared:iosSimulatorArm64Test`
@@ -169,16 +183,18 @@ Backend использует **Redis 8** для:
 
 ## Деплой на Railway (GitHub)
 
-В одном проекте Railway четыре сервиса: **Postgres**, **Redis**, **Backend** (Ktor API), **Frontend** (React + nginx). Пользователи открывают только URL фронтенда; nginx проксирует `/api/*` на backend по приватной сети Railway. Для автоматических деплоев нужно подключить GitHub репозиторий к сервисам Backend и Frontend в настройках этих сервисов Railway. Альтернативный вариант, деплоить с локального репозитория через Railway CLI.
+В одном проекте Railway шесть сервисов: **Postgres**, **Redis**, **RabbitMQ**, **Backend** (Ktor API), **Personality Worker**, **Frontend** (React + nginx). Пользователи открывают только URL фронтенда; nginx проксирует `/api/*` на backend по приватной сети Railway.
 
 ### Архитектура
 
 | Сервис | Root Directory | Config file (от корня репо) |
 |--------|----------------|----------------------------|
 | Backend | **пусто** (корень репо) | `/railway.toml` |
+| Personality Worker | **пусто** | `/deploy/railway.personality-worker.toml` |
 | Frontend | **пусто** | `/deploy/railway.frontend.toml` |
 | Postgres | — | — |
 | Redis | — | — |
+| RabbitMQ | — | — (Railway template / Docker image) |
 
 Образы собираются **из корня репозитория** (backend нуждается в `:core` + `:server`; frontend — `deploy/Dockerfile.webReact`).
 
@@ -215,12 +231,33 @@ git push -u origin master
    |------------|----------|
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
    | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
+   | `RABBITMQ_URL` | `${{RabbitMQ.RABBITMQ_URL}}` (или URL вашего RabbitMQ-сервиса) |
    | `WEB_ORIGIN` | `https://${{Frontend.RAILWAY_PUBLIC_DOMAIN}}` (после появления домена у frontend) |
    | `FRONTEND_URL` | то же, что `WEB_ORIGIN` |
    | `AUTH_DEV_MODE` | `false` (prod) или `true` (staging) |
+   | `LLM_USE_STUB` | `true` (API не вызывает LLM; генерация в worker) |
 
 6. Деплой (автоматически при push или **Deploy** в dashboard).
 7. Публичный домен опционален (health: `GET /health`).
+
+#### Personality Worker
+
+1. **+ New** → **Empty Service** → имя `PersonalityWorker`.
+2. **Settings → Source**: **тот же** репозиторий и ветка.
+3. **Settings → Root Directory**: **пусто**.
+4. **Settings → Config file**: `/deploy/railway.personality-worker.toml`.
+5. **Variables**:
+
+   | Переменная | Значение |
+   |------------|----------|
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+   | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
+   | `RABBITMQ_URL` | `${{RabbitMQ.RABBITMQ_URL}}` |
+   | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | см. [`env.example`](./env.example) |
+   | `WORKER_HEALTH_PORT` | `8091` локально; на Railway можно не задавать — используется `PORT` |
+
+6. **Networking → Public Networking**: опционально (health: `GET /health` на порту worker).
+7. Деплой.
 
 #### Frontend
 
@@ -248,15 +285,18 @@ git push -u origin master
 ### Порядок деплоя
 
 1. Postgres (уже создан)
-2. Backend (`/health`, Flyway в логах)
-3. Frontend (публичный домен + `BACKEND_UPSTREAM`)
-4. Повторный деплой Backend, если нужно обновить `WEB_ORIGIN` / `FRONTEND_URL`
+2. Redis, RabbitMQ
+3. Backend (`/health`, Flyway в логах)
+4. Personality Worker (`/health`, consumer в логах)
+5. Frontend (публичный домен + `BACKEND_UPSTREAM`)
+6. Повторный деплой Backend, если нужно обновить `WEB_ORIGIN` / `FRONTEND_URL`
 
 ### Проверка
 
 | Проверка | Как |
 |----------|-----|
-| Health API | `GET /health` → `{"status":"ok","redis":"ok"}` |
+| Health API | `GET /health` → `{"status":"ok","redis":"ok","rabbitmq":"ok"}` |
+| Health Worker | `GET http://<worker-domain>/health` (порт сервиса на Railway) |
 | Frontend | `https://<frontend-domain>/` |
 | API через прокси | Вход при `AUTH_DEV_MODE=true` на backend |
 | Сборка | В логах деплоя — **Dockerfile**, не **Railpack** |
@@ -267,4 +307,4 @@ git push -u origin master
 - Railway выставляет `PORT` для обоих сервисов.
 - `DATABASE_URL` от Postgres — `postgresql://...`; сервер добавляет JDBC `sslmode=require`.
 
-Переменные LLM (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.) задайте на Backend в dashboard — см. комментарии в [`env.example`](./env.example).
+Переменные LLM для **Personality Worker** (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.) — см. комментарии в [`env.example`](./env.example). На Backend при раздельном worker можно задать `LLM_USE_STUB=true`.

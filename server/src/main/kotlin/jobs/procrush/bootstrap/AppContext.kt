@@ -10,6 +10,7 @@ import jobs.procrush.bootstrap.modules.MatchingModule
 import jobs.procrush.bootstrap.modules.PersonalityModule
 import jobs.procrush.bootstrap.modules.SeekerModule
 import jobs.procrush.bootstrap.modules.SurveyModule
+import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.service.EmployerProfileService
 import jobs.procrush.matching.service.MatchInterestService
@@ -17,10 +18,14 @@ import jobs.procrush.personality.service.PersonalityProfileService
 import jobs.procrush.seeker.service.SeekerProfileService
 import jobs.procrush.shared.repository.ReferenceRepository
 import jobs.procrush.survey.service.SurveyService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 data class AppContext(
     val config: AppConfig,
     val redisModule: RedisModule,
+    val rabbitMqModule: RabbitMqModule,
     val userAuthService: UserAuthService,
     val sessionService: SessionService,
     val roleGuard: RoleGuard,
@@ -30,14 +35,19 @@ data class AppContext(
     val personalityProfileService: PersonalityProfileService,
     val matchInterestService: MatchInterestService,
     val referenceRepository: ReferenceRepository,
+    private val personalityModule: PersonalityModule,
 ) {
     fun close() {
+        personalityModule.personalityStatusNotifier.close()
+        rabbitMqModule.close()
         redisModule.close()
     }
 
     companion object {
         fun create(config: AppConfig): AppContext {
+            val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val redis = RedisModule.create(config)
+            val rabbitMq = RabbitMqModule.create(config.rabbitMq)
             val auth = AuthModule.create(config, redis)
             val survey = SurveyModule.create(auth)
             val matching = MatchingModule.create(auth, survey, redis, config)
@@ -48,7 +58,9 @@ data class AppContext(
                     auth = auth,
                     survey = survey,
                     redis = redis,
+                    rabbitMq = rabbitMq,
                     matchingCacheInvalidator = matching.cacheInvalidator,
+                    scope = coroutineScope,
                 )
             survey.attachPersonalityCoordinator(personality.coordinator)
             val seeker = SeekerModule.create(auth, matching, survey)
@@ -59,6 +71,7 @@ data class AppContext(
             return AppContext(
                 config = config,
                 redisModule = redis,
+                rabbitMqModule = rabbitMq,
                 userAuthService = auth.userAuthService,
                 sessionService = auth.sessionService,
                 roleGuard = auth.roleGuard,
@@ -68,6 +81,7 @@ data class AppContext(
                 personalityProfileService = personality.personalityProfileService,
                 matchInterestService = matching.matchInterestService,
                 referenceRepository = auth.referenceRepository,
+                personalityModule = personality,
             )
         }
     }

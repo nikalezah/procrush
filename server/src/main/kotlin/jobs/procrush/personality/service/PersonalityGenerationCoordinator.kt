@@ -2,6 +2,7 @@ package jobs.procrush.personality.service
 
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.personality.dto.PersonalityProfileStatus
+import jobs.procrush.personality.messaging.PersonalityJobPublisher
 import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
 import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.shared.GenerationInProgressException
@@ -12,7 +13,8 @@ class PersonalityGenerationCoordinator(
     private val seekerRepository: SeekerRepository,
     private val profileRepository: SeekerPersonalProfileRepository,
     private val surveyService: SurveyService,
-    private val generator: PersonalityProfileGenerator,
+    private val lockGuard: PersonalityGenerationLockGuard,
+    private val publisher: PersonalityJobPublisher,
     private val matchingCacheInvalidator: MatchingCacheInvalidator,
 ) {
     fun onAllSurveysCompleted(userId: UUID) {
@@ -32,12 +34,12 @@ class PersonalityGenerationCoordinator(
         val shouldStart =
             when {
                 record == null -> true
-                record.generationStatus == PersonalityProfileStatus.PROCESSING && generator.isStale(record) -> true
+                record.generationStatus == PersonalityProfileStatus.PROCESSING && lockGuard.isStale(record) -> true
                 else -> false
             }
         if (!shouldStart) return
 
-        generator.startGeneration(seeker.id, userId)
+        enqueueGeneration(seeker.id, userId)
     }
 
     fun triggerGeneration(userId: UUID) {
@@ -46,9 +48,14 @@ class PersonalityGenerationCoordinator(
 
         val seeker = seekerRepository.findByUserId(userId) ?: error("Соискатель не найден")
         val record = profileRepository.findBySeekerId(seeker.id)
-        if (record?.generationStatus == PersonalityProfileStatus.PROCESSING && !generator.isStale(record)) {
+        if (record?.generationStatus == PersonalityProfileStatus.PROCESSING && !lockGuard.isStale(record)) {
             throw GenerationInProgressException()
         }
-        generator.startGeneration(seeker.id, userId)
+        enqueueGeneration(seeker.id, userId)
+    }
+
+    private fun enqueueGeneration(seekerId: Long, userId: UUID) {
+        profileRepository.markProcessing(seekerId)
+        publisher.enqueue(seekerId, userId)
     }
 }

@@ -53,10 +53,17 @@ fun Application.module() {
                 runCatching { app.redisModule.client.ping() }
                     .map { if (it.equals("PONG", ignoreCase = true)) "ok" else "down" }
                     .getOrElse { "down" }
-            if (redisStatus == "ok") {
-                call.respond(mapOf("status" to "ok", "redis" to "ok"))
+            val rabbitStatus =
+                runCatching { if (app.rabbitMqModule.isConnected()) "ok" else "down" }
+                    .getOrElse { "down" }
+            val healthy = redisStatus == "ok" && rabbitStatus == "ok"
+            if (healthy) {
+                call.respond(mapOf("status" to "ok", "redis" to "ok", "rabbitmq" to "ok"))
             } else {
-                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("status" to "degraded", "redis" to "down"))
+                call.respond(
+                    HttpStatusCode.ServiceUnavailable,
+                    mapOf("status" to "degraded", "redis" to redisStatus, "rabbitmq" to rabbitStatus),
+                )
             }
         }
         authRoutes(app.config, app.userAuthService, app.sessionService, app.roleGuard)

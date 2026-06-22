@@ -21,8 +21,23 @@ services:
     volumes:
       - redis_data:/data
 
+  rabbitmq:
+    container_name: procrush-rabbitmq
+    image: rabbitmq:4-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: procrush
+      RABBITMQ_DEFAULT_PASS: procrush
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
 volumes:
   postgres_data:
     name: procrush-postgres-data
   redis_data:
     name: procrush-redis-data
+  rabbitmq_data:
+    name: procrush-rabbitmq-data

@@ -27,6 +27,7 @@ kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.8.0"
 lettuce = "6.7.1.RELEASE"
 testcontainers = "1.21.3"
+amqp-client = "5.25.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -80,6 +81,8 @@ ktor-clientLogging = { module = "io.ktor:ktor-client-logging", version.ref = "kt
 lettuce-core = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-redis = { module = "com.redis:testcontainers-redis", version = "2.2.4" }
+amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "amqp-client" }
+testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

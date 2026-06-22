@@ -34,9 +34,11 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.contentNegotiation)
     implementation(libs.lettuce.core)
+    implementation(libs.amqp.client)
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.redis)
+    testImplementation(libs.testcontainers.rabbitmq)
 }

@@ -1,16 +1,21 @@
 package jobs.procrush.bootstrap.modules
 
 import jobs.procrush.bootstrap.config.AppConfig
+import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.llm.LlmFactory
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
+import jobs.procrush.personality.messaging.PersonalityJobConsumer
+import jobs.procrush.personality.messaging.PersonalityJobPublisher
+import jobs.procrush.personality.messaging.PersonalityMessageDedup
 import jobs.procrush.personality.service.PersonalityGenerationCoordinator
-import jobs.procrush.personality.service.PersonalityGenerationNotifier
-import jobs.procrush.personality.service.PersonalityProfileGenerator
+import jobs.procrush.personality.service.PersonalityGenerationHandler
+import jobs.procrush.personality.service.PersonalityGenerationLockGuard
 import jobs.procrush.personality.service.PersonalityProfileReader
 import jobs.procrush.personality.service.PersonalityProfileService
+import jobs.procrush.personality.service.RedisPersonalityStatusNotifier
 import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
 import jobs.procrush.seeker.repository.SeekerSuperpowersAndTalentsRepository
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +42,7 @@ data class SurveyModule(
 data class PersonalityModule(
     val coordinator: PersonalityGenerationCoordinator,
     val personalityProfileService: PersonalityProfileService,
+    val personalityStatusNotifier: RedisPersonalityStatusNotifier,
 ) {
     companion object {
         fun create(
@@ -44,35 +50,27 @@ data class PersonalityModule(
             auth: AuthModule,
             survey: SurveyModule,
             redis: RedisModule,
+            rabbitMq: RabbitMqModule,
             matchingCacheInvalidator: MatchingCacheInvalidator,
+            scope: CoroutineScope,
         ): PersonalityModule {
             val profileRepository = SeekerPersonalProfileRepository()
             val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
-            val llmClient = LlmFactory.createClient(config.llm)
-            val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-            val generationNotifier = PersonalityGenerationNotifier()
-            val generator =
-                PersonalityProfileGenerator(
-                    seekerRepository = auth.seekerRepository,
-                    profileRepository = profileRepository,
-                    referenceRepository = auth.referenceRepository,
-                    surveyService = survey.surveyService,
-                    llmConfig = config.llm,
-                    llmClient = llmClient,
-                    promptBuilder = PersonalityPromptBuilder(),
-                    validator = PersonalityProfileValidator(),
-                    notifier = generationNotifier,
-                    distributedLock = redis.distributedLock,
-                    redisConfig = config.redis,
-                    matchingCacheInvalidator = matchingCacheInvalidator,
-                    scope = coroutineScope,
+            val lockGuard = PersonalityGenerationLockGuard(redis.distributedLock, config.redis)
+            val publisher = PersonalityJobPublisher(rabbitMq.publishChannel, rabbitMq.config)
+            val personalityStatusNotifier =
+                RedisPersonalityStatusNotifier(
+                    redis = redis.client,
+                    config = config.redis,
+                    scope = scope,
                 )
             val coordinator =
                 PersonalityGenerationCoordinator(
                     seekerRepository = auth.seekerRepository,
                     profileRepository = profileRepository,
                     surveyService = survey.surveyService,
-                    generator = generator,
+                    lockGuard = lockGuard,
+                    publisher = publisher,
                     matchingCacheInvalidator = matchingCacheInvalidator,
                 )
             val reader =
@@ -81,18 +79,91 @@ data class PersonalityModule(
                     profileRepository = profileRepository,
                     superpowersRepository = superpowersRepository,
                     surveyService = survey.surveyService,
-                    generator = generator,
+                    lockGuard = lockGuard,
                 )
             val personalityProfileService =
                 PersonalityProfileService(
                     reader = reader,
                     coordinator = coordinator,
                     surveyService = survey.surveyService,
-                    notifier = generationNotifier,
+                    notifier = personalityStatusNotifier,
                 )
+            personalityStatusNotifier.start()
             return PersonalityModule(
                 coordinator = coordinator,
                 personalityProfileService = personalityProfileService,
+                personalityStatusNotifier = personalityStatusNotifier,
+            )
+        }
+    }
+}
+
+data class PersonalityWorkerModule(
+    val consumer: PersonalityJobConsumer,
+    val statusNotifier: RedisPersonalityStatusNotifier,
+) {
+    fun start() {
+        statusNotifier.start()
+        consumer.start()
+    }
+
+    fun stop() {
+        consumer.stop()
+        statusNotifier.close()
+    }
+
+    companion object {
+        fun create(
+            config: AppConfig,
+            auth: AuthModule,
+            survey: SurveyModule,
+            redis: RedisModule,
+            rabbitMq: RabbitMqModule,
+            matchingCacheInvalidator: MatchingCacheInvalidator,
+            scope: CoroutineScope,
+        ): PersonalityWorkerModule {
+            val profileRepository = SeekerPersonalProfileRepository()
+            val lockGuard = PersonalityGenerationLockGuard(redis.distributedLock, config.redis)
+            val publisher = PersonalityJobPublisher(rabbitMq.publishChannel, rabbitMq.config)
+            val statusNotifier =
+                RedisPersonalityStatusNotifier(
+                    redis = redis.client,
+                    config = config.redis,
+                    scope = scope,
+                )
+            val handler =
+                PersonalityGenerationHandler(
+                    profileRepository = profileRepository,
+                    referenceRepository = auth.referenceRepository,
+                    surveyService = survey.surveyService,
+                    llmConfig = config.llm,
+                    llmClient = LlmFactory.createClient(config.llm),
+                    promptBuilder = PersonalityPromptBuilder(),
+                    validator = PersonalityProfileValidator(),
+                    matchingCacheInvalidator = matchingCacheInvalidator,
+                )
+            val dedup =
+                PersonalityMessageDedup(
+                    redis = redis.client,
+                    config = config.redis,
+                    rabbitMqConfig = rabbitMq.config,
+                )
+            val consumer =
+                PersonalityJobConsumer(
+                    rabbitMq = rabbitMq,
+                    handler = handler,
+                    publisher = publisher,
+                    profileRepository = profileRepository,
+                    statusNotifier = statusNotifier,
+                    lockGuard = lockGuard,
+                    distributedLock = redis.distributedLock,
+                    dedup = dedup,
+                    redisConfig = config.redis,
+                    rabbitMqConfig = rabbitMq.config,
+                )
+            return PersonalityWorkerModule(
+                consumer = consumer,
+                statusNotifier = statusNotifier,
             )
         }
     }

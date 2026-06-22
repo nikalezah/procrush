@@ -10,7 +10,7 @@ class PersonalityProfileService(
     private val reader: PersonalityProfileReader,
     private val coordinator: PersonalityGenerationCoordinator,
     private val surveyService: SurveyService,
-    private val notifier: PersonalityGenerationNotifier,
+    private val notifier: RedisPersonalityStatusNotifier,
 ) {
     fun getPreview(userId: UUID): PersonalityPreviewDto = reader.getPreview(userId)
 
@@ -30,11 +30,11 @@ class PersonalityProfileService(
 
         coordinator.maybeTriggerGeneration(userId)
 
-        val deferred = notifier.register(userId)
+        val channel = notifier.subscribe(userId)
         try {
-            onStatus(deferred.await())
+            onStatus(channel.receive())
         } finally {
-            notifier.cancel(userId, deferred)
+            notifier.unsubscribe(userId, channel)
         }
     }
 }
