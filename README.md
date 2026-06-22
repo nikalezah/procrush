@@ -8,10 +8,10 @@
 
 После входа пользователь один раз выбирает роль (`SEEKER` или `EMPLOYER`) через `POST /api/auth/complete-registration`. Сменить роль нельзя.
 
-| Роль | Что делает в MVP |
-|------|------------------|
-| **Соискатель (SEEKER)** | Проходит группы личностных тестов, получает сформированный профиль |
-| **Работодатель (EMPLOYER)** | Просматривает дашборд и списки (полный матчинг — в развитии) |
+| Роль | Возможности |
+|------|-------------|
+| **Соискатель (SEEKER)** | Проходит группы личностных тестов, получает интерпретированный профиль, указывает желаемые профессии, просматривает рекомендации вакансий и откликается на них |
+| **Работодатель (EMPLOYER)** | Ведёт профиль компании и профили вакансий, просматривает рекомендованных кандидатов с оценкой совпадения и откликается на них |
 
 ### Группы тестов
 
@@ -44,17 +44,49 @@ flowchart LR
 - LLM получает системный промпт с требуемой JSON-схемой (`PersonalityPromptBuilder`);
 - ответ валидируется и сохраняется (`PersonalityProfileValidator`, `SeekerPersonalProfileRepository`).
 
-Статусы профиля: `NOT_READY` → `PROCESSING` → `READY` или `FAILED` (с возможностью повтора).
+Статусы профиля: `NOT_READY` → `PROCESSING` → `READY` или `FAILED` (с возможностью повтора). Готовность профиля уведомляется клиенту через SSE (`/api/seeker/personality-preview/events`).
+
+### Матчинг и отклики
+
+После завершения обеих групп тестов соискатель указывает желаемые профессии. Работодатель создаёт профили вакансий с привязкой к профессии, навыкам и ожидаемым личностным осям.
+
+**Рекомендации.** `MatchingService` подбирает пары «соискатель ↔ вакансия» в рамках совпадающей профессии и считает оценку совпадения (`MatchScoringService`): доля пересечения навыков (Jaccard) и, если у соискателя готов личностный профиль, сходство по осям личности (50/50). Списки сортируются по убыванию score.
+
+| Сторона | Список рекомендаций |
+|---------|---------------------|
+| Соискатель | `GET /api/seeker/recommendations` — вакансии по желаемым профессиям |
+| Работодатель | `GET /api/employer/job-profiles/{id}/candidates` — кандидаты для вакансии |
+
+**Отклики.** Любая сторона может первой выразить интерес; отклик необратим. Статус хранится в `job_match_interests` и вычисляется для каждой стороны отдельно (`InterestStatusCalculator`):
+
+| Статус | Для инициатора | Для получателя |
+|--------|----------------|----------------|
+| `NONE` | Отклика не было | — |
+| `RESPONDED` | Свой отклик отправлен | — |
+| `INCOMING` | — | Противоположная сторона откликнулась |
+| `MUTUAL` | Взаимный интерес | Взаимный интерес |
+
+При `MUTUAL` раскрываются контактные данные противоположной стороны. Отклики вне текущего списка рекомендаций доступны отдельно (`GET /api/seeker/interests`, `GET /api/employer/job-profiles/{id}/interests`).
+
+Новые входящие отклики доставляются в реальном времени через SSE (`/api/seeker/match-interests/events`, `/api/employer/match-interests/events`); счётчик непросмотренных — `GET .../match-interests/count`.
+
+```mermaid
+flowchart LR
+    A[Рекомендации] --> B{Отклик одной стороны}
+    B --> C[RESPONDED / INCOMING]
+    C --> D{Отклик второй стороны}
+    D --> E[MUTUAL + контакты]
+```
 
 ## Выбор архитектуры
 
 ### Kotlin Multiplatform (KMP)
 
-Проект собран как **Kotlin Multiplatform** с модулями `core`, `app/shared`, нативными приложениями (Android, iOS, Desktop) и Ktor-сервером. Сейчас **единственный пользовательский интерфейс MVP — отдельный React-клиент**, но KMP выбран осознанно как задел на будущее: по мере созревания продукта Compose Multiplatform и мобильные приложения смогут делить с сервером бизнес-правила, валидацию и форматирование без переписывания с нуля. KMP здесь — инвестиция в переиспользование кода между модулями и приложениями.
+Проект собран как **Kotlin Multiplatform** с модулями `core`, `app/shared`, нативными приложениями (Android, iOS, Desktop) и Ktor-сервером. Основной веб-клиент — отдельное **React**-приложение; KMP выбран как задел на будущее: Compose Multiplatform и мобильные приложения смогут делить с сервером бизнес-правила, валидацию и форматирование без переписывания с нуля.
 
-### React для веб-MVP
+### React для веб-клиента
 
-Веб-интерфейс MVP реализован как **отдельное React + Vite + Tailwind приложение** (`app/webReact`), а не через Compose for Web:
+Веб-интерфейс реализован как **отдельное React + Vite + Tailwind приложение** (`app/webReact`), а не через Compose for Web:
 
 - быстрый старт и знакомый стек для итераций UI;
 - независимый деплой фронтенда (nginx + прокси `/api`);
@@ -66,8 +98,8 @@ flowchart LR
 |------|------------------------------------------------|
 | [`core/`](./core/src) | Общий код для всех таргетов (модели, утилиты)  |
 | [`app/shared/`](./app/shared/src) | UI и логика Compose Multiplatform              |
-| [`app/webReact/`](./app/webReact) | **Единственный веб-клиент MVP** (React)        |
-| [`app/webApp/`](./app/webApp) | Compose Web (JS), auth MVP                     |
+| [`app/webReact/`](./app/webReact) | Основной веб-клиент (React)                    |
+| [`app/webApp/`](./app/webApp) | Compose Web (JS), экспериментальный auth UI    |
 | [`app/androidApp/`](./app/androidApp), [`app/iosApp/`](./app/iosApp), [`app/desktopApp/`](./app/desktopApp) | Нативные оболочки KMP                          |
 | [`server/`](./server/src/main/kotlin) | Ktor API, домен, миграции Flyway, расчёты, LLM |
 | [`deploy/`](./deploy) | Dockerfile для Railway                         |
@@ -105,7 +137,7 @@ docker compose down -v && docker compose up -d
 
 ### Запуск приложений
 
-- **React (веб-MVP):** `cd app/webReact && npm run dev` → http://localhost:8081
+- **React:** `cd app/webReact && npm run dev` → http://localhost:8081
 - **Server**: `./gradlew :server:run`
 - Android: `./gradlew :app:androidApp:assembleDebug`
 - Desktop: `./gradlew :app:desktopApp:run` (hot reload: `:app:desktopApp:hotRun --auto`)
