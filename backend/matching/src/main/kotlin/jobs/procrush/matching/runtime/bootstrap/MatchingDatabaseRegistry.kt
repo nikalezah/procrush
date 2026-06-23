@@ -6,24 +6,13 @@ import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object MatchingDatabaseRegistry {
-    lateinit var main: Database
-        private set
     lateinit var matching: Database
         private set
 
     fun init(
-        mainConfig: DatabaseConfig,
         matchingConfig: DatabaseConfig,
         runMatchingMigrations: Boolean = true,
     ) {
-        // Main DB is read by MatchingRepository; matching DB stores computed results.
-        main =
-            Database.connect(
-                url = mainConfig.jdbcUrl,
-                driver = "org.postgresql.Driver",
-                user = mainConfig.user,
-                password = mainConfig.password,
-            )
         matching =
             Database.connect(
                 url = matchingConfig.jdbcUrl,
@@ -43,6 +32,5 @@ object MatchingDatabaseRegistry {
                 .migrate()
         }
         transaction(matching) { }
-        transaction(main) { }
     }
 }

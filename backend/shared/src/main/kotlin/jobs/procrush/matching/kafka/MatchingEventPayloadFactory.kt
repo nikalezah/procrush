@@ -45,6 +45,7 @@ class MatchingEventPayloadFactory(
                 firstName = base.firstName,
                 lastName = base.lastName,
                 skillNames = base.skillNames,
+                matchingEligible = base.matchingEligible,
             )
         publisher.publish(
             eventType = MatchingEventTypes.SEEKER_PERSONALITY_READY,
@@ -91,6 +92,7 @@ class MatchingEventPayloadFactory(
                 referenceRepository.findSkillsByIds(skillIds).map { it.name }
             }
         val context = matchingRepository.getSeekerMatchingContext(seekerId)
+        val matchingEligible = matchingRepository.findSeekerIdsWithAllTestsComplete().contains(seekerId)
         return SeekerProfileChangedPayload(
             seekerId = seekerId,
             desiredOccupationIds = desiredOccupationIds,
@@ -100,6 +102,7 @@ class MatchingEventPayloadFactory(
             firstName = seeker.firstName,
             lastName = seeker.lastName,
             skillNames = skillNames,
+            matchingEligible = matchingEligible,
         )
     }
 }

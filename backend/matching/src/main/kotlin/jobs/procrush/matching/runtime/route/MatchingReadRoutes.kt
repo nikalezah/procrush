@@ -8,9 +8,13 @@ import io.ktor.server.routing.route
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
+import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
 import kotlinx.serialization.json.Json
 
-fun Route.matchingReadRoutes(repository: MatchResultsRepository) {
+fun Route.matchingReadRoutes(
+    repository: MatchResultsRepository,
+    projectionRepository: MatchingProjectionRepository,
+) {
     val json = Json { ignoreUnknownKeys = true }
 
     route("/internal") {
@@ -89,12 +93,12 @@ fun Route.matchingReadRoutes(repository: MatchResultsRepository) {
         get("/occupations/{occupationId}/candidate-count") {
             val occupationId = call.parameters["occupationId"]?.toLongOrNull()
                 ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный occupationId"))
-            call.respond(mapOf("count" to repository.countDistinctSeekersForOccupation(occupationId)))
+            call.respond(mapOf("count" to (projectionRepository.countEligibleSeekersForOccupations(listOf(occupationId))[occupationId] ?: 0)))
         }
         get("/occupations/candidate-counts") {
             val raw = call.request.queryParameters["ids"] ?: ""
             val occupationIds = raw.split(',').mapNotNull { it.trim().toLongOrNull() }
-            call.respond(repository.countDistinctSeekersForOccupations(occupationIds))
+            call.respond(projectionRepository.countEligibleSeekersForOccupations(occupationIds))
         }
     }
 }

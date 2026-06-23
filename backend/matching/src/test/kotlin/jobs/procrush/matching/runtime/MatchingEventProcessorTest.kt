@@ -3,12 +3,11 @@ package jobs.procrush.matching.runtime
 import jobs.procrush.bootstrap.config.DatabaseConfig
 import jobs.procrush.matching.events.JobProfileChangedPayload
 import jobs.procrush.matching.events.SeekerProfileChangedPayload
-import jobs.procrush.matching.repository.MatchingRepository
 import jobs.procrush.matching.runtime.bootstrap.MatchingDatabaseRegistry
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
+import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
 import jobs.procrush.matching.runtime.service.MatchingEventProcessor
 import jobs.procrush.personality.dto.PersonalityAxesDto
-import jobs.procrush.shared.repository.ReferenceRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -35,25 +34,17 @@ class MatchingEventProcessorTest {
     @BeforeAll
     fun setup() {
         matchingPostgres.start()
-        val mainConfig =
-            DatabaseConfig.resolve(
-                databaseUrl = System.getenv("DATABASE_URL"),
-                databaseUser = System.getenv("DATABASE_USER"),
-                databasePassword = System.getenv("DATABASE_PASSWORD"),
-            )
         val matchingConfig =
             DatabaseConfig(
                 jdbcUrl = matchingPostgres.jdbcUrl,
                 user = matchingPostgres.username,
                 password = matchingPostgres.password,
             )
-        MatchingDatabaseRegistry.init(mainConfig, matchingConfig)
+        MatchingDatabaseRegistry.init(matchingConfig)
         repository = MatchResultsRepository()
-        val mainDb = MatchingDatabaseRegistry.main
-        val referenceRepository = ReferenceRepository(mainDb)
         processor =
             MatchingEventProcessor(
-                matchingRepository = MatchingRepository(referenceRepository, mainDb),
+                projectionRepository = MatchingProjectionRepository(),
                 matchResultsRepository = repository,
             )
     }
@@ -91,5 +82,49 @@ class MatchingEventProcessorTest {
         assertEquals("Acme", stored!!.companyName)
         assertEquals("Ann", stored.seekerFirstName)
         assertTrue(stored.matchScoreDisplay in 1..100)
+    }
+
+    @Test
+    fun `job event matches only eligible seekers`() {
+        processor.processSeekerProfileChanged(
+            SeekerProfileChangedPayload(
+                seekerId = 43,
+                desiredOccupationIds = listOf(2),
+                skillIds = listOf(1L),
+                personalityReady = false,
+                firstName = "Bob",
+                lastName = "Cee",
+                skillNames = listOf("Kotlin"),
+                matchingEligible = false,
+            ),
+        )
+
+        val jobPayload =
+            JobProfileChangedPayload(
+                jobProfileId = 88_002,
+                occupationId = 2,
+                skillIds = listOf(1L),
+                personalityAxes = PersonalityAxesDto.DEFAULT,
+                isActive = true,
+                companyName = "Beta",
+                occupationName = "Analyst",
+                deleted = false,
+            )
+        processor.processJobProfileChanged(jobPayload)
+        assertTrue(repository.findPair(43, 88_002) == null)
+
+        processor.processSeekerProfileChanged(
+            SeekerProfileChangedPayload(
+                seekerId = 43,
+                desiredOccupationIds = listOf(2),
+                skillIds = listOf(1L),
+                personalityReady = false,
+                firstName = "Bob",
+                lastName = "Cee",
+                skillNames = listOf("Kotlin"),
+                matchingEligible = true,
+            ),
+        )
+        assertTrue(repository.findPair(43, 88_002) != null)
     }
 }

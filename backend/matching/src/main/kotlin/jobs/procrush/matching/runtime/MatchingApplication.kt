@@ -54,7 +54,7 @@ fun main() {
                         )
                     }
                 }
-                matchingReadRoutes(context.matchResultsRepository)
+                matchingReadRoutes(context.matchResultsRepository, context.projectionRepository)
             }
         }
 

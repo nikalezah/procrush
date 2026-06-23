@@ -30,6 +30,7 @@ data class SeekerProfileChangedPayload(
     val firstName: String = "",
     val lastName: String = "",
     val skillNames: List<String> = emptyList(),
+    val matchingEligible: Boolean = false,
 )
 
 @Serializable
@@ -41,6 +42,7 @@ data class SeekerPersonalityReadyPayload(
     val firstName: String = "",
     val lastName: String = "",
     val skillNames: List<String> = emptyList(),
+    val matchingEligible: Boolean = true,
 )
 
 @Serializable

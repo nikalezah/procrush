@@ -5,24 +5,25 @@ import jobs.procrush.matching.events.SeekerPersonalityReadyPayload
 import jobs.procrush.matching.events.SeekerProfileChangedPayload
 import jobs.procrush.matching.model.JobMatchCandidate
 import jobs.procrush.matching.model.SeekerMatchCandidate
-import jobs.procrush.matching.repository.MatchingRepository
 import jobs.procrush.matching.runtime.model.StoredMatchResult
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
+import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
 import jobs.procrush.matching.service.MatchScoringService
 import kotlinx.serialization.json.Json
 import java.time.OffsetDateTime
 
 class MatchingEventProcessor(
-    private val matchingRepository: MatchingRepository,
+    private val projectionRepository: MatchingProjectionRepository,
     private val matchResultsRepository: MatchResultsRepository,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     fun processSeekerProfileChanged(payload: SeekerProfileChangedPayload) {
+        projectionRepository.upsertSeeker(payload)
         if (payload.desiredOccupationIds.isEmpty()) {
             matchResultsRepository.deleteAllForSeeker(payload.seekerId)
             return
         }
-        val jobs = matchingRepository.findMatchableJobProfiles(payload.desiredOccupationIds)
+        val jobs = projectionRepository.findMatchableJobProfiles(payload.desiredOccupationIds)
         val results =
             jobs.mapNotNull { job ->
                 scorePair(payload, job)?.takeIf { job.isActive }
@@ -45,17 +46,20 @@ class MatchingEventProcessor(
                 firstName = payload.firstName,
                 lastName = payload.lastName,
                 skillNames = payload.skillNames,
+                matchingEligible = payload.matchingEligible,
             ),
         )
     }
 
     fun processJobProfileChanged(payload: JobProfileChangedPayload) {
         if (payload.deleted || !payload.isActive) {
+            projectionRepository.deleteJob(payload.jobProfileId)
             matchResultsRepository.deleteAllForJob(payload.jobProfileId)
             return
         }
+        projectionRepository.upsertJob(payload)
         val job = payload.toJobCandidate()
-        val seekers = matchingRepository.findMatchableSeekers(payload.occupationId)
+        val seekers = projectionRepository.findMatchableSeekers(payload.occupationId)
         val results =
             seekers.mapNotNull { seeker ->
                 scorePair(seeker, job)

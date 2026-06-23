@@ -7,7 +7,6 @@ import jobs.procrush.bootstrap.config.Env
 
 data class MatchingServiceAppConfig(
     val port: Int,
-    val mainDatabase: DatabaseConfig,
     val matchingDatabase: DatabaseConfig,
     val appConfig: AppConfig,
 ) {
@@ -28,7 +27,6 @@ data class MatchingServiceAppConfig(
                 )
             return MatchingServiceAppConfig(
                 port = Env.env("MATCHING_SERVICE_PORT", "8092", dotEnv).toIntOrNull() ?: 8092,
-                mainDatabase = appConfig.database,
                 matchingDatabase = matchingDatabase,
                 appConfig = appConfig,
             )
