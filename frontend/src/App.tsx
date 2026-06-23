@@ -17,9 +17,9 @@ import {SeekerPositionsPage} from './pages/seeker/SeekerPositionsPage'
 import {SeekerProfilePage} from './pages/seeker/SeekerProfilePage'
 import {SettingsPage} from './pages/shared/SettingsPage'
 import {
-  EmployerMatchInterestEventsProvider,
-  SeekerMatchInterestEventsProvider,
-  useMatchInterestEvents,
+    EmployerMatchInterestEventsProvider,
+    SeekerMatchInterestEventsProvider,
+    useMatchInterestEvents,
 } from './hooks/useMatchInterestEvents'
 import {PersonalityReadyEventsProvider, usePersonalityReadyEvents,} from './hooks/usePersonalityReadyEvents'
 import type {AuthUserDto} from './api/types'

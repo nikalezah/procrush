@@ -2,10 +2,10 @@
 # Railway service: Settings → Config file: /deploy/railway.frontend.toml, Root Directory: empty
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "deploy/Dockerfile.webReact"
+dockerfilePath = "deploy/Dockerfile.frontend"
 watchPatterns = [
-  "/app/webReact/**",
-  "/deploy/Dockerfile.webReact",
+  "/frontend/**",
+  "/deploy/Dockerfile.frontend",
   "/deploy/railway.frontend.toml",
 ]
 

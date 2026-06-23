@@ -86,7 +86,7 @@ flowchart LR
 
 ### React для веб-клиента
 
-Веб-интерфейс реализован как **отдельное React + Vite + Tailwind приложение** (`app/webReact`), а не через Compose for Web:
+Веб-интерфейс реализован как **отдельное React + Vite + Tailwind приложение** (`frontend`), а не через Compose for Web:
 
 - быстрый старт и знакомый стек для итераций UI;
 - независимый деплой фронтенда (nginx + прокси `/api`);
@@ -98,7 +98,7 @@ flowchart LR
 |------|------------------------------------------------|
 | [`core/`](./core/src) | Общий код для всех таргетов (модели, утилиты)  |
 | [`app/shared/`](./app/shared/src) | UI и логика Compose Multiplatform              |
-| [`app/webReact/`](./app/webReact) | Основной веб-клиент (React)                    |
+| [`frontend/`](./frontend) | Основной веб-клиент (React)                    |
 | [`app/webApp/`](./app/webApp) | Compose Web (JS), экспериментальный auth UI    |
 | [`app/androidApp/`](./app/androidApp), [`app/iosApp/`](./app/iosApp), [`app/desktopApp/`](./app/desktopApp) | Нативные оболочки KMP                          |
 | [`backend/shared/`](./backend/shared/src/main/kotlin) | Общий домен, инфраструктура, миграции Flyway main DB |
@@ -112,7 +112,7 @@ flowchart LR
 ### Требования
 
 - JDK 17+, Docker (PostgreSQL, **Redis 8**, **RabbitMQ 4**, **Kafka**, matching-postgres)
-- Для React: **Node.js 20+** (см. [app/webReact/README.md](./app/webReact/README.md) при ошибке `Unexpected token '||='`)
+- Для React: **Node.js 20+** (см. [frontend/README.md](./frontend/README.md) при ошибке `Unexpected token '||='`)
 
 ### Аутентификация
 
@@ -124,7 +124,7 @@ flowchart LR
 4. **Personality** (обязателен для генерации профиля): `./gradlew :backend:personality:run` — в отдельном терминале
 5. **Matching**: `./gradlew :backend:matching:run` — в отдельном терминале
 6. Веб-клиент:
-   - **React:** `cd app/webReact && npm install && npm run dev` → http://localhost:8081
+   - **React:** `cd frontend && npm install && npm run dev` → http://localhost:8081
    - **Compose:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
 
 Схема БД и справочные данные — в Flyway-миграциях (`backend/shared/src/main/kotlin/db/migration/`) и seed (`backend/shared/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
@@ -191,7 +191,7 @@ Backend использует **Redis 8** для:
 
 ### Запуск приложений
 
-- **React:** `cd app/webReact && npm run dev` → http://localhost:8081
+- **React:** `cd frontend && npm run dev` → http://localhost:8081
 - **API**: `./gradlew :backend:api:run`
 - **Personality**: `./gradlew :backend:personality:run` → health http://localhost:8091/health
 - **Matching**: `./gradlew :backend:matching:run` → health http://localhost:8092/health
@@ -231,7 +231,7 @@ Backend использует **Redis 8** для:
 | RabbitMQ | — | — (Railway template / Docker image) |
 | Kafka | — | — (Railway template / Redpanda / Upstash) |
 
-Образы собираются **из корня репозитория** (backend нуждается в `:core` + `backend/`; frontend — `deploy/Dockerfile.webReact`).
+Образы собираются **из корня репозитория** (backend нуждается в `:core` + `backend/`; frontend — `deploy/Dockerfile.frontend`).
 
 Для backend **не используйте** Railpack/Nixpacks auto-detect — только `builder = "DOCKERFILE"` в конфиге.
 

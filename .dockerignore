@@ -4,10 +4,8 @@
 **/build/
 .kotlin/
 
-# Other app targets (keep app/webReact for deploy/Dockerfile.webReact)
+# KMP app targets (android, ios, webApp, etc.)
 app/*
-!app/webReact
-!app/webReact/**
 
 # Node
 node_modules/

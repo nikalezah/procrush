@@ -1,9 +1,4 @@
-import type {
-  AuthUserDto,
-  CompleteRegistrationRequest,
-  DevLoginRequest,
-  MeResponse,
-} from './types'
+import type {AuthUserDto, CompleteRegistrationRequest, DevLoginRequest, MeResponse,} from './types'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
 

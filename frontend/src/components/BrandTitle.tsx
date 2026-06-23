@@ -1,4 +1,4 @@
-import { AlphaBadge } from './AlphaBadge'
+import {AlphaBadge} from './AlphaBadge'
 
 interface BrandTitleProps {
   size?: 'md' | 'lg'
