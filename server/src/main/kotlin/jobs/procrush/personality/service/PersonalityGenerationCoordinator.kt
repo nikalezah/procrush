@@ -1,5 +1,6 @@
 package jobs.procrush.personality.service
 
+import jobs.procrush.bootstrap.modules.MatchingEventsModule
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.messaging.PersonalityJobPublisher
@@ -16,10 +17,12 @@ class PersonalityGenerationCoordinator(
     private val lockGuard: PersonalityGenerationLockGuard,
     private val publisher: PersonalityJobPublisher,
     private val matchingCacheInvalidator: MatchingCacheInvalidator,
+    private val matchingEvents: MatchingEventsModule,
 ) {
     fun onAllSurveysCompleted(userId: UUID) {
         seekerRepository.findByUserId(userId)?.let { seeker ->
             matchingCacheInvalidator.invalidateSeekerJobs(seeker.id)
+            matchingEvents.payloadFactory.publishSeekerProfileChanged(matchingEvents.publisher, seeker.id)
         }
         maybeTriggerGeneration(userId)
     }

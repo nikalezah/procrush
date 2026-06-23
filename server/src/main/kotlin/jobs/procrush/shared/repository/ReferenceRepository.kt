@@ -12,12 +12,21 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
+import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
-class ReferenceRepository {
+class ReferenceRepository(
+    private val database: Database? = null,
+) {
+    private inline fun <T> inTx(crossinline statement: () -> T): T =
+        when (database) {
+            null -> transaction { statement() }
+            else -> transaction(database) { statement() }
+        }
+
     fun listOccupations(leafOnly: Boolean): List<OccupationDto> =
-        transaction {
+        inTx {
             val query =
                 if (leafOnly) {
                     OccupationsTable.selectAll().where { OccupationsTable.isLeaf eq true }
@@ -30,16 +39,19 @@ class ReferenceRepository {
         }
 
     fun findOccupationsByIds(ids: List<Long>): List<OccupationDto> =
-        transaction {
-            if (ids.isEmpty()) return@transaction emptyList()
-            OccupationsTable
-                .selectAll()
-                .where { OccupationsTable.id inList ids }
-                .map { it.toOccupationDto() }
+        inTx {
+            if (ids.isEmpty()) {
+                emptyList()
+            } else {
+                OccupationsTable
+                    .selectAll()
+                    .where { OccupationsTable.id inList ids }
+                    .map { it.toOccupationDto() }
+            }
         }
 
     fun findOccupationById(id: Long): OccupationDto? =
-        transaction {
+        inTx {
             OccupationsTable
                 .selectAll()
                 .where { OccupationsTable.id eq id }
@@ -48,7 +60,7 @@ class ReferenceRepository {
         }
 
     fun searchSkills(query: String?, limit: Int = 50): List<SkillDto> =
-        transaction {
+        inTx {
             val base =
                 if (query.isNullOrBlank()) {
                     SkillsTable.selectAll()
@@ -64,16 +76,19 @@ class ReferenceRepository {
         }
 
     fun findSkillsByIds(ids: List<Long>): List<SkillDto> =
-        transaction {
-            if (ids.isEmpty()) return@transaction emptyList()
-            SkillsTable
-                .selectAll()
-                .where { SkillsTable.id inList ids }
-                .map { it.toSkillDto() }
+        inTx {
+            if (ids.isEmpty()) {
+                emptyList()
+            } else {
+                SkillsTable
+                    .selectAll()
+                    .where { SkillsTable.id inList ids }
+                    .map { it.toSkillDto() }
+            }
         }
 
     fun listSuperpowersAndTalents(): List<SuperpowerAndTalentDto> =
-        transaction {
+        inTx {
             SuperpowersAndTalentsTable
                 .selectAll()
                 .orderBy(SuperpowersAndTalentsTable.name to SortOrder.ASC)
@@ -81,14 +96,17 @@ class ReferenceRepository {
         }
 
     fun findSuperpowersAndTalentsByNames(names: List<String>): Map<String, Long> =
-        transaction {
-            if (names.isEmpty()) return@transaction emptyMap()
-            SuperpowersAndTalentsTable
-                .selectAll()
-                .where { SuperpowersAndTalentsTable.name inList names }
-                .associate { row ->
-                    row[SuperpowersAndTalentsTable.name]!! to row[SuperpowersAndTalentsTable.id].value
-                }
+        inTx {
+            if (names.isEmpty()) {
+                emptyMap()
+            } else {
+                SuperpowersAndTalentsTable
+                    .selectAll()
+                    .where { SuperpowersAndTalentsTable.name inList names }
+                    .associate { row ->
+                        row[SuperpowersAndTalentsTable.name]!! to row[SuperpowersAndTalentsTable.id].value
+                    }
+            }
         }
 
     private fun ResultRow.toOccupationDto() =

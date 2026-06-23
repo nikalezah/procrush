@@ -28,6 +28,7 @@ kotlinx-datetime = "0.8.0"
 lettuce = "6.7.1.RELEASE"
 testcontainers = "1.21.3"
 amqp-client = "5.25.0"
+kafka-clients = "4.3.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -83,6 +84,9 @@ testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.re
 testcontainers-redis = { module = "com.redis:testcontainers-redis", version = "2.2.4" }
 amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "amqp-client" }
 testcontainers-rabbitmq = { module = "org.testcontainers:rabbitmq", version.ref = "testcontainers" }
+testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka-clients" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

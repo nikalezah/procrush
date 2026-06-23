@@ -5,6 +5,8 @@ import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.llm.LlmFactory
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
+import jobs.procrush.matching.client.MatchingServiceClient
+import jobs.procrush.matching.service.RemoteMatchingQueries
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
 import jobs.procrush.personality.messaging.PersonalityJobConsumer
@@ -52,6 +54,7 @@ data class PersonalityModule(
             redis: RedisModule,
             rabbitMq: RabbitMqModule,
             matchingCacheInvalidator: MatchingCacheInvalidator,
+            matchingEvents: MatchingEventsModule,
             scope: CoroutineScope,
         ): PersonalityModule {
             val profileRepository = SeekerPersonalProfileRepository()
@@ -72,6 +75,7 @@ data class PersonalityModule(
                     lockGuard = lockGuard,
                     publisher = publisher,
                     matchingCacheInvalidator = matchingCacheInvalidator,
+                    matchingEvents = matchingEvents,
                 )
             val reader =
                 PersonalityProfileReader(
@@ -120,6 +124,7 @@ data class PersonalityWorkerModule(
             redis: RedisModule,
             rabbitMq: RabbitMqModule,
             matchingCacheInvalidator: MatchingCacheInvalidator,
+            matchingEvents: MatchingEventsModule,
             scope: CoroutineScope,
         ): PersonalityWorkerModule {
             val profileRepository = SeekerPersonalProfileRepository()
@@ -141,6 +146,7 @@ data class PersonalityWorkerModule(
                     promptBuilder = PersonalityPromptBuilder(),
                     validator = PersonalityProfileValidator(),
                     matchingCacheInvalidator = matchingCacheInvalidator,
+                    matchingEvents = matchingEvents,
                 )
             val dedup =
                 PersonalityMessageDedup(
@@ -200,9 +206,17 @@ data class MatchingModule(
                     matchingRepository = matchingRepository,
                     surveyService = survey.surveyService,
                 )
+            val matchingQueries: jobs.procrush.matching.service.MatchingQueries =
+                config.matchingServiceUrl?.let { url ->
+                    RemoteMatchingQueries(
+                        client = MatchingServiceClient(url),
+                        seekerRepository = auth.seekerRepository,
+                        fallback = coreMatchingService,
+                    )
+                } ?: coreMatchingService
             val matchingService =
                 jobs.procrush.matching.cache.CachedMatchingService(
-                    delegate = coreMatchingService,
+                    delegate = matchingQueries,
                     resolveSeekerId = { userId -> auth.seekerRepository.findByUserId(userId)?.id },
                     redis = redis.client,
                     config = config.redis,
@@ -236,6 +250,7 @@ data class SeekerModule(
             auth: AuthModule,
             matching: MatchingModule,
             survey: SurveyModule,
+            matchingEvents: MatchingEventsModule,
         ): SeekerModule {
             val seekerProfileService =
                 jobs.procrush.seeker.service.SeekerProfileService(
@@ -245,6 +260,7 @@ data class SeekerModule(
                     matching.matchInterestService,
                     survey.surveyService,
                     matching.cacheInvalidator,
+                    matchingEvents,
                 )
             return SeekerModule(seekerProfileService = seekerProfileService)
         }
@@ -255,7 +271,11 @@ data class EmployerModule(
     val employerProfileService: jobs.procrush.employer.service.EmployerProfileService,
 ) {
     companion object {
-        fun create(auth: AuthModule, matching: MatchingModule): EmployerModule {
+        fun create(
+            auth: AuthModule,
+            matching: MatchingModule,
+            matchingEvents: MatchingEventsModule,
+        ): EmployerModule {
             val employerProfileService =
                 jobs.procrush.employer.service.EmployerProfileService(
                     auth.employerRepository,
@@ -263,6 +283,7 @@ data class EmployerModule(
                     matching.matchingService,
                     matching.matchInterestService,
                     matching.cacheInvalidator,
+                    matchingEvents,
                 )
             return EmployerModule(employerProfileService = employerProfileService)
         }

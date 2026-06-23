@@ -3,7 +3,7 @@ package jobs.procrush.bootstrap.config
 import java.nio.file.Files
 import java.nio.file.Path
 
-internal object DotEnv {
+object DotEnv {
     fun load(): Map<String, String> {
         var dir = Path.of(System.getProperty("user.dir"))
         while (true) {

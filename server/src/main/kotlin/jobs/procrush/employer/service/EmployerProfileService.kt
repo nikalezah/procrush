@@ -1,5 +1,6 @@
 package jobs.procrush.employer.service
 
+import jobs.procrush.bootstrap.modules.MatchingEventsModule
 import jobs.procrush.employer.dto.CreateJobProfileRequest
 import jobs.procrush.employer.dto.EmployerDashboardDto
 import jobs.procrush.employer.dto.JobProfileDto
@@ -21,6 +22,7 @@ class EmployerProfileService(
     private val matchingService: CachedMatchingService,
     private val matchInterestService: MatchInterestService,
     private val matchingCacheInvalidator: MatchingCacheInvalidator,
+    private val matchingEvents: MatchingEventsModule,
 ) {
     fun getOrCreateEmployer(userId: UUID) =
         employerRepository.findByUserId(userId) ?: employerRepository.createForUser(userId)
@@ -41,22 +43,35 @@ class EmployerProfileService(
             ?: throw IllegalArgumentException("Должность не найдена")
         val created = employerRepository.createJobProfile(getOrCreateEmployer(userId).id, request)
         matchingCacheInvalidator.invalidateJobCandidates(created.id)
+        val employer = getOrCreateEmployer(userId)
+        matchingEvents.payloadFactory.publishJobProfileChanged(matchingEvents.publisher, created, employer.id)
         return created
     }
 
     fun updateJobProfile(userId: UUID, jobProfileId: Long, request: UpdateJobProfileRequest) {
         referenceRepository.findOccupationById(request.occupationId)
             ?: throw IllegalArgumentException("Должность не найдена")
-        employerRepository.updateJobProfile(getOrCreateEmployer(userId).id, jobProfileId, request)
+        val employer = getOrCreateEmployer(userId)
+        employerRepository.updateJobProfile(employer.id, jobProfileId, request)
             ?: throw ResourceNotFoundException("Профиль не найден")
         matchingCacheInvalidator.invalidateJobCandidates(jobProfileId)
+        val updated = findJobProfile(userId, jobProfileId)
+        matchingEvents.payloadFactory.publishJobProfileChanged(matchingEvents.publisher, updated, employer.id)
     }
 
     fun deleteJobProfile(userId: UUID, jobProfileId: Long) {
-        if (!employerRepository.deleteJobProfile(getOrCreateEmployer(userId).id, jobProfileId)) {
+        val employer = getOrCreateEmployer(userId)
+        val existing = findJobProfile(userId, jobProfileId)
+        if (!employerRepository.deleteJobProfile(employer.id, jobProfileId)) {
             throw ResourceNotFoundException("Профиль не найден")
         }
         matchingCacheInvalidator.invalidateJobCandidates(jobProfileId)
+        matchingEvents.payloadFactory.publishJobProfileChanged(
+            matchingEvents.publisher,
+            existing,
+            employer.id,
+            deleted = true,
+        )
     }
 
     fun findJobProfile(userId: UUID, jobProfileId: Long) =

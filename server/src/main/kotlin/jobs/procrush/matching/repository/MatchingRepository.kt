@@ -22,14 +22,22 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class MatchingRepository(
     private val referenceRepository: ReferenceRepository,
+    private val database: Database? = null,
 ) {
+    private inline fun <T> inTx(crossinline statement: () -> T): T =
+        when (database) {
+            null -> transaction { statement() }
+            else -> transaction(database) { statement() }
+        }
+
     fun findJobProfileById(jobProfileId: Long): JobMatchCandidate? =
-        transaction {
+        inTx {
             EmployerJobProfilesTable
                 .selectAll()
                 .where { EmployerJobProfilesTable.id eq jobProfileId }
@@ -38,14 +46,14 @@ class MatchingRepository(
         }
 
     fun findSeekerMatchCandidate(seekerId: Long, occupationId: Long): SeekerMatchCandidate? =
-        transaction {
+        inTx {
             val occupationName = resolveOccupationName(occupationId)
             buildSeekerMatchCandidates(listOf(seekerId), occupationId, occupationName).firstOrNull()
         }
 
     fun findMatchableJobProfiles(occupationIds: List<Long>): List<JobMatchCandidate> {
         if (occupationIds.isEmpty()) return emptyList()
-        return transaction {
+        return inTx {
             EmployerJobProfilesTable
                 .selectAll()
                 .where {
@@ -57,24 +65,28 @@ class MatchingRepository(
     }
 
     fun findMatchableSeekers(occupationId: Long): List<SeekerMatchCandidate> =
-        transaction {
+        inTx {
             val eligibleSeekerIds = findSeekerIdsWithAllTestsCompleteInTx()
-            if (eligibleSeekerIds.isEmpty()) return@transaction emptyList()
+            if (eligibleSeekerIds.isEmpty()) {
+                emptyList()
+            } else {
+                val seekerIdsForOccupation =
+                    SeekerDesiredPositionsTable
+                        .selectAll()
+                        .where {
+                            (SeekerDesiredPositionsTable.occupationId eq occupationId) and
+                                (SeekerDesiredPositionsTable.seekerId inList eligibleSeekerIds.toList())
+                        }
+                        .map { it[SeekerDesiredPositionsTable.seekerId].value }
+                        .distinct()
 
-            val seekerIdsForOccupation =
-                SeekerDesiredPositionsTable
-                    .selectAll()
-                    .where {
-                        (SeekerDesiredPositionsTable.occupationId eq occupationId) and
-                            (SeekerDesiredPositionsTable.seekerId inList eligibleSeekerIds.toList())
-                    }
-                    .map { it[SeekerDesiredPositionsTable.seekerId].value }
-                    .distinct()
-
-            if (seekerIdsForOccupation.isEmpty()) return@transaction emptyList()
-
-            val occupationName = resolveOccupationName(occupationId)
-            buildSeekerMatchCandidates(seekerIdsForOccupation, occupationId, occupationName)
+                if (seekerIdsForOccupation.isEmpty()) {
+                    emptyList()
+                } else {
+                    val occupationName = resolveOccupationName(occupationId)
+                    buildSeekerMatchCandidates(seekerIdsForOccupation, occupationId, occupationName)
+                }
+            }
         }
 
     fun countMatchableSeekers(occupationId: Long): Int =
@@ -82,28 +94,28 @@ class MatchingRepository(
 
     fun countMatchableSeekersByOccupations(occupationIds: List<Long>): Map<Long, Int> {
         if (occupationIds.isEmpty()) return emptyMap()
-        return transaction {
+        return inTx {
             val eligibleSeekerIds = findSeekerIdsWithAllTestsCompleteInTx()
             if (eligibleSeekerIds.isEmpty()) {
-                return@transaction occupationIds.associateWith { 0 }
+                occupationIds.associateWith { 0 }
+            } else {
+                val distinctSeekersByOccupation = mutableMapOf<Long, MutableSet<Long>>()
+                SeekerDesiredPositionsTable
+                    .selectAll()
+                    .where {
+                        (SeekerDesiredPositionsTable.occupationId inList occupationIds) and
+                            (SeekerDesiredPositionsTable.seekerId inList eligibleSeekerIds.toList())
+                    }
+                    .forEach { row ->
+                        val occupationId = row[SeekerDesiredPositionsTable.occupationId].value
+                        val seekerId = row[SeekerDesiredPositionsTable.seekerId].value
+                        distinctSeekersByOccupation
+                            .getOrPut(occupationId) { mutableSetOf() }
+                            .add(seekerId)
+                    }
+
+                occupationIds.associateWith { distinctSeekersByOccupation[it]?.size ?: 0 }
             }
-
-            val distinctSeekersByOccupation = mutableMapOf<Long, MutableSet<Long>>()
-            SeekerDesiredPositionsTable
-                .selectAll()
-                .where {
-                    (SeekerDesiredPositionsTable.occupationId inList occupationIds) and
-                        (SeekerDesiredPositionsTable.seekerId inList eligibleSeekerIds.toList())
-                }
-                .forEach { row ->
-                    val occupationId = row[SeekerDesiredPositionsTable.occupationId].value
-                    val seekerId = row[SeekerDesiredPositionsTable.seekerId].value
-                    distinctSeekersByOccupation
-                        .getOrPut(occupationId) { mutableSetOf() }
-                        .add(seekerId)
-                }
-
-            occupationIds.associateWith { distinctSeekersByOccupation[it]?.size ?: 0 }
         }
     }
 
@@ -111,24 +123,32 @@ class MatchingRepository(
         seekerId: Long,
         testsAlreadyComplete: Boolean = false,
     ): SeekerMatchingContext? =
-        transaction {
+        inTx {
             if (!testsAlreadyComplete) {
                 val eligibleSeekerIds = findSeekerIdsWithAllTestsCompleteInTx()
-                if (seekerId !in eligibleSeekerIds) return@transaction null
+                if (seekerId !in eligibleSeekerIds) {
+                    null
+                } else {
+                    buildContextForSeeker(seekerId)
+                }
+            } else {
+                buildContextForSeeker(seekerId)
             }
-
-            val skillIds = getSeekerSkillIds(seekerId)
-            val personalityRow =
-                SeekerPersonalProfilesTable
-                    .selectAll()
-                    .where { SeekerPersonalProfilesTable.seekerId eq seekerId }
-                    .firstOrNull()
-
-            buildSeekerMatchingContext(skillIds, personalityRow)
         }
 
+    private fun buildContextForSeeker(seekerId: Long): SeekerMatchingContext {
+        val skillIds = getSeekerSkillIds(seekerId)
+        val personalityRow =
+            SeekerPersonalProfilesTable
+                .selectAll()
+                .where { SeekerPersonalProfilesTable.seekerId eq seekerId }
+                .firstOrNull()
+
+        return buildSeekerMatchingContext(skillIds, personalityRow)
+    }
+
     fun findSeekerIdsWithAllTestsComplete(): Set<Long> =
-        transaction { findSeekerIdsWithAllTestsCompleteInTx() }
+        inTx { findSeekerIdsWithAllTestsCompleteInTx() }
 
     private fun findSeekerIdsWithAllTestsCompleteInTx(): Set<Long> {
         val requiredSurveyIds =

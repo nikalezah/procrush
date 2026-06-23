@@ -1,6 +1,6 @@
 package jobs.procrush.bootstrap.config
 
-internal object Env {
+object Env {
     fun resolve(name: String, dotEnv: Map<String, String>): String? =
         System.getenv(name)?.takeIf { it.isNotBlank() }
             ?: dotEnv[name]?.takeIf { it.isNotBlank() }

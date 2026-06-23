@@ -6,6 +6,7 @@ import jobs.procrush.auth.service.UserAuthService
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.modules.AuthModule
 import jobs.procrush.bootstrap.modules.EmployerModule
+import jobs.procrush.bootstrap.modules.MatchingEventsModule
 import jobs.procrush.bootstrap.modules.MatchingModule
 import jobs.procrush.bootstrap.modules.PersonalityModule
 import jobs.procrush.bootstrap.modules.SeekerModule
@@ -26,6 +27,7 @@ data class AppContext(
     val config: AppConfig,
     val redisModule: RedisModule,
     val rabbitMqModule: RabbitMqModule,
+    private val matchingEventsModule: MatchingEventsModule,
     val userAuthService: UserAuthService,
     val sessionService: SessionService,
     val roleGuard: RoleGuard,
@@ -39,6 +41,7 @@ data class AppContext(
 ) {
     fun close() {
         personalityModule.personalityStatusNotifier.close()
+        matchingEventsModule.close()
         rabbitMqModule.close()
         redisModule.close()
     }
@@ -50,6 +53,8 @@ data class AppContext(
             val rabbitMq = RabbitMqModule.create(config.rabbitMq)
             val auth = AuthModule.create(config, redis)
             val survey = SurveyModule.create(auth)
+            val matchingRepository = jobs.procrush.matching.repository.MatchingRepository(auth.referenceRepository)
+            val matchingEvents = MatchingEventsModule.create(config, auth, matchingRepository)
             val matching = MatchingModule.create(auth, survey, redis, config)
             redis.attachMatchInterestNotifier(matching.matchInterestNotifier)
             val personality =
@@ -60,11 +65,12 @@ data class AppContext(
                     redis = redis,
                     rabbitMq = rabbitMq,
                     matchingCacheInvalidator = matching.cacheInvalidator,
+                    matchingEvents = matchingEvents,
                     scope = coroutineScope,
                 )
             survey.attachPersonalityCoordinator(personality.coordinator)
-            val seeker = SeekerModule.create(auth, matching, survey)
-            val employer = EmployerModule.create(auth, matching)
+            val seeker = SeekerModule.create(auth, matching, survey, matchingEvents)
+            val employer = EmployerModule.create(auth, matching, matchingEvents)
 
             auth.sessionRepository.purgeExpired()
 
@@ -82,6 +88,7 @@ data class AppContext(
                 matchInterestService = matching.matchInterestService,
                 referenceRepository = auth.referenceRepository,
                 personalityModule = personality,
+                matchingEventsModule = matchingEvents,
             )
         }
     }

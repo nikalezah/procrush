@@ -56,13 +56,20 @@ fun Application.module() {
             val rabbitStatus =
                 runCatching { if (app.rabbitMqModule.isConnected()) "ok" else "down" }
                     .getOrElse { "down" }
-            val healthy = redisStatus == "ok" && rabbitStatus == "ok"
+            val kafkaStatus =
+                if (app.config.kafka.bootstrapServers.isNotBlank()) "ok" else "down"
+            val healthy = redisStatus == "ok" && rabbitStatus == "ok" && kafkaStatus == "ok"
             if (healthy) {
-                call.respond(mapOf("status" to "ok", "redis" to "ok", "rabbitmq" to "ok"))
+                call.respond(mapOf("status" to "ok", "redis" to "ok", "rabbitmq" to "ok", "kafka" to "ok"))
             } else {
                 call.respond(
                     HttpStatusCode.ServiceUnavailable,
-                    mapOf("status" to "degraded", "redis" to redisStatus, "rabbitmq" to rabbitStatus),
+                    mapOf(
+                        "status" to "degraded",
+                        "redis" to redisStatus,
+                        "rabbitmq" to rabbitStatus,
+                        "kafka" to kafkaStatus,
+                    ),
                 )
             }
         }

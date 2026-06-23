@@ -1,0 +1,23 @@
+# Matching Service — Kafka consumer + HTTP read API for precomputed match results.
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /app
+
+COPY gradlew gradlew
+COPY gradle gradle
+COPY settings.gradle.kts build.gradle.kts gradle.properties ./
+COPY core core
+COPY server server
+COPY matching-service matching-service
+
+RUN chmod +x gradlew \
+    && ./gradlew :matching-service:installDist -x test --no-daemon \
+        -Dorg.gradle.configuration-cache=false
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /app/matching-service/build/install/matching-service ./
+
+ENV MATCHING_SERVICE_PORT=8092
+EXPOSE 8092
+
+CMD ["bin/matching-service"]

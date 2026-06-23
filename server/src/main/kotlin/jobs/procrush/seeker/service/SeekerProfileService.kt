@@ -1,5 +1,6 @@
 package jobs.procrush.seeker.service
 
+import jobs.procrush.bootstrap.modules.MatchingEventsModule
 import jobs.procrush.matching.cache.CachedMatchingService
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
@@ -26,6 +27,7 @@ class SeekerProfileService(
     private val matchInterestService: MatchInterestService,
     private val surveyService: SurveyService,
     private val matchingCacheInvalidator: MatchingCacheInvalidator,
+    private val matchingEvents: MatchingEventsModule,
 ) {
     fun getOrCreateSeeker(userId: UUID) =
         seekerRepository.findByUserId(userId) ?: seekerRepository.createForUser(userId)
@@ -83,6 +85,7 @@ class SeekerProfileService(
         val seeker = getOrCreateSeeker(userId)
         seekerRepository.setSkillIds(seeker.id, skillIds)
         matchingCacheInvalidator.invalidateSeekerJobs(seeker.id)
+        matchingEvents.payloadFactory.publishSeekerProfileChanged(matchingEvents.publisher, seeker.id)
         return getSkills(userId)
     }
 
@@ -101,6 +104,7 @@ class SeekerProfileService(
         }
         seekerRepository.setDesiredOccupationIds(seeker.id, occupationIds)
         matchingCacheInvalidator.invalidateSeekerJobs(seeker.id)
+        matchingEvents.payloadFactory.publishSeekerProfileChanged(matchingEvents.publisher, seeker.id)
         return getDesiredPositions(userId)
     }
 
