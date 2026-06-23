@@ -38,7 +38,7 @@ flowchart LR
 
 **2. Расчёты.** Для каждого опроса в БД хранятся ключи подсчёта (`survey_keys`). `SurveyScoringService` применяет нужную логику (`open_text`, `matrix`, `direct_sum`, `formula`) и записывает структурированный JSON в `survey_results.calculated_results`. Примеры: суммы по осям DISC, роли Белбина, нормализованные баллы шкалы 0–4.
 
-**3. Интерпретация.** Когда завершены обе группы тестов, API ставит задачу в очередь RabbitMQ; отдельный **personality-worker** забирает задачу и вызывает LLM:
+**3. Интерпретация.** Когда завершены обе группы тестов, API ставит задачу в очередь RabbitMQ; отдельный процесс **personality** забирает задачу и вызывает LLM:
 
 - собирается контекст: ответы, результаты расчётов и глоссарий терминов (`SurveyService.buildLlmContext`);
 - LLM получает системный промпт с требуемой JSON-схемой (`PersonalityPromptBuilder`);
@@ -156,9 +156,9 @@ Backend использует **Redis 8** для:
 
 Проверка worker: `GET http://localhost:8091/health` → тот же формат (`WORKER_HEALTH_PORT`, по умолчанию **8091**, не 8081 — React dev server).
 
-#### Статус Этапа 3 (RabbitMQ + personality-worker)
+#### Статус Этапа 3 (RabbitMQ + personality)
 
-Этап 3 **завершён**: API ставит задачи в очередь, отдельный процесс `personality-worker` потребляет их, LLM вызывается вне API.
+Этап 3 **завершён**: API ставит задачи в очередь, отдельный процесс `personality` потребляет их, LLM вызывается вне API.
 
 | Критерий | Статус |
 |----------|--------|
@@ -171,16 +171,16 @@ Backend использует **Redis 8** для:
 
 **Известные пробелы (не блокируют Этап 4):** нет end-to-end теста «publish → consume → READY». Deployable-модули (`api`, `matching`, `personality`) зависят от общей библиотеки `:backend:shared`.
 
-### Kafka + matching-service (Этап 4)
+### Kafka + matching (Этап 4)
 
-**Kafka** — event log для пересчёта матчинга. API и personality-worker публикуют доменные события; **matching-service** потребляет их и пишет результаты в **отдельную PostgreSQL** (`procrush_matching`).
+**Kafka** — event log для пересчёта матчинга. API и personality публикуют доменные события; **matching** потребляет их и пишет результаты в **отдельную PostgreSQL** (`procrush_matching`).
 
 - Локально: `docker compose up -d` поднимает также Kafka (`localhost:9092`) и matching-postgres (`localhost:5433`)
 - `KAFKA_BOOTSTRAP_SERVERS=localhost:9092`
 - `MATCHING_DATABASE_URL=jdbc:postgresql://localhost:5433/procrush_matching`
-- `MATCHING_SERVICE_URL=http://localhost:8092` — если задан, API читает рекомендации из matching-service по HTTP
+- `MATCHING_SERVICE_URL=http://localhost:8092` — если задан, API читает рекомендации из matching по HTTP
 
-Проверка matching-service: `GET http://localhost:8092/health` → `{"status":"ok","postgres":"ok","kafka":"ok","redis":"ok"}`.
+Проверка matching: `GET http://localhost:8092/health` → `{"status":"ok","postgres":"ok","kafka":"ok","redis":"ok"}`.
 
 | Endpoint | Описание |
 |----------|----------|
@@ -215,15 +215,15 @@ Backend использует **Redis 8** для:
 
 ## Деплой на Railway (GitHub)
 
-В одном проекте Railway девять сервисов: **Postgres**, **Matching Postgres**, **Redis**, **RabbitMQ**, **Kafka**, **Backend** (Ktor API), **Personality Worker**, **Matching Service**, **Frontend** (React + nginx). Пользователи открывают только URL фронтенда; nginx проксирует `/api/*` на backend по приватной сети Railway.
+В одном проекте Railway девять сервисов: **Postgres**, **Matching Postgres**, **Redis**, **RabbitMQ**, **Kafka**, **Backend** (Ktor API), **Personality**, **Matching**, **Frontend** (React + nginx). Пользователи открывают только URL фронтенда; nginx проксирует `/api/*` на backend по приватной сети Railway.
 
 ### Архитектура
 
 | Сервис | Root Directory | Config file (от корня репо) |
 |--------|----------------|----------------------------|
 | Backend | **пусто** (корень репо) | `/railway.toml` |
-| Personality Worker | **пусто** | `/deploy/railway.personality-worker.toml` |
-| Matching Service | **пусто** | `/deploy/railway.matching-service.toml` |
+| Personality | **пусто** | `/deploy/railway.personality.toml` |
+| Matching | **пусто** | `/deploy/railway.matching.toml` |
 | Frontend | **пусто** | `/deploy/railway.frontend.toml` |
 | Postgres | — | — |
 | Matching Postgres | — | — |
@@ -275,12 +275,12 @@ git push -u origin master
 6. Деплой (автоматически при push или **Deploy** в dashboard).
 7. Публичный домен опционален (health: `GET /health`).
 
-#### Personality Worker
+#### Personality
 
-1. **+ New** → **Empty Service** → имя `PersonalityWorker`.
+1. **+ New** → **Empty Service** → имя `Personality`.
 2. **Settings → Source**: **тот же** репозиторий и ветка.
 3. **Settings → Root Directory**: **пусто**.
-4. **Settings → Config file**: `/deploy/railway.personality-worker.toml`.
+4. **Settings → Config file**: `/deploy/railway.personality.toml`.
 5. **Variables**:
 
    | Переменная | Значение |
@@ -322,7 +322,7 @@ git push -u origin master
 1. Postgres (уже создан)
 2. Redis, RabbitMQ
 3. Backend (`/health`, Flyway в логах)
-4. Personality Worker (`/health`, consumer в логах)
+4. Personality (`/health`, consumer в логах)
 5. Frontend (публичный домен + `BACKEND_UPSTREAM`)
 6. Повторный деплой Backend, если нужно обновить `WEB_ORIGIN` / `FRONTEND_URL`
 
@@ -342,4 +342,4 @@ git push -u origin master
 - Railway выставляет `PORT` для обоих сервисов.
 - `DATABASE_URL` от Postgres — `postgresql://...`; сервер добавляет JDBC `sslmode=require`.
 
-Переменные LLM для **Personality Worker** (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.) — см. комментарии в [`env.example`](./env.example). На Backend при раздельном worker можно задать `LLM_USE_STUB=true`.
+Переменные LLM для **Personality** (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.) — см. комментарии в [`env.example`](./env.example). На Backend при раздельном personality можно задать `LLM_USE_STUB=true`.
