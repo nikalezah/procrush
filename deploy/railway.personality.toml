@@ -1,0 +1,21 @@
+# Personality — build from the repository root.
+# Railway service: Settings → Config file: /deploy/railway.personality-worker.toml, Root Directory: empty
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "deploy/Dockerfile.personality"
+watchPatterns = [
+  "/backend/personality/**",
+  "/backend/shared/**",
+  "/core/**",
+  "/deploy/Dockerfile.personality",
+  "/gradle/**",
+  "/gradlew",
+  "/settings.gradle.kts",
+  "/build.gradle.kts",
+  "/gradle.properties",
+  "/deploy/railway.personality-worker.toml",
+]
+
+[deploy]
+healthcheckPath = "/health"
+restartPolicyType = "ON_FAILURE"

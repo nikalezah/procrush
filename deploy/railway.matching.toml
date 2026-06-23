@@ -1,0 +1,21 @@
+# Matching — build from the repository root.
+# Railway service: Settings → Config file: /deploy/railway.matching-service.toml, Root Directory: empty
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "deploy/Dockerfile.matching"
+watchPatterns = [
+  "/backend/matching/**",
+  "/backend/shared/**",
+  "/core/**",
+  "/deploy/Dockerfile.matching",
+  "/gradle/**",
+  "/gradlew",
+  "/settings.gradle.kts",
+  "/build.gradle.kts",
+  "/gradle.properties",
+  "/deploy/railway.matching-service.toml",
+]
+
+[deploy]
+healthcheckPath = "/health"
+restartPolicyType = "ON_FAILURE"

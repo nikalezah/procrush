@@ -2,11 +2,12 @@
 # Railway service: Settings → Config file: /railway.toml, Root Directory: empty
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "deploy/Dockerfile.server"
+dockerfilePath = "deploy/Dockerfile.api"
 watchPatterns = [
-  "/server/**",
+  "/backend/api/**",
+  "/backend/shared/**",
   "/core/**",
-  "/deploy/Dockerfile.server",
+  "/deploy/Dockerfile.api",
   "/gradle/**",
   "/gradlew",
   "/settings.gradle.kts",

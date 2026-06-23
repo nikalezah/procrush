@@ -20,7 +20,7 @@
 1. **Тест 1 (`core`)** — восемь последовательных методик (открытые вопросы, выбор качеств, DISC, дилеммы, Белбин и др.). Шаги можно пересматривать, пока вся группа не завершена.
 2. **Тест 2 (`64qn`)** — личностный опросник на 64 вопроса (шкала 0–4). Открывается только после полного завершения группы `core`.
 
-Правила блокировки и навигации между шагами — в `server/.../survey/SurveyFlowRules.kt`.
+Правила блокировки и навигации между шагами — в `backend/shared/.../survey/SurveyFlowRules.kt`.
 
 ### Цепочка «тесты → расчёты → интерпретация»
 
@@ -101,9 +101,10 @@ flowchart LR
 | [`app/webReact/`](./app/webReact) | Основной веб-клиент (React)                    |
 | [`app/webApp/`](./app/webApp) | Compose Web (JS), экспериментальный auth UI    |
 | [`app/androidApp/`](./app/androidApp), [`app/iosApp/`](./app/iosApp), [`app/desktopApp/`](./app/desktopApp) | Нативные оболочки KMP                          |
-| [`server/`](./server/src/main/kotlin) | Ktor API, домен, миграции Flyway, расчёты, очереди |
-| [`personality-worker/`](./personality-worker) | Worker: потребление задач RabbitMQ, вызов LLM |
-| [`matching-service/`](./matching-service) | Kafka consumer + HTTP read API, отдельная БД матчинга |
+| [`backend/shared/`](./backend/shared/src/main/kotlin) | Общий домен, инфраструктура, миграции Flyway main DB |
+| [`backend/api/`](./backend/api/src/main/kotlin) | Ktor HTTP API для клиентов (routes, plugins) |
+| [`backend/personality/`](./backend/personality) | RabbitMQ consumer + health endpoint |
+| [`backend/matching/`](./backend/matching) | Kafka consumer + HTTP read API, отдельная БД матчинга |
 | [`deploy/`](./deploy) | Dockerfile для Railway                         |
 
 ## Локальная разработка
@@ -119,14 +120,14 @@ flowchart LR
 
 1. Скопируйте [`env.example`](./env.example) в `.env` (`AUTH_DEV_MODE=true`; `REDIS_URL=redis://localhost:6379`; `RABBITMQ_URL=amqp://procrush:procrush@localhost:5672/%2F`; `KAFKA_BOOTSTRAP_SERVERS=localhost:9092`; в `WEB_ORIGIN` укажите оба origin, если работаете и с React, и с Compose).
 2. PostgreSQL, Redis, RabbitMQ, Kafka и matching-postgres: `docker compose up -d`
-3. API: `./gradlew :server:run` (миграции Flyway применяются автоматически; **без `REDIS_URL`, `RABBITMQ_URL` и `KAFKA_BOOTSTRAP_SERVERS` сервер не стартует**)
-4. **Personality worker** (обязателен для генерации профиля): `./gradlew :personality-worker:run` — в отдельном терминале
-5. **Matching service**: `./gradlew :matching-service:run` — в отдельном терминале
+3. API: `./gradlew :backend:api:run` (миграции Flyway применяются автоматически; **без `REDIS_URL`, `RABBITMQ_URL` и `KAFKA_BOOTSTRAP_SERVERS` сервер не стартует**)
+4. **Personality** (обязателен для генерации профиля): `./gradlew :backend:personality:run` — в отдельном терминале
+5. **Matching**: `./gradlew :backend:matching:run` — в отдельном терминале
 6. Веб-клиент:
    - **React:** `cd app/webReact && npm install && npm run dev` → http://localhost:8081
    - **Compose:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
 
-Схема БД и справочные данные — в Flyway-миграциях (`server/src/main/kotlin/db/migration/`) и seed (`server/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
+Схема БД и справочные данные — в Flyway-миграциях (`backend/shared/src/main/kotlin/db/migration/`) и seed (`backend/shared/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
 
 ```bash
 docker compose down -v && docker compose up -d
@@ -162,13 +163,13 @@ Backend использует **Redis 8** для:
 | Критерий | Статус |
 |----------|--------|
 | Publisher в API | `PersonalityGenerationCoordinator` → `PersonalityJobPublisher` |
-| Отдельный worker | модуль `personality-worker`, Dockerfile `deploy/Dockerfile.personality-worker` |
+| Отдельный worker | модуль `backend/personality`, Dockerfile `deploy/Dockerfile.personality` |
 | Consumer только в worker | `AppContext` не стартует consumer; `WorkerContext` — да |
 | Retry + DLQ | до 3 попыток, затем `personality.generation.dlq` |
 | Distributed lock + dedup | Redis lock и `PersonalityMessageDedup` |
 | SSE / pub-sub | `RedisPersonalityStatusNotifier` + SSE |
 
-**Известные пробелы (не блокируют Этап 4):** нет end-to-end теста «publish → consume → READY»; worker переиспользует код из `:server` (process separation, не полная изоляция артефакта).
+**Известные пробелы (не блокируют Этап 4):** нет end-to-end теста «publish → consume → READY». Deployable-модули (`api`, `matching`, `personality`) зависят от общей библиотеки `:backend:shared`.
 
 ### Kafka + matching-service (Этап 4)
 
@@ -191,9 +192,9 @@ Backend использует **Redis 8** для:
 ### Запуск приложений
 
 - **React:** `cd app/webReact && npm run dev` → http://localhost:8081
-- **Server**: `./gradlew :server:run`
-- **Personality worker**: `./gradlew :personality-worker:run` → health http://localhost:8091/health
-- **Matching service**: `./gradlew :matching-service:run` → health http://localhost:8092/health
+- **API**: `./gradlew :backend:api:run`
+- **Personality**: `./gradlew :backend:personality:run` → health http://localhost:8091/health
+- **Matching**: `./gradlew :backend:matching:run` → health http://localhost:8092/health
 - Android: `./gradlew :app:androidApp:assembleDebug`
 - Desktop: `./gradlew :app:desktopApp:run` (hot reload: `:app:desktopApp:hotRun --auto`)
 - iOS: открыть [`app/iosApp`](./app/iosApp) в Xcode
@@ -202,9 +203,10 @@ Backend использует **Redis 8** для:
 
 - Android: `./gradlew :app:shared:testAndroidHostTest`
 - Desktop: `./gradlew :app:shared:jvmTest`
-- Server: `./gradlew :server:test`
-- Personality worker: `./gradlew :personality-worker:installDist`
-- Matching service: `./gradlew :matching-service:test`
+- API: `./gradlew :backend:api:test`
+- Shared: `./gradlew :backend:shared:test`
+- Personality: `./gradlew :backend:personality:installDist`
+- Matching: `./gradlew :backend:matching:test`
 - Web (Wasm): `./gradlew :app:shared:wasmJsTest`
 - Web (JS): `./gradlew :app:shared:jsTest`
 - iOS: `./gradlew :app:shared:iosSimulatorArm64Test`
@@ -229,7 +231,7 @@ Backend использует **Redis 8** для:
 | RabbitMQ | — | — (Railway template / Docker image) |
 | Kafka | — | — (Railway template / Redpanda / Upstash) |
 
-Образы собираются **из корня репозитория** (backend нуждается в `:core` + `:server`; frontend — `deploy/Dockerfile.webReact`).
+Образы собираются **из корня репозитория** (backend нуждается в `:core` + `backend/`; frontend — `deploy/Dockerfile.webReact`).
 
 Для backend **не используйте** Railpack/Nixpacks auto-detect — только `builder = "DOCKERFILE"` в конфиге.
 
@@ -306,7 +308,7 @@ git push -u origin master
 
    Используйте точные имена сервисов. **Не** используйте `${{Backend.PORT}}` — cross-service ссылки на `PORT` часто пустые, nginx падает с `invalid port in upstream`.
 
-   API слушает порт `8080` (`deploy/Dockerfile.server`, Ktor по умолчанию без `PORT`).
+   API слушает порт `8080` (`deploy/Dockerfile.api`, Ktor по умолчанию без `PORT`).
 
 6. **Networking → Public Networking**: **Generate Domain** (обязательно для пользователей).
 7. Деплой.

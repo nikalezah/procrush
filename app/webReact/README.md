@@ -5,7 +5,7 @@ Dev server: http://localhost:8081 (proxies `/api` to Ktor on :8080).
 ## Requirements
 
 - **Node.js 20+** (LTS 22 recommended)
-- Running API: `./gradlew :server:run` from repo root
+- Running API: `./gradlew :backend:api:run` from repo root
 - `.env` with `AUTH_DEV_MODE=true` and `WEB_ORIGIN` including `http://localhost:8081`
 
 ## Commands
