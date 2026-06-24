@@ -11,7 +11,7 @@ application {
 }
 
 dependencies {
-    implementation(projects.backend.shared)
+    implementation(projects.backend.bootstrap)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)
@@ -22,6 +22,13 @@ dependencies {
     implementation(libs.ktor.serverSse)
     implementation(libs.ktor.serialization.kotlinxJson)
     testImplementation(libs.ktor.serverTestHost)
-    testImplementation(libs.kotlin.testJunit)
+    testImplementation(libs.kotlin.testJunit5)
     testImplementation(libs.junit.jupiter)
+}
+
+tasks.test {
+    useJUnitPlatform()
+    filter {
+        isFailOnNoMatchingTests = false
+    }
 }

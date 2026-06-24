@@ -5,7 +5,11 @@ builder = "DOCKERFILE"
 dockerfilePath = "deploy/Dockerfile.personality"
 watchPatterns = [
   "/backend/personality/**",
-  "/backend/shared/**",
+  "/backend/contracts/**",
+  "/backend/infra/**",
+  "/backend/schema/**",
+  "/backend/domain/**",
+  "/backend/wire/**",
   "/core/**",
   "/deploy/Dockerfile.personality",
   "/gradle/**",

@@ -100,5 +100,40 @@ fun Route.matchingReadRoutes(
             val occupationIds = raw.split(',').mapNotNull { it.trim().toLongOrNull() }
             call.respond(projectionRepository.countEligibleSeekersForOccupations(occupationIds))
         }
+        get("/job-profiles/{jobProfileId}/display") {
+            val jobProfileId = call.parameters["jobProfileId"]?.toLongOrNull()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный jobProfileId"))
+            val job = projectionRepository.findJobSnapshot(jobProfileId)
+                ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("message" to "Не найдено"))
+            call.respond(
+                JobRecommendationDto(
+                    id = job.jobProfileId,
+                    companyName = job.companyName,
+                    positionName = job.occupationName,
+                    description = job.description.orEmpty(),
+                    matchScore = 0.0,
+                    matchScoreDisplay = 0,
+                ),
+            )
+        }
+        get("/seekers/{seekerId}/jobs/{jobProfileId}/display-candidate") {
+            val seekerId = call.parameters["seekerId"]?.toLongOrNull()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный seekerId"))
+            val jobProfileId = call.parameters["jobProfileId"]?.toLongOrNull()
+                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный jobProfileId"))
+            val seeker = projectionRepository.findSeekerSnapshotForJob(seekerId, jobProfileId)
+                ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("message" to "Не найдено"))
+            call.respond(
+                CandidateRecommendationDto(
+                    id = seeker.seekerId,
+                    firstName = seeker.firstName,
+                    lastName = seeker.lastName,
+                    positionName = seeker.occupationName,
+                    skills = seeker.skillNames,
+                    matchScore = 0.0,
+                    matchScoreDisplay = 0,
+                ),
+            )
+        }
     }
 }

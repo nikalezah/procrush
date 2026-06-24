@@ -6,11 +6,11 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import jobs.procrush.bootstrap.WorkerContext
-import jobs.procrush.bootstrap.config.AppConfig
+import jobs.procrush.bootstrap.config.WorkerAppConfig
+import jobs.procrush.personality.bootstrap.WorkerContext
 
 fun main() {
-    val config = AppConfig.fromEnvironment()
+    val config = WorkerAppConfig.fromEnvironment()
     val context = WorkerContext.create(config)
     val server =
         embeddedServer(Netty, port = config.workerHealthPort, host = "::") {

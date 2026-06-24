@@ -13,7 +13,8 @@ application {
 }
 
 dependencies {
-    implementation(projects.backend.shared)
+    implementation(projects.backend.contracts)
+    implementation(projects.backend.infra)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)

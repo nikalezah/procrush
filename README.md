@@ -20,7 +20,7 @@
 1. **Тест 1 (`core`)** — восемь последовательных методик (открытые вопросы, выбор качеств, DISC, дилеммы, Белбин и др.). Шаги можно пересматривать, пока вся группа не завершена.
 2. **Тест 2 (`64qn`)** — личностный опросник на 64 вопроса (шкала 0–4). Открывается только после полного завершения группы `core`.
 
-Правила блокировки и навигации между шагами — в `backend/shared/.../survey/SurveyFlowRules.kt`.
+Правила блокировки и навигации между шагами — в `backend/contracts/.../survey/SurveyFlowRules.kt`.
 
 ### Цепочка «тесты → расчёты → интерпретация»
 
@@ -50,7 +50,7 @@ flowchart LR
 
 После завершения обеих групп тестов соискатель указывает желаемые профессии. Работодатель создаёт профили вакансий с привязкой к профессии, навыкам и ожидаемым личностным осям.
 
-**Рекомендации.** `MatchingService` подбирает пары «соискатель ↔ вакансия» в рамках совпадающей профессии и считает оценку совпадения (`MatchScoringService`): доля пересечения навыков (Jaccard) и, если у соискателя готов личностный профиль, сходство по осям личности (50/50). Списки сортируются по убыванию score.
+**Рекомендации.** Отдельный сервис **matching** (`backend/matching`) — единственный источник рекомендаций: API читает их по HTTP (`MATCHING_SERVICE_URL` обязателен). Пары «соискатель ↔ вакансия» подбираются в рамках совпадающей профессии; оценка совпадения (`MatchScoringService`) — доля пересечения навыков (Jaccard) и, если у соискателя готов личностный профиль, сходство по осям личности (50/50). Списки сортируются по убыванию score.
 
 | Сторона | Список рекомендаций |
 |---------|---------------------|
@@ -101,7 +101,11 @@ flowchart LR
 | [`frontend/`](./frontend) | Основной веб-клиент (React)                    |
 | [`app/webApp/`](./app/webApp) | Compose Web (JS), экспериментальный auth UI    |
 | [`app/androidApp/`](./app/androidApp), [`app/iosApp/`](./app/iosApp), [`app/desktopApp/`](./app/desktopApp) | Нативные оболочки KMP                          |
-| [`backend/shared/`](./backend/shared/src/main/kotlin) | Общий домен, инфраструктура, миграции Flyway main DB |
+| [`backend/contracts/`](./backend/contracts/src/main/kotlin) | DTO, события, чистая доменная логика без инфраструктуры |
+| [`backend/infra/`](./backend/infra/src/main/kotlin) | Конфиг, Redis/Rabbit/Kafka, LLM-клиенты, миграции Flyway main DB |
+| [`backend/domain/`](./backend/domain) | Bounded contexts: auth, seeker, employer, survey, matching, personality |
+| [`backend/wire/`](./backend/wire/src/main/kotlin) | DI-модули и orchestration-сервисы профилей |
+| [`backend/bootstrap/`](./backend/bootstrap/src/main/kotlin) | Composition root API (`AppContext`) |
 | [`backend/api/`](./backend/api/src/main/kotlin) | Ktor HTTP API для клиентов (routes, plugins) |
 | [`backend/personality/`](./backend/personality) | RabbitMQ consumer + health endpoint |
 | [`backend/matching/`](./backend/matching) | Kafka consumer + HTTP read API, отдельная БД матчинга |
@@ -120,14 +124,14 @@ flowchart LR
 
 1. Скопируйте [`env.example`](./env.example) в `.env` (`AUTH_DEV_MODE=true`; `REDIS_URL=redis://localhost:6379`; `RABBITMQ_URL=amqp://procrush:procrush@localhost:5672/%2F`; `KAFKA_BOOTSTRAP_SERVERS=localhost:9092`; в `WEB_ORIGIN` укажите оба origin, если работаете и с React, и с Compose).
 2. PostgreSQL, Redis, RabbitMQ, Kafka и matching-postgres: `docker compose up -d`
-3. API: `./gradlew :backend:api:run` (миграции Flyway применяются автоматически; **без `REDIS_URL`, `RABBITMQ_URL` и `KAFKA_BOOTSTRAP_SERVERS` сервер не стартует**)
+3. API: `./gradlew :backend:api:run` (миграции Flyway применяются автоматически; **без `REDIS_URL`, `RABBITMQ_URL`, `KAFKA_BOOTSTRAP_SERVERS` и `MATCHING_SERVICE_URL` сервер не стартует**)
 4. **Personality** (обязателен для генерации профиля): `./gradlew :backend:personality:run` — в отдельном терминале
-5. **Matching**: `./gradlew :backend:matching:run` — в отдельном терминале
+5. **Matching** (обязателен для рекомендаций): `./gradlew :backend:matching:run` — в отдельном терминале
 6. Веб-клиент:
    - **React:** `cd frontend && npm install && npm run dev` → http://localhost:8081
    - **Compose:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
 
-Схема БД и справочные данные — в Flyway-миграциях (`backend/shared/src/main/kotlin/db/migration/`) и seed (`backend/shared/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
+Схема БД и справочные данные — в Flyway-миграциях (`backend/infra/src/main/kotlin/db/migration/`) и seed (`backend/infra/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
 
 ```bash
 docker compose down -v && docker compose up -d
@@ -169,7 +173,7 @@ Backend использует **Redis 8** для:
 | Distributed lock + dedup | Redis lock и `PersonalityMessageDedup` |
 | SSE / pub-sub | `RedisPersonalityStatusNotifier` + SSE |
 
-**Известные пробелы (не блокируют Этап 4):** нет end-to-end теста «publish → consume → READY». Deployable-модули (`api`, `matching`, `personality`) зависят от общей библиотеки `:backend:shared`.
+**Известные пробелы (не блокируют Этап 4):** нет end-to-end теста «publish → consume → READY».
 
 ### Kafka + matching (Этап 4)
 
@@ -204,7 +208,8 @@ Backend использует **Redis 8** для:
 - Android: `./gradlew :app:shared:testAndroidHostTest`
 - Desktop: `./gradlew :app:shared:jvmTest`
 - API: `./gradlew :backend:api:test`
-- Shared: `./gradlew :backend:shared:test`
+- Contracts: `./gradlew :backend:contracts:test`
+- Domain matching: `./gradlew :backend:domain:matching:test`
 - Personality: `./gradlew :backend:personality:installDist`
 - Matching: `./gradlew :backend:matching:test`
 - Web (Wasm): `./gradlew :app:shared:wasmJsTest`

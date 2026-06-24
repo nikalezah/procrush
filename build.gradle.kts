@@ -10,3 +10,11 @@ plugins {
     alias(libs.plugins.ktor) apply false
     alias(libs.plugins.kotlinSerialization) apply false
 }
+
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        dependencies {
+            add("testRuntimeOnly", rootProject.libs.junit.platform.launcher)
+        }
+    }
+}

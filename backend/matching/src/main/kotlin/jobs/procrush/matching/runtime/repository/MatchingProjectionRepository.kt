@@ -83,6 +83,31 @@ class MatchingProjectionRepository(
         }
     }
 
+    fun findJobSnapshot(jobProfileId: Long): JobMatchCandidate? =
+        transaction(MatchingDatabaseRegistry.matching) {
+            JobProfileSnapshotsTable
+                .selectAll()
+                .where { JobProfileSnapshotsTable.jobProfileId eq jobProfileId }
+                .firstOrNull()
+                ?.toJobMatchCandidate()
+        }
+
+    fun findSeekerSnapshotForJob(seekerId: Long, jobProfileId: Long): SeekerMatchCandidate? =
+        transaction(MatchingDatabaseRegistry.matching) {
+            val job =
+                JobProfileSnapshotsTable
+                    .selectAll()
+                    .where { JobProfileSnapshotsTable.jobProfileId eq jobProfileId }
+                    .firstOrNull()
+                    ?: return@transaction null
+            val occupationId = job[JobProfileSnapshotsTable.occupationId]
+            SeekerSnapshotsTable
+                .selectAll()
+                .where { SeekerSnapshotsTable.seekerId eq seekerId }
+                .firstOrNull()
+                ?.toSeekerMatchCandidate(occupationId)
+        }
+
     fun findMatchableJobProfiles(occupationIds: List<Long>): List<JobMatchCandidate> {
         if (occupationIds.isEmpty()) return emptyList()
         return transaction(MatchingDatabaseRegistry.matching) {

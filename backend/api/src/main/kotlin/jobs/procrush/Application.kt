@@ -13,6 +13,7 @@ import io.ktor.server.sse.SSE
 import jobs.procrush.auth.route.authRoutes
 import jobs.procrush.bootstrap.AppContext
 import jobs.procrush.bootstrap.DatabaseFactory
+import jobs.procrush.bootstrap.checkMatchingServiceHealthBlocking
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.plugins.configureCallLogging
 import jobs.procrush.bootstrap.plugins.configureCors
@@ -58,9 +59,20 @@ fun Application.module() {
                     .getOrElse { "down" }
             val kafkaStatus =
                 if (app.config.kafka.bootstrapServers.isNotBlank()) "ok" else "down"
-            val healthy = redisStatus == "ok" && rabbitStatus == "ok" && kafkaStatus == "ok"
+            val matchingStatus =
+                runCatching { if (app.checkMatchingServiceHealthBlocking()) "ok" else "down" }
+                    .getOrElse { "down" }
+            val healthy = redisStatus == "ok" && rabbitStatus == "ok" && kafkaStatus == "ok" && matchingStatus == "ok"
             if (healthy) {
-                call.respond(mapOf("status" to "ok", "redis" to "ok", "rabbitmq" to "ok", "kafka" to "ok"))
+                call.respond(
+                    mapOf(
+                        "status" to "ok",
+                        "redis" to "ok",
+                        "rabbitmq" to "ok",
+                        "kafka" to "ok",
+                        "matching" to "ok",
+                    ),
+                )
             } else {
                 call.respond(
                     HttpStatusCode.ServiceUnavailable,
@@ -69,6 +81,7 @@ fun Application.module() {
                         "redis" to redisStatus,
                         "rabbitmq" to rabbitStatus,
                         "kafka" to kafkaStatus,
+                        "matching" to matchingStatus,
                     ),
                 )
             }
