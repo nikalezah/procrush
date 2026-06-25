@@ -3,8 +3,6 @@ package jobs.procrush.personality.bootstrap
 import jobs.procrush.bootstrap.config.WorkerAppConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
-import jobs.procrush.composition.AuthModule
-import jobs.procrush.composition.SurveyModule
 import jobs.procrush.llm.LlmFactory
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
@@ -18,6 +16,8 @@ import jobs.procrush.personality.service.PersonalityGenerationHandler
 import jobs.procrush.personality.service.PersonalityGenerationLockGuard
 import jobs.procrush.personality.service.RedisPersonalityStatusNotifier
 import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
+import jobs.procrush.shared.repository.ReferenceRepository
+import jobs.procrush.survey.service.SurveyService
 import kotlinx.coroutines.CoroutineScope
 
 data class PersonalityWorkerModule(
@@ -37,8 +37,8 @@ data class PersonalityWorkerModule(
     companion object {
         fun create(
             config: WorkerAppConfig,
-            auth: AuthModule,
-            survey: SurveyModule,
+            referenceRepository: ReferenceRepository,
+            surveyService: SurveyService,
             redis: RedisModule,
             rabbitMq: RabbitMqModule,
             matchingCacheInvalidator: MatchingCachePort,
@@ -57,8 +57,8 @@ data class PersonalityWorkerModule(
             val handler =
                 PersonalityGenerationHandler(
                     profileRepository = profileRepository,
-                    referenceRepository = auth.referenceRepository,
-                    surveyService = survey.surveyService,
+                    referenceRepository = referenceRepository,
+                    surveyService = surveyService,
                     llmConfig = config.llm,
                     llmClient = LlmFactory.createClient(config.llm),
                     promptBuilder = PersonalityPromptBuilder(),

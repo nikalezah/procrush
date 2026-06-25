@@ -8,6 +8,7 @@ import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.service.EmployerProfileService
 import jobs.procrush.matching.client.MatchingServiceClient
+import jobs.procrush.matching.kafka.MatchingEventsRuntime
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.personality.service.PersonalityProfileService
 import jobs.procrush.seeker.service.SeekerProfileService
@@ -22,7 +23,7 @@ data class AppContext(
     val config: AppConfig,
     val redisModule: RedisModule,
     val rabbitMqModule: RabbitMqModule,
-    private val matchingEventsModule: MatchingEventsModule,
+    private val matchingEventsRuntime: MatchingEventsRuntime,
     private val matchingModule: MatchingModule,
     val matchingClient: MatchingServiceClient,
     val userAuthService: UserAuthService,
@@ -39,7 +40,7 @@ data class AppContext(
     fun close() {
         personalityModule.personalityStatusNotifier.close()
         matchingModule.close()
-        matchingEventsModule.close()
+        matchingEventsRuntime.close()
         rabbitMqModule.close()
         redisModule.close()
     }
@@ -53,7 +54,14 @@ data class AppContext(
             val deferredCoordinator = DeferredPersonalitySurveyCoordinator()
             val survey = SurveyModule.create(auth, deferredCoordinator)
             val matchingRepository = jobs.procrush.matching.repository.MatchingRepository(auth.referenceRepository)
-            val matchingEvents = MatchingEventsModule.create(config, auth, matchingRepository)
+            val matchingEvents =
+                MatchingEventsRuntime.create(
+                    kafka = config.kafka,
+                    seekerRepository = auth.seekerRepository,
+                    employerRepository = auth.employerRepository,
+                    matchingRepository = matchingRepository,
+                    referenceRepository = auth.referenceRepository,
+                )
             val matching = MatchingModule.create(auth, survey, redis, config)
             val personality =
                 PersonalityModule.create(
@@ -86,7 +94,7 @@ data class AppContext(
                 matchInterestService = matching.matchInterestService,
                 referenceRepository = auth.referenceRepository,
                 personalityModule = personality,
-                matchingEventsModule = matchingEvents,
+                matchingEventsRuntime = matchingEvents,
                 matchingModule = matching,
                 matchingClient = matching.matchingClient,
             )

@@ -1,8 +1,6 @@
-package jobs.procrush.composition
+package jobs.procrush.matching.kafka
 
 import jobs.procrush.employer.dto.JobProfileDto
-import jobs.procrush.matching.kafka.MatchingEventPayloadFactory
-import jobs.procrush.matching.kafka.MatchingEventPublisher
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.personality.dto.PersonalityAxesDto
 
