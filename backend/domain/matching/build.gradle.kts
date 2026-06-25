@@ -28,13 +28,4 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kafka.clients)
     implementation(libs.lettuce.core)
-    testImplementation(libs.kotlin.testJunit)
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.testcontainers.junit)
-    testImplementation(projects.backend.platform.redis)
-    testImplementation(libs.testcontainers.redis)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

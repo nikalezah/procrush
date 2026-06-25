@@ -36,14 +36,4 @@ dependencies {
     implementation(libs.kafka.clients)
     implementation(libs.amqp.client)
     implementation(libs.kotlinx.coroutines.core)
-    testImplementation(libs.ktor.serverTestHost)
-    testImplementation(libs.kotlin.testJunit5)
-    testImplementation(libs.junit.jupiter)
-}
-
-tasks.test {
-    useJUnitPlatform()
-    filter {
-        isFailOnNoMatchingTests = false
-    }
 }

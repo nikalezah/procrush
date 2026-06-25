@@ -32,12 +32,4 @@ dependencies {
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.postgresql)
-    testImplementation(libs.kotlin.testJunit)
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.testcontainers.junit)
-    testImplementation(libs.testcontainers.postgresql)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

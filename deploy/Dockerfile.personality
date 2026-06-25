@@ -9,7 +9,7 @@ COPY core core
 COPY backend backend
 
 RUN chmod +x gradlew \
-    && ./gradlew :backend:personality:installDist -x test --no-daemon \
+    && ./gradlew :backend:personality:installDist --no-daemon \
         -Dorg.gradle.configuration-cache=false
 
 FROM eclipse-temurin:21-jre

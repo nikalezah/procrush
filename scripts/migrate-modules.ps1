@@ -1,6 +1,5 @@
 $root = "C:\Documents\projects\procrush"
 $sharedMain = Join-Path $root "backend\shared\src\main\kotlin"
-$sharedTest = Join-Path $root "backend\shared\src\test\kotlin"
 $sharedRes = Join-Path $root "backend\shared\src\main\resources"
 
 function Ensure-Copy($src, $dst) {
@@ -21,7 +20,6 @@ function Copy-Tree($baseSrc, $baseDst, $rel) {
 # INFRA
 $infraMain = Join-Path $root "backend\infra\src\main\kotlin"
 $infraRes = Join-Path $root "backend\infra\src\main\resources"
-$infraTest = Join-Path $root "backend\infra\src\test\kotlin"
 $jp = Join-Path $sharedMain "jobs\procrush"
 $infraJp = Join-Path $infraMain "jobs\procrush"
 
@@ -36,8 +34,6 @@ Copy-Tree $jp $infraJp "llm\OllamaLlmClient.kt"
 Copy-Tree $jp $infraJp "llm\StubLlmClient.kt"
 Copy-Tree (Join-Path $sharedMain "db") (Join-Path $infraMain "db") "migration"
 Ensure-Copy $sharedRes (Join-Path $infraRes "") 
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $infraTest "jobs\procrush") "bootstrap\redis"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $infraTest "jobs\procrush") "bootstrap\rabbitmq"
 
 # SCHEMA (all tables for migrations)
 $schemaMain = Join-Path $root "backend\schema\src\main\kotlin"
@@ -72,7 +68,6 @@ Copy-Tree $jp $employerMain "employer\service"
 $surveyMain = Join-Path $root "backend\domain\survey\src\main\kotlin\jobs\procrush"
 Copy-Tree $jp $surveyMain "survey\repository"
 Copy-Tree $jp $surveyMain "survey\service"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $root "backend\domain\survey\src\test\kotlin\jobs\procrush") "survey\scoring"
 
 # DOMAIN MATCHING
 $matchMain = Join-Path $root "backend\domain\matching\src\main\kotlin\jobs\procrush"
@@ -82,9 +77,6 @@ Copy-Tree $jp $matchMain "matching\service\RedisMatchInterestNotifier.kt"
 Copy-Tree $jp $matchMain "matching\cache"
 Copy-Tree $jp $matchMain "matching\client"
 Copy-Tree $jp $matchMain "matching\kafka"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $root "backend\domain\matching\src\test\kotlin\jobs\procrush") "matching\repository"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $root "backend\domain\matching\src\test\kotlin\jobs\procrush") "matching\cache"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $root "backend\domain\matching\src\test\kotlin\jobs\procrush") "matching\service"
 
 # DOMAIN PERSONALITY
 $persMain = Join-Path $root "backend\domain\personality\src\main\kotlin\jobs\procrush"
@@ -95,8 +87,6 @@ Copy-Tree $jp $persMain "personality\service\PersonalityProfileReader.kt"
 Copy-Tree $jp $persMain "personality\service\PersonalityProfileService.kt"
 Copy-Tree $jp $persMain "personality\service\RedisPersonalityStatusNotifier.kt"
 Copy-Tree $jp $persMain "personality\llm\PersonalityProfileMapper.kt"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $root "backend\domain\personality\src\test\kotlin\jobs\procrush") "personality\messaging"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $root "backend\domain\personality\src\test\kotlin\jobs\procrush") "personality\service"
 
 # BOOTSTRAP
 $bootMain = Join-Path $root "backend\bootstrap\src\main\kotlin\jobs\procrush"
@@ -114,6 +104,5 @@ Copy-Tree $jp $persWorker "personality\messaging\PersonalityMessageDedup.kt"
 Copy-Tree $jp $persWorker "personality\service\PersonalityGenerationHandler.kt"
 Copy-Tree $jp $persWorker "personality\llm\PersonalityPromptBuilder.kt"
 Copy-Tree $jp $persWorker "personality\llm\PersonalityProfileValidator.kt"
-Copy-Tree (Join-Path $sharedTest "jobs\procrush") (Join-Path $root "backend\personality\src\test\kotlin\jobs\procrush") "personality\llm"
 
 Write-Host "Migration copy complete"

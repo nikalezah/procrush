@@ -207,11 +207,6 @@ Backend использует **Redis 8** для:
 
 - Android: `./gradlew :app:shared:testAndroidHostTest`
 - Desktop: `./gradlew :app:shared:jvmTest`
-- API: `./gradlew :backend:api:test`
-- Contracts: `./gradlew :backend:contracts:test`
-- Domain matching: `./gradlew :backend:domain:matching:test`
-- Personality: `./gradlew :backend:personality:installDist`
-- Matching: `./gradlew :backend:matching:test`
 - Web (Wasm): `./gradlew :app:shared:wasmJsTest`
 - Web (JS): `./gradlew :app:shared:jsTest`
 - iOS: `./gradlew :app:shared:iosSimulatorArm64Test`

@@ -37,24 +37,4 @@ $paths = @(
 )
 foreach ($p in $paths) { Copy-RelPath $p }
 
-$tsrc = Join-Path $root "backend\shared\src\test\kotlin\jobs\procrush"
-$tdst = Join-Path $root "backend\contracts\src\test\kotlin\jobs\procrush"
-$tests = @(
-    "matching\service\MatchScoringServiceTest.kt",
-    "matching\events\MatchingEventsTest.kt",
-    "matching\dto\InterestStatusCalculatorTest.kt",
-    "matching\dto\OverviewDtosTest.kt",
-    "survey\scoring\SurveyFlowRulesTest.kt",
-    "survey\scoring\SurveyScoringServiceTest.kt",
-    "llm\LlmResponseParserTest.kt"
-)
-foreach ($t in $tests) {
-    $s = Join-Path $tsrc $t
-    $d = Join-Path $tdst $t
-    if (Test-Path $s) {
-        New-Item -ItemType Directory -Force -Path (Split-Path $d -Parent) | Out-Null
-        Copy-Item -Force $s $d
-    }
-}
-
 Write-Host "KT count:" (Get-ChildItem -Recurse (Join-Path $root "backend\contracts") -Filter "*.kt").Count

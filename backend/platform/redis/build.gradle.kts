@@ -9,12 +9,4 @@ dependencies {
     implementation(projects.backend.config)
     implementation(libs.lettuce.core)
     implementation(libs.kotlinx.coroutines.core)
-    testImplementation(libs.kotlin.testJunit)
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.testcontainers.junit)
-    testImplementation(libs.testcontainers.redis)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

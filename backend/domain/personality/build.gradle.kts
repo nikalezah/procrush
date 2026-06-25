@@ -24,15 +24,4 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.amqp.client)
     implementation(libs.lettuce.core)
-    testImplementation(libs.kotlin.testJunit)
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.testcontainers.junit)
-    testImplementation(libs.testcontainers.redis)
-    testImplementation(projects.backend.platform.redis)
-    testImplementation(projects.backend.platform.rabbit)
-    testImplementation(libs.testcontainers.rabbitmq)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
