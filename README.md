@@ -101,13 +101,13 @@ flowchart LR
 | [`frontend/`](./frontend) | Основной веб-клиент (React)                    |
 | [`app/webApp/`](./app/webApp) | Compose Web (JS), экспериментальный auth UI    |
 | [`app/androidApp/`](./app/androidApp), [`app/iosApp/`](./app/iosApp), [`app/desktopApp/`](./app/desktopApp) | Нативные оболочки KMP                          |
-| [`backend/contracts/`](./backend/contracts/src/main/kotlin) | DTO, события, чистая доменная логика без инфраструктуры |
-| [`backend/infra/`](./backend/infra/src/main/kotlin) | Конфиг, Redis/Rabbit/Kafka, LLM-клиенты, миграции Flyway main DB |
-| [`backend/domain/`](./backend/domain) | Bounded contexts: auth, seeker, employer, survey, matching, personality |
-| [`backend/wire/`](./backend/wire/src/main/kotlin) | DI-модули и orchestration-сервисы профилей |
-| [`backend/bootstrap/`](./backend/bootstrap/src/main/kotlin) | Composition root API (`AppContext`) |
-| [`backend/api/`](./backend/api/src/main/kotlin) | Ktor HTTP API для клиентов (routes, plugins) |
-| [`backend/personality/`](./backend/personality) | RabbitMQ consumer + health endpoint |
+| [`backend/contracts/`](./backend/contracts/src/main/kotlin) | DTO, события, порты и чистая доменная логика без инфраструктуры |
+| [`backend/config/`](./backend/config/src/main/kotlin) | Чтение env и типизированные настройки приложений |
+| [`backend/platform/`](./backend/platform) | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`) |
+| [`backend/domain/`](./backend/domain) | Bounded contexts: auth, seeker, employer, survey, matching, personality (репозитории, сервисы, Exposed-таблицы) |
+| [`backend/api/`](./backend/api/src/main/kotlin) | Ktor HTTP API, composition root, orchestration-сервисы профилей |
+| [`backend/personality/`](./backend/personality) | Gradle `:backend:personality` — deployable app: RabbitMQ consumer + health endpoint |
+| [`backend/domain/personality/`](./backend/domain/personality) | Gradle `:backend:domain:personality-lib` — библиотека домена (координатор, publisher, worker-логика) |
 | [`backend/matching/`](./backend/matching) | Kafka consumer + HTTP read API, отдельная БД матчинга |
 | [`deploy/`](./deploy) | Dockerfile для Railway                         |
 
@@ -131,7 +131,7 @@ flowchart LR
    - **React:** `cd frontend && npm install && npm run dev` → http://localhost:8081
    - **Compose:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
 
-Схема БД и справочные данные — в Flyway-миграциях (`backend/infra/src/main/kotlin/db/migration/`) и seed (`backend/infra/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
+Схема БД и справочные данные — в Flyway-миграциях (`backend/platform/persistence/src/main/kotlin/db/migration/`) и seed (`backend/platform/persistence/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
 
 ```bash
 docker compose down -v && docker compose up -d

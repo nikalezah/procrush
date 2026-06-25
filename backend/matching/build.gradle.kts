@@ -10,11 +10,14 @@ version = "1.0.0"
 
 application {
     mainClass = "jobs.procrush.matching.runtime.MatchingApplicationKt"
+    applicationName = "matching"
 }
 
 dependencies {
+    implementation(projects.backend.config)
+    implementation(projects.backend.platform.redis)
+    implementation(projects.backend.platform.kafka)
     implementation(projects.backend.contracts)
-    implementation(projects.backend.infra)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)
@@ -23,6 +26,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kafka.clients)
     implementation(libs.exposed.core)
+    implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.java.time)
     implementation(libs.flyway.core)
@@ -31,9 +35,7 @@ dependencies {
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.testcontainers.junit)
-    testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.testcontainers.postgresql)
-    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks.test {

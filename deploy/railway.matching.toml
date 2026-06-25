@@ -6,8 +6,8 @@ dockerfilePath = "deploy/Dockerfile.matching"
 watchPatterns = [
   "/backend/matching/**",
   "/backend/contracts/**",
-  "/backend/infra/**",
-  "/backend/schema/**",
+  "/backend/config/**",
+  "/backend/platform/**",
   "/core/**",
   "/deploy/Dockerfile.matching",
   "/gradle/**",

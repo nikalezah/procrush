@@ -1,12 +1,12 @@
 package jobs.procrush.personality.bootstrap
 
 import jobs.procrush.bootstrap.config.WorkerAppConfig
-import jobs.procrush.bootstrap.modules.AuthModule
-import jobs.procrush.bootstrap.modules.SurveyModule
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
+import jobs.procrush.composition.AuthModule
+import jobs.procrush.composition.SurveyModule
 import jobs.procrush.llm.LlmFactory
-import jobs.procrush.matching.cache.MatchingCacheInvalidator
+import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.personality.llm.PersonalityProfileLlmMapper
 import jobs.procrush.personality.llm.PersonalityProfileValidator
@@ -41,7 +41,7 @@ data class PersonalityWorkerModule(
             survey: SurveyModule,
             redis: RedisModule,
             rabbitMq: RabbitMqModule,
-            matchingCacheInvalidator: MatchingCacheInvalidator,
+            matchingCacheInvalidator: MatchingCachePort,
             matchingEvents: MatchingEventPort,
             scope: CoroutineScope,
         ): PersonalityWorkerModule {
@@ -64,7 +64,7 @@ data class PersonalityWorkerModule(
                     promptBuilder = PersonalityPromptBuilder(),
                     validator = PersonalityProfileValidator(),
                     profileMapper = PersonalityProfileLlmMapper,
-                    matchingCacheInvalidator = matchingCacheInvalidator,
+                    matchingCache = matchingCacheInvalidator,
                     matchingEvents = matchingEvents,
                 )
             val dedup =

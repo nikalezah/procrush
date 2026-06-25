@@ -3,7 +3,7 @@ package jobs.procrush.personality.service
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import jobs.procrush.bootstrap.config.LlmConfig
 import jobs.procrush.llm.LlmClient
-import jobs.procrush.matching.cache.MatchingCacheInvalidator
+import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.personality.dto.PersonalityAxesDto
 import jobs.procrush.personality.dto.PersonalityProfileStatus
@@ -25,7 +25,7 @@ class PersonalityGenerationHandler(
     private val promptBuilder: PersonalityPromptBuilder,
     private val validator: PersonalityProfileValidator,
     private val profileMapper: PersonalityProfileLlmMapper,
-    private val matchingCacheInvalidator: MatchingCacheInvalidator,
+    private val matchingCache: MatchingCachePort,
     private val matchingEvents: MatchingEventPort,
 ) {
     private val logger = LoggerFactory.getLogger(PersonalityGenerationHandler::class.java)
@@ -57,7 +57,7 @@ class PersonalityGenerationHandler(
                 nameToId.getValue(item.name) to item.isPronounced
             }
         profileRepository.upsertProfileWithSuperpowers(seekerId, record, superpowerRows)
-        matchingCacheInvalidator.invalidateSeekerJobs(seekerId)
+        matchingCache.invalidateSeekerJobs(seekerId)
         PersonalityAxesDto.fromSeekerRecord(record)?.let { axes ->
             matchingEvents.publishSeekerPersonalityReady(seekerId, axes)
         }

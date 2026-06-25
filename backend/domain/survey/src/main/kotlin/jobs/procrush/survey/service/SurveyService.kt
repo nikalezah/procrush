@@ -24,13 +24,9 @@ import java.util.UUID
 class SurveyService(
     private val seekerRepository: SeekerRepository,
     private val surveyRepository: SurveyRepository,
+    private val personalityCoordinator: PersonalitySurveyCoordinator,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
-    private var personalityCoordinator: PersonalitySurveyCoordinator? = null
-
-    fun attachPersonalityCoordinator(coordinator: PersonalitySurveyCoordinator) {
-        personalityCoordinator = coordinator
-    }
 
     private val groupNames =
         mapOf(
@@ -194,7 +190,7 @@ class SurveyService(
 
         val groups = listGroups(userId)
         if (groups.testsCompleted >= groups.testsTotal) {
-            personalityCoordinator?.onAllSurveysCompleted(userId)
+            personalityCoordinator.onAllSurveysCompleted(userId)
         }
         val nextSurveyId = SurveyFlowRules.nextSurveyInCore(survey, coreSurveys)
         return CompleteSurveyResult(

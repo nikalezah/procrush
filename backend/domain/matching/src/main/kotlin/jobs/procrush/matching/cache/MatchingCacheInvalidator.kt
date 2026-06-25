@@ -2,6 +2,7 @@ package jobs.procrush.matching.cache
 
 import jobs.procrush.bootstrap.config.RedisConfig
 import jobs.procrush.bootstrap.redis.RedisClient
+import jobs.procrush.matching.port.MatchingCachePort
 
 object MatchingCacheKeys {
     fun seekerJobs(config: RedisConfig, seekerId: Long): String =
@@ -14,12 +15,12 @@ object MatchingCacheKeys {
 class MatchingCacheInvalidator(
     private val redis: RedisClient,
     private val config: RedisConfig,
-) {
-    fun invalidateSeekerJobs(seekerId: Long) {
+) : MatchingCachePort {
+    override fun invalidateSeekerJobs(seekerId: Long) {
         redis.del(MatchingCacheKeys.seekerJobs(config, seekerId))
     }
 
-    fun invalidateJobCandidates(jobProfileId: Long) {
+    override fun invalidateJobCandidates(jobProfileId: Long) {
         redis.del(MatchingCacheKeys.jobCandidates(config, jobProfileId))
     }
 }

@@ -11,14 +11,14 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import jobs.procrush.auth.route.authRoutes
-import jobs.procrush.bootstrap.AppContext
 import jobs.procrush.bootstrap.DatabaseFactory
-import jobs.procrush.bootstrap.checkMatchingServiceHealthBlocking
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.plugins.configureCallLogging
 import jobs.procrush.bootstrap.plugins.configureCors
 import jobs.procrush.bootstrap.plugins.configureSerialization
 import jobs.procrush.bootstrap.plugins.configureStatusPages
+import jobs.procrush.composition.AppContext
+import jobs.procrush.composition.checkMatchingServiceHealthBlocking
 import jobs.procrush.employer.route.employerRoutes
 import jobs.procrush.personality.route.personalityProfileRoutes
 import jobs.procrush.seeker.route.seekerProfileRoutes

@@ -2,11 +2,11 @@ package jobs.procrush.personality.bootstrap
 
 import jobs.procrush.bootstrap.DatabaseFactory
 import jobs.procrush.bootstrap.config.WorkerAppConfig
-import jobs.procrush.bootstrap.modules.AuthModule
-import jobs.procrush.bootstrap.modules.MatchingEventsModule
-import jobs.procrush.bootstrap.modules.SurveyModule
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
+import jobs.procrush.composition.AuthModule
+import jobs.procrush.composition.MatchingEventsModule
+import jobs.procrush.composition.SurveyModule
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.repository.MatchingRepository
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +33,7 @@ data class WorkerContext(
             val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val redis = RedisModule.create(config)
             val rabbitMq = RabbitMqModule.create(config.rabbitMq)
-            val auth = AuthModule.create(config, redis)
+            val auth = AuthModule.create()
             val survey = SurveyModule.create(auth)
             val matchingRepository = MatchingRepository(auth.referenceRepository)
             val matchingEvents = MatchingEventsModule.create(config, auth, matchingRepository)

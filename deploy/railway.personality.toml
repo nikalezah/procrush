@@ -6,10 +6,9 @@ dockerfilePath = "deploy/Dockerfile.personality"
 watchPatterns = [
   "/backend/personality/**",
   "/backend/contracts/**",
-  "/backend/infra/**",
-  "/backend/schema/**",
+  "/backend/config/**",
+  "/backend/platform/**",
   "/backend/domain/**",
-  "/backend/wire/**",
   "/core/**",
   "/deploy/Dockerfile.personality",
   "/gradle/**",
