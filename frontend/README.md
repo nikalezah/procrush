@@ -1,6 +1,6 @@
 # ProCrush React web client
 
-**Полный стек:** http://procrush.local (kind + Ingress) — см. [deploy/k8s/README.md](../deploy/k8s/README.md).
+**Полный стек:** http://127.10.0.10 (kind + Ingress) — см. [deploy/k8s/README.md](../deploy/k8s/README.md).
 
 **Hot-reload dev server:** http://localhost:8081 (proxies `/api` to Ktor on :8080; требует port-forward инфраструктуры из kind).
 

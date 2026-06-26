@@ -14,8 +14,8 @@ data:
   MATCHING_SERVICE_URL: http://matching:8092
   MATCHING_SERVICE_PORT: "8092"
   WORKER_HEALTH_PORT: "8091"
-  WEB_ORIGIN: http://procrush.local
-  FRONTEND_URL: http://procrush.local
+  WEB_ORIGIN: http://127.10.0.10
+  FRONTEND_URL: http://127.10.0.10
   SESSION_COOKIE_NAME: procrush_session
   SESSION_DAYS: "30"
   AUTH_DEV_MODE: "true"

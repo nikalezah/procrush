@@ -53,9 +53,7 @@ kubectl get pods -n procrush
 
 Write-Host ""
 Write-Host "ProCrush is deploying."
-Write-Host "Add to hosts file:  127.10.0.10 procrush.local"
-Write-Host "Infra host aliases: deploy/k8s/README.md"
-Write-Host "Open:               http://procrush.local"
-Write-Host "API health:         http://procrush.local/api/auth/me (401 without session is OK)"
+Write-Host "Open:               http://127.10.0.10"
+Write-Host "API health:         http://127.10.0.10/api/auth/me (401 without session is OK)"
 Write-Host ""
-Write-Host "Infra endpoints:    postgres.procrush.local:5432, redis.procrush.local:6379, rabbitmq.procrush.local:5672"
+Write-Host "Infra endpoints:    127.10.0.11:5432 postgres, 127.10.0.13:6379 redis, 127.10.0.14:5672 rabbitmq"

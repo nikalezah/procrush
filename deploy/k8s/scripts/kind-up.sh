@@ -53,8 +53,9 @@ kubectl get pods -n procrush
 
 echo ""
 echo "ProCrush is deploying."
-echo "Add to /etc/hosts:  127.0.0.1 procrush.local"
-echo "Open:               http://procrush.local"
-echo "API health:         http://procrush.local/api/auth/me (401 without session is OK)"
+echo "Open:               http://127.10.0.10"
+echo "API health:         http://127.10.0.10/api/auth/me (401 without session is OK)"
+echo ""
+echo "Infra endpoints:    127.10.0.11:5432 postgres, 127.10.0.13:6379 redis, 127.10.0.14:5672 rabbitmq"
 echo ""
 echo "RabbitMQ UI (optional): kubectl port-forward -n procrush svc/rabbitmq 15672:15672"

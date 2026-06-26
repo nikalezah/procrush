@@ -9,8 +9,9 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: procrush.local
-      http:
+    # No host — matches any Host header (e.g. http://127.10.0.10). Kubernetes Ingress
+    # does not allow IP addresses in the host field.
+    - http:
         paths:
           - path: /api
             pathType: Prefix
