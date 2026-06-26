@@ -108,11 +108,11 @@ flowchart LR
 ### Требования
 
 - **Полный стек в Kubernetes (рекомендуется):** Docker (≥ 8 GB RAM), [kind](https://kind.sigs.k8s.io/), kubectl — см. [deploy/k8s/README.md](./deploy/k8s/README.md)
-- **Hot-reload (опционально):** JDK 17+, Node.js 20+ для `./gradlew run` / `npm run dev` с port-forward инфраструктуры (см. [env.example](./env.example))
+- **Hot-reload (опционально):** JDK 17+, Node.js 20+ для `./gradlew run` / `npm run dev`; инфраструктура kind доступна на `*.procrush.local` (см. [env.example](./env.example))
 
 ### Запуск полного стека (kind)
 
-1. Добавьте в hosts: `127.0.0.1 procrush.local`
+1. Добавьте в hosts локальные адреса из [deploy/k8s/README.md](./deploy/k8s/README.md): `127.10.0.10 procrush.local` и aliases для инфраструктуры.
 2. Из корня репозитория:
 
    ```powershell
@@ -152,13 +152,13 @@ Backend использует **Redis 8** для:
 - кэша сессий (PostgreSQL остаётся source of truth);
 - pub/sub для SSE-уведомлений о новых откликах и статусе генерации профиля (работает при нескольких инстансах API).
 
-В kind Redis поднимается внутри кластера; с хоста доступен только через `kubectl port-forward` (см. [deploy/k8s/README.md](./deploy/k8s/README.md)).
+В kind Redis поднимается внутри кластера; с хоста доступен через `redis.procrush.local:6379` (см. [deploy/k8s/README.md](./deploy/k8s/README.md)).
 
 ### RabbitMQ (обязателен)
 
 **RabbitMQ** — брокер сообщений: API кладёт задачу «сгенерировать личностный профиль» в очередь `personality.generation`; worker забирает задачу и вызывает LLM.
 
-- В kind: сервис `rabbitmq` в namespace `procrush`; UI — `kubectl port-forward -n procrush svc/rabbitmq 15672:15672` → http://localhost:15672 (`procrush` / `procrush`)
+- В kind: сервис `rabbitmq` в namespace `procrush`; UI — http://rabbitmq.procrush.local:15672 (`procrush` / `procrush`)
 - При ошибках после 3 попыток сообщение попадает в DLQ `personality.generation.dlq`
 
 Проверка API (через Ingress): `GET http://procrush.local/health` не проксируется — health на API напрямую: `kubectl port-forward -n procrush svc/api 8080:8080` → `GET http://localhost:8080/health` → `{"status":"ok",...}`.

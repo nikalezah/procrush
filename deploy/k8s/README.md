@@ -13,7 +13,12 @@
 1. Добавьте в файл hosts (от имени администратора):
 
    ```
-   127.0.0.1 procrush.local
+   127.10.0.10 procrush.local
+   127.10.0.11 postgres.procrush.local
+   127.10.0.12 matching-postgres.procrush.local
+   127.10.0.13 redis.procrush.local
+   127.10.0.14 rabbitmq.procrush.local
+   127.10.0.15 kafka.procrush.local
    ```
 
    Windows: `C:\Windows\System32\drivers\etc\hosts`
@@ -25,6 +30,8 @@
    ```powershell
    .\deploy\k8s\scripts\kind-up.ps1
    ```
+
+   Если кластер `procrush` был создан до перехода на адрес `127.10.0.10`, пересоздайте его: `.\deploy\k8s\scripts\kind-down.ps1`, затем снова `.\deploy\k8s\scripts\kind-up.ps1`. Настройка `listenAddress` применяется только при создании контейнера ноды kind.
 
    **Linux / macOS:**
 
@@ -56,6 +63,19 @@
 | Сессия (без cookie → 401) | `curl -s -o /dev/null -w "%{http_code}" http://procrush.local/api/auth/me` |
 | Dev-login | через UI на http://procrush.local |
 
+## Локальные endpoint'ы инфраструктуры
+
+После `kind-up` сервисы доступны с хоста без `kubectl port-forward`:
+
+| Сервис | Endpoint |
+|--------|----------|
+| PostgreSQL | `postgres.procrush.local:5432` |
+| Matching PostgreSQL | `matching-postgres.procrush.local:5432` |
+| Redis | `redis.procrush.local:6379` |
+| RabbitMQ AMQP | `rabbitmq.procrush.local:5672` |
+| RabbitMQ UI | http://rabbitmq.procrush.local:15672 |
+| Kafka | `kafka.procrush.local:9092` |
+
 ## Архитектура
 
 ```text
@@ -80,11 +100,7 @@ kubectl rollout restart deployment -n procrush api personality matching frontend
 
 ## RabbitMQ UI (опционально)
 
-```bash
-kubectl port-forward -n procrush svc/rabbitmq 15672:15672
-```
-
-Откройте http://localhost:15672 — логин `procrush` / `procrush`.
+Откройте http://rabbitmq.procrush.local:15672 — логин `procrush` / `procrush`.
 
 ## Сброс данных
 
@@ -109,16 +125,7 @@ kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 
 ## Hot-reload без пересборки образов (опционально)
 
-Пробросьте инфраструктуру на localhost и запускайте приложения через Gradle/npm (см. [env.example](../../env.example), секция port-forward).
-
-```bash
-kubectl port-forward -n procrush svc/postgres 5432:5432 &
-kubectl port-forward -n procrush svc/matching-postgres 5433:5432 &
-kubectl port-forward -n procrush svc/redis 6379:6379 &
-kubectl port-forward -n procrush svc/rabbitmq 5672:5672 &
-kubectl port-forward -n procrush svc/kafka 9092:9092 &
-kubectl port-forward -n procrush svc/matching 8092:8092 &
-```
+Инфраструктура доступна с хоста через выделенные loopback-IP сразу после `kind-up`; запускайте приложения через Gradle/npm с переменными из [env.example](../../env.example). Это позволяет нескольким локальным проектам одновременно использовать стандартные порты, например `5432` для PostgreSQL, без конфликтов.
 
 ## Устранение неполадок
 
