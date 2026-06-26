@@ -6,17 +6,17 @@ interface PersonalityAxesEditorProps {
   onChange: (value: PersonalityAxesDto) => void
 }
 
-export function PersonalityAxesEditor({ value, onChange }: PersonalityAxesEditorProps) {
+export function PersonalityAxesEditor({value, onChange}: PersonalityAxesEditorProps) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-neutral-600">
+      <p className="text-sm text-stone-500">
         Укажите желаемый уровень по каждой личностной оси (0–100%)
       </p>
       {AXIS_KEYS.map((key) => (
-        <label key={key} className="flex flex-col gap-1">
+        <label key={key} className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">{AXIS_LABELS[key]}</span>
-            <span className="tabular-nums text-neutral-600">
+            <span className="font-medium text-stone-800">{AXIS_LABELS[key]}</span>
+            <span className="tabular-nums font-semibold text-brand-600">
               {Math.round(value[key] * 100)}%
             </span>
           </div>
@@ -31,7 +31,7 @@ export function PersonalityAxesEditor({ value, onChange }: PersonalityAxesEditor
                 [key]: Number(e.target.value) / 100,
               })
             }
-            className="w-full"
+            className="w-full accent-brand-600"
           />
         </label>
       ))}

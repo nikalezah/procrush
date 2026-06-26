@@ -1,26 +1,30 @@
-import { useEffect, useState } from 'react'
+import {useEffect, useState} from 'react'
 import {
-  createEducation,
-  createExperience,
-  deleteEducation,
-  deleteExperience,
-  fetchEducation,
-  fetchExperience,
-  fetchSeekerProfile,
-  fetchSeekerSkills,
-  updateSeekerProfile,
-  updateSeekerSkills,
+    createEducation,
+    createExperience,
+    deleteEducation,
+    deleteExperience,
+    fetchEducation,
+    fetchExperience,
+    fetchSeekerProfile,
+    fetchSeekerSkills,
+    updateSeekerProfile,
+    updateSeekerSkills,
 } from '../../api/seekerApi'
 import type {
-  CreateSeekerEducationRequest,
-  CreateSeekerExperienceRequest,
-  SeekerEducationDto,
-  SeekerExperienceDto,
-  SeekerProfileDto,
+    CreateSeekerEducationRequest,
+    CreateSeekerExperienceRequest,
+    SeekerEducationDto,
+    SeekerExperienceDto,
+    SeekerProfileDto,
 } from '../../api/types'
-import { EmptyState } from '../../components/EmptyState'
-import { FormSection } from '../../components/FormSection'
-import { SkillPicker } from '../../components/SkillPicker'
+import {EmptyState} from '../../components/EmptyState'
+import {FormSection} from '../../components/FormSection'
+import {SkillPicker} from '../../components/SkillPicker'
+import {Alert} from '../../components/ui/Alert'
+import {Button} from '../../components/ui/Button'
+import {PageHeader} from '../../components/ui/PageHeader'
+import {Spinner} from '../../components/Spinner'
 
 export function SeekerProfilePage() {
   const [profile, setProfile] = useState<SeekerProfileDto | null>(null)
@@ -93,17 +97,21 @@ export function SeekerProfilePage() {
   }
 
   if (profile == null && error == null) {
-    return <p className="text-sm text-neutral-500">Загрузка…</p>
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Мой профиль</h1>
-        <p className="mt-1 text-sm text-neutral-600">Опыт, навыки, образование и контакты</p>
-      </div>
-      {message != null && <p className="text-sm text-green-700">{message}</p>}
-      {error != null && <p className="text-sm text-red-600">{error}</p>}
+      <PageHeader
+        title="Мой профиль 👤"
+        subtitle="Расскажите о себе — так мэтчи будут точнее"
+      />
+      {message != null && <Alert variant="success">{message}</Alert>}
+      {error != null && <Alert variant="error">{error}</Alert>}
 
       {profile != null && (
         <form onSubmit={(e) => void saveProfile(e)}>
@@ -115,7 +123,7 @@ export function SeekerProfilePage() {
                   required
                   value={profile.firstName}
                   onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                  className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -125,7 +133,7 @@ export function SeekerProfilePage() {
                   onChange={(e) =>
                     setProfile({ ...profile, middleName: e.target.value || null })
                   }
-                  className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -134,7 +142,7 @@ export function SeekerProfilePage() {
                   required
                   value={profile.lastName}
                   onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
-                  className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -142,7 +150,7 @@ export function SeekerProfilePage() {
                 <input
                   value={profile.phone ?? ''}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value || null })}
-                  className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -150,7 +158,7 @@ export function SeekerProfilePage() {
                 <input
                   value={profile.telegram ?? ''}
                   onChange={(e) => setProfile({ ...profile, telegram: e.target.value || null })}
-                  className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -158,17 +166,13 @@ export function SeekerProfilePage() {
                 <input
                   value={profile.linkedin ?? ''}
                   onChange={(e) => setProfile({ ...profile, linkedin: e.target.value || null })}
-                  className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
                 />
               </label>
             </div>
-            <button
-              type="submit"
-              disabled={saving}
-              className="self-start rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
-              Сохранить
-            </button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Сохранение…' : 'Сохранить'}
+            </Button>
           </FormSection>
         </form>
       )}
@@ -183,16 +187,16 @@ export function SeekerProfilePage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {experience.map((item) => (
-              <li key={item.id} className="rounded-lg border border-neutral-200 p-3">
+              <li key={item.id} className="rounded-2xl border border-brand-100 bg-brand-50/30 p-4">
                 <div className="flex justify-between gap-2">
                   <div>
-                    <p className="font-medium">{item.position}</p>
-                    <p className="text-sm text-neutral-600">{item.companyName}</p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="font-semibold text-stone-900">{item.position}</p>
+                    <p className="text-sm text-stone-500">{item.companyName}</p>
+                    <p className="text-xs text-stone-400">
                       {item.startDate} — {item.endDate ?? 'настоящее время'}
                     </p>
                     {item.description != null && (
-                      <p className="mt-1 text-sm text-neutral-700">{item.description}</p>
+                      <p className="mt-1 text-sm text-stone-600">{item.description}</p>
                     )}
                   </div>
                   <button
@@ -202,7 +206,7 @@ export function SeekerProfilePage() {
                         setExperience((prev) => prev.filter((x) => x.id !== item.id)),
                       )
                     }
-                    className="text-sm text-red-600"
+                    className="text-sm text-red-600 hover:text-red-700"
                   >
                     Удалить
                   </button>
@@ -220,15 +224,15 @@ export function SeekerProfilePage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {education.map((item) => (
-              <li key={item.id} className="rounded-lg border border-neutral-200 p-3">
+              <li key={item.id} className="rounded-2xl border border-brand-100 bg-brand-50/30 p-4">
                 <div className="flex justify-between gap-2">
                   <div>
-                    <p className="font-medium">{item.institution}</p>
-                    <p className="text-sm text-neutral-600">{item.specialization}</p>
+                    <p className="font-semibold text-stone-900">{item.institution}</p>
+                    <p className="text-sm text-stone-500">{item.specialization}</p>
                     {item.degree != null && (
-                      <p className="text-sm text-neutral-600">{item.degree}</p>
+                      <p className="text-sm text-stone-500">{item.degree}</p>
                     )}
-                    <p className="text-xs text-neutral-500">Год окончания: {item.endYear}</p>
+                    <p className="text-xs text-stone-400">Год окончания: {item.endYear}</p>
                   </div>
                   <button
                     type="button"
@@ -237,7 +241,7 @@ export function SeekerProfilePage() {
                         setEducation((prev) => prev.filter((x) => x.id !== item.id)),
                       )
                     }
-                    className="text-sm text-red-600"
+                    className="text-sm text-red-600 hover:text-red-700"
                   >
                     Удалить
                   </button>
@@ -277,37 +281,37 @@ function ExperienceForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-lg bg-neutral-50 p-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl bg-brand-50/50 p-4 sm:grid-cols-2">
       <input
         required
         placeholder="Компания"
         value={companyName}
         onChange={(e) => setCompanyName(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         required
         placeholder="Должность"
         value={position}
         onChange={(e) => setPosition(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         required
         type="date"
         value={startDate}
         onChange={(e) => setStartDate(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         type="date"
         value={endDate}
         onChange={(e) => setEndDate(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <button
         type="submit"
-        className="sm:col-span-2 self-start rounded-lg border border-neutral-900 px-4 py-2 text-sm"
+        className="sm:col-span-2 self-start rounded-full gradient-brand px-5 py-2 text-sm font-medium text-white shadow-sm"
       >
         Добавить опыт
       </button>
@@ -340,26 +344,26 @@ function EducationForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-lg bg-neutral-50 p-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl bg-brand-50/50 p-4 sm:grid-cols-2">
       <input
         required
         placeholder="Учебное заведение"
         value={institution}
         onChange={(e) => setInstitution(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         required
         placeholder="Специальность"
         value={specialization}
         onChange={(e) => setSpecialization(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         placeholder="Степень"
         value={degree}
         onChange={(e) => setDegree(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         required
@@ -367,11 +371,11 @@ function EducationForm({
         placeholder="Год окончания"
         value={endYear}
         onChange={(e) => setEndYear(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <button
         type="submit"
-        className="sm:col-span-2 self-start rounded-lg border border-neutral-900 px-4 py-2 text-sm"
+        className="sm:col-span-2 self-start rounded-full gradient-brand px-5 py-2 text-sm font-medium text-white shadow-sm"
       >
         Добавить образование
       </button>

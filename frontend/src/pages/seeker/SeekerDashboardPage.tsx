@@ -2,7 +2,14 @@ import {Link} from 'react-router-dom'
 import {useEffect, useState} from 'react'
 import {fetchSeekerDashboard} from '../../api/seekerApi'
 import type {SeekerDashboardDto} from '../../api/types'
+import {Alert} from '../../components/ui/Alert'
+import {Button} from '../../components/ui/Button'
+import {Card, StatCard} from '../../components/ui/Card'
 import {MatchScoreBadge} from '../../components/MatchScoreBadge'
+import {PageHeader} from '../../components/ui/PageHeader'
+import {Spinner} from '../../components/Spinner'
+import {EmptyState} from '../../components/EmptyState'
+import {Avatar} from '../../components/ui/Avatar'
 
 export function SeekerDashboardPage() {
   const [data, setData] = useState<SeekerDashboardDto | null>(null)
@@ -14,72 +21,112 @@ export function SeekerDashboardPage() {
       .catch((e: Error) => setError(e.message))
   }, [])
 
-  if (error != null) return <p className="text-sm text-red-600">{error}</p>
-  if (data == null) return <p className="text-sm text-neutral-500">Загрузка…</p>
+  if (error != null) {
+    return <p className="text-sm text-red-600">{error}</p>
+  }
+  if (data == null) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Дашборд</h1>
-        <p className="mt-1 text-sm text-neutral-600">Обзор вашего профиля и рекомендаций</p>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <p className="text-sm text-neutral-600">Заполнение профиля</p>
-          <p className="mt-1 text-2xl font-semibold">{data.profileCompletionPercent}%</p>
-          <Link to="/seeker/profile" className="mt-2 inline-block text-sm text-neutral-900 underline">
-            Заполнить профиль
-          </Link>
-        </div>
-        <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <p className="text-sm text-neutral-600">Опыт работы</p>
-          <p className="mt-1 text-2xl font-semibold">{data.experienceCount}</p>
-        </div>
-        <div className="rounded-xl border border-neutral-200 bg-white p-4">
-          <p className="text-sm text-neutral-600">Желаемые должности</p>
-          <p className="mt-1 text-2xl font-semibold">{data.desiredPositionsCount}</p>
-        </div>
-      </div>
-      {!data.testsComplete && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-medium text-amber-900">Личностное тестирование</p>
-              <p className="mt-1 text-sm text-amber-800">
-                Пройдите оба теста для участия в подборе вакансий
-              </p>
+      <PageHeader
+        title="Привет! 👋"
+        subtitle="Вот как выглядит ваш профиль и свежие мэтчи"
+      />
+
+      <Card className="flex items-center gap-4">
+        <Avatar name="Вы" size="lg" />
+        <div className="flex-1">
+          <p className="text-sm text-stone-500">Заполненность профиля</p>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-brand-100">
+              <div
+                className="gradient-brand h-full rounded-full transition-all"
+                style={{width: `${data.profileCompletionPercent}%`}}
+              />
             </div>
-            <Link
-              to="/seeker/personality/tests"
-              className="rounded-lg bg-amber-900 px-4 py-2 text-sm font-medium text-white"
-            >
-              Пройти тесты
-            </Link>
+            <span className="text-lg font-bold text-brand-600">{data.profileCompletionPercent}%</span>
           </div>
-        </div>
-      )}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Рекомендации</h2>
-          <Link to="/seeker/positions" className="text-sm text-neutral-700 underline">
-            Все вакансии
+          <Link
+            to="/seeker/profile"
+            className="mt-2 inline-block text-sm font-medium text-brand-600 hover:text-brand-700"
+          >
+            Улучшить профиль →
           </Link>
         </div>
-        <div className="flex flex-col gap-3">
-          {data.recommendationsPreview.map((job) => (
-            <article
-              key={job.id}
-              className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between"
-            >
-              <div>
-                <h3 className="font-medium">{job.positionName}</h3>
-                <p className="text-sm text-neutral-600">{job.companyName}</p>
-                <p className="mt-2 text-sm text-neutral-700">{job.description}</p>
-              </div>
-              <MatchScoreBadge score={job.matchScoreDisplay} />
-            </article>
-          ))}
+      </Card>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <StatCard label="Опыт работы" value={data.experienceCount} icon="💼" />
+        <StatCard label="Желаемые должности" value={data.desiredPositionsCount} icon="🎯" />
+      </div>
+
+      {!data.testsComplete && (
+        <Alert
+          variant="warning"
+          title="Пройдите тесты личности"
+          action={
+            <Link to="/seeker/personality/tests">
+              <Button size="sm">Пройти тесты</Button>
+            </Link>
+          }
+        >
+          Завершите оба теста, чтобы получать персональные мэтчи с вакансиями
+        </Alert>
+      )}
+
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-stone-900">Свежие мэтчи</h2>
+          <Link
+            to="/seeker/positions"
+            className="text-sm font-medium text-brand-600 hover:text-brand-700"
+          >
+            Все →
+          </Link>
         </div>
+
+        {data.recommendationsPreview.length === 0 ? (
+          <EmptyState
+            title="Пока нет мэтчей"
+            description={
+              data.testsComplete
+                ? 'Укажите желаемые должности — и мы подберём вакансии'
+                : 'Сначала пройдите тесты личности'
+            }
+            icon="💫"
+            action={
+              <Link to={data.testsComplete ? '/seeker/positions' : '/seeker/personality/tests'}>
+                <Button size="sm">
+                  {data.testsComplete ? 'Выбрать должности' : 'К тестам'}
+                </Button>
+              </Link>
+            }
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {data.recommendationsPreview.map((job) => (
+              <Card key={job.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <Avatar name={job.companyName} size="md" />
+                  <div>
+                    <h3 className="font-semibold text-stone-900">{job.positionName}</h3>
+                    <p className="text-sm text-stone-500">{job.companyName}</p>
+                    {job.description != null && job.description !== '' && (
+                      <p className="mt-2 line-clamp-2 text-sm text-stone-600">{job.description}</p>
+                    )}
+                  </div>
+                </div>
+                <MatchScoreBadge score={job.matchScoreDisplay} size="sm" />
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )

@@ -1,4 +1,4 @@
-import type { SurveyQuestionsDefinition } from '../../api/types'
+import type {SurveyQuestionsDefinition} from '../../api/types'
 
 type Answers = Record<string, unknown>
 
@@ -70,10 +70,10 @@ function NumberOptionButtons({ max, value, maxAllowed = max, ariaLabel, onChange
             className={[
               'flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium transition-colors',
               selected
-                ? 'bg-neutral-900 text-white'
+                ? 'gradient-brand text-white shadow-sm'
                 : disabled
-                  ? 'cursor-not-allowed bg-neutral-100 text-neutral-300'
-                  : 'border border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50',
+                  ? 'cursor-not-allowed bg-stone-100 text-stone-300'
+                  : 'border border-brand-200 bg-white text-stone-700 hover:border-brand-300 hover:bg-brand-50',
             ].join(' ')}
           >
             {pts}
@@ -94,7 +94,7 @@ interface PointAllocationRowProps {
 
 function PointAllocationRow({ label, value, maxPer, maxAllowed, onChange }: PointAllocationRowProps) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-neutral-100 bg-neutral-50/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-brand-100 bg-brand-50/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
       <span className="flex-1 text-sm leading-snug">{label}</span>
       <NumberOptionButtons
         max={maxPer}
@@ -113,7 +113,7 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
   if (type === 'open_questions') {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-neutral-600">{instruction}</p>
+        <p className="text-sm text-stone-600">{instruction}</p>
         {definition.questions?.map((q) => (
           <label key={q.id} className="flex flex-col gap-1">
             <span className="text-sm font-medium">{q.text}</span>
@@ -121,7 +121,7 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
               rows={3}
               value={String(answers[String(q.id)] ?? '')}
               onChange={(e) => onChange({ ...answers, [String(q.id)]: e.target.value })}
-              className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-brand-300 px-3 py-2 text-sm"
             />
           </label>
         ))}
@@ -136,13 +136,13 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
     const options = definition.options ?? []
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-neutral-600">{instruction}</p>
-        <p className="text-xs text-neutral-500">
+        <p className="text-sm text-stone-600">{instruction}</p>
+        <p className="text-xs text-stone-500">
           Выбрано: {selected.length} / {max}
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {options.map((opt) => (
-            <label key={opt.id} className="flex items-center gap-2 rounded-lg border border-neutral-200 p-2 text-sm">
+            <label key={opt.id} className="flex items-center gap-2 rounded-lg border border-brand-200 p-2 text-sm">
               <input
                 type="checkbox"
                 checked={selected.includes(opt.id)}
@@ -159,9 +159,9 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
   if (type === 'binary_choice') {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-neutral-600">{instruction}</p>
+        <p className="text-sm text-stone-600">{instruction}</p>
         {definition.questions?.map((q) => (
-          <fieldset key={q.id} className="rounded-lg border border-neutral-200 p-3">
+          <fieldset key={q.id} className="rounded-lg border border-brand-200 p-3">
             <legend className="px-1 text-sm font-medium">Вопрос {q.id}</legend>
             <div className="mt-2 flex flex-col gap-2">
               {[1, 2].map((choice) => (
@@ -188,13 +188,13 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
     const items = pageSize != null ? all.slice(start, start + pageSize) : all
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-neutral-600">{instruction}</p>
+        <p className="text-sm text-stone-600">{instruction}</p>
         {items.map((q) => {
           const current = typeof answers[String(q.id)] === 'number' ? (answers[String(q.id)] as number) : -1
           return (
             <div
               key={q.id}
-              className="flex flex-col gap-2 rounded-lg border border-neutral-100 bg-neutral-50/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              className="flex flex-col gap-2 rounded-lg border border-brand-100 bg-brand-50/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
             >
               <span className="flex-1 text-sm leading-snug">{q.text}</span>
               <NumberOptionButtons
@@ -216,16 +216,16 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
     const prefix = type === 'belbin_matrix' ? 'section_' : 'q'
     return (
       <div className="flex flex-col gap-6">
-        <p className="text-sm text-neutral-600">{instruction}</p>
+        <p className="text-sm text-stone-600">{instruction}</p>
         {(definition.questions ?? []).map((q) => {
           const key = `${prefix}${q.id}`
           const block = getBlockAnswers(answers, key)
           const sum = Object.values(block).reduce((a, b) => a + (b ?? 0), 0)
           return (
-            <fieldset key={q.id} className="rounded-lg border border-neutral-200 p-3">
+            <fieldset key={q.id} className="rounded-lg border border-brand-200 p-3">
               <legend className="px-1 text-sm font-medium">{q.text}</legend>
               <p
-                className={`mt-1 text-xs ${sum === total ? 'font-medium text-green-700' : 'text-neutral-500'}`}
+                className={`mt-1 text-xs ${sum === total ? 'font-medium text-green-700' : 'text-stone-500'}`}
               >
                 {sum === total
                   ? `Распределено ${total} из ${total} баллов`

@@ -58,10 +58,10 @@ export function OccupationPicker({
             type="button"
             disabled={disabled}
             onClick={() => toggle(occ.id)}
-            className={`rounded-full border px-3 py-1.5 text-sm transition ${
+            className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
               selected
-                ? 'border-neutral-900 bg-neutral-900 text-white'
-                : 'border-neutral-300 bg-white text-neutral-700 hover:border-neutral-500'
+                ? 'gradient-brand border-transparent text-white shadow-sm shadow-brand-500/20'
+                : 'border-brand-200 bg-white text-stone-700 hover:border-brand-300 hover:bg-brand-50'
             } disabled:opacity-50`}
           >
             {occ.name}

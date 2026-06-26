@@ -1,19 +1,34 @@
 interface MatchScoreBadgeProps {
   score: number
+  size?: 'sm' | 'md'
 }
 
-export function MatchScoreBadge({ score }: MatchScoreBadgeProps) {
+function scoreColor(score: number): string {
+  if (score >= 75) return 'text-emerald-600'
+  if (score >= 50) return 'text-brand-600'
+  return 'text-amber-600'
+}
+
+function scoreGradient(score: number): string {
+  if (score >= 75) return 'from-emerald-400 to-emerald-600'
+  if (score >= 50) return 'from-brand-400 to-brand-600'
+  return 'from-amber-400 to-amber-500'
+}
+
+export function MatchScoreBadge({score, size = 'md'}: MatchScoreBadgeProps) {
+  const ringSize = size === 'sm' ? 'h-12 w-12' : 'h-16 w-16'
+  const textSize = size === 'sm' ? 'text-sm' : 'text-lg'
+
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex items-center gap-2">
-        <div className="h-2 w-24 overflow-hidden rounded-full bg-neutral-200">
-          <div
-            className="h-full rounded-full bg-neutral-900"
-            style={{ width: `${score}%` }}
-          />
+    <div className="flex flex-col items-center gap-1">
+      <div
+        className={`relative flex ${ringSize} items-center justify-center rounded-full bg-gradient-to-br ${scoreGradient(score)} p-0.5`}
+      >
+        <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white">
+          <span className={`font-bold tabular-nums ${textSize} ${scoreColor(score)}`}>{score}%</span>
         </div>
-        <span className="text-sm font-semibold tabular-nums">{score}/100</span>
       </div>
+      <span className="text-xs font-medium text-stone-500">совпадение</span>
     </div>
   )
 }

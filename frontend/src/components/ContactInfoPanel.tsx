@@ -11,27 +11,29 @@ function isEmployerContact(
   return 'companyName' in contact
 }
 
-export function ContactInfoPanel({ contactInfo, perspective }: ContactInfoPanelProps) {
-  const title =
-    perspective === 'seeker' ? 'Контакты работодателя' : 'Контакты кандидата'
+export function ContactInfoPanel({contactInfo, perspective}: ContactInfoPanelProps) {
+  const title = perspective === 'seeker' ? '💕 Контакты работодателя' : '💕 Контакты кандидата'
 
   return (
-    <div className="w-full rounded-lg border border-green-200 bg-green-50 p-3 text-sm">
-      <p className="font-medium text-green-900">{title}</p>
-      <ul className="mt-2 flex flex-col gap-1 text-green-800">
+    <div className="w-full rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-brand-50 p-4 text-sm">
+      <p className="font-semibold text-emerald-900">{title}</p>
+      <ul className="mt-2 flex flex-col gap-1.5 text-emerald-800">
         {isEmployerContact(contactInfo) ? (
           <>
-            <li>{contactInfo.companyName}</li>
+            <li className="font-medium">{contactInfo.companyName}</li>
             {contactInfo.phone != null && contactInfo.phone !== '' && (
               <li>
-                <a href={`tel:${contactInfo.phone}`} className="underline">
+                <a href={`tel:${contactInfo.phone}`} className="underline hover:text-emerald-900">
                   {contactInfo.phone}
                 </a>
               </li>
             )}
             {contactInfo.emailContact != null && contactInfo.emailContact !== '' && (
               <li>
-                <a href={`mailto:${contactInfo.emailContact}`} className="underline">
+                <a
+                  href={`mailto:${contactInfo.emailContact}`}
+                  className="underline hover:text-emerald-900"
+                >
                   {contactInfo.emailContact}
                 </a>
               </li>
@@ -42,7 +44,7 @@ export function ContactInfoPanel({ contactInfo, perspective }: ContactInfoPanelP
                   href={contactInfo.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline"
+                  className="underline hover:text-emerald-900"
                 >
                   {contactInfo.website}
                 </a>
@@ -51,12 +53,12 @@ export function ContactInfoPanel({ contactInfo, perspective }: ContactInfoPanelP
           </>
         ) : (
           <>
-            <li>
+            <li className="font-medium">
               {contactInfo.firstName} {contactInfo.lastName}
             </li>
             {contactInfo.phone != null && contactInfo.phone !== '' && (
               <li>
-                <a href={`tel:${contactInfo.phone}`} className="underline">
+                <a href={`tel:${contactInfo.phone}`} className="underline hover:text-emerald-900">
                   {contactInfo.phone}
                 </a>
               </li>
@@ -70,7 +72,7 @@ export function ContactInfoPanel({ contactInfo, perspective }: ContactInfoPanelP
                   href={contactInfo.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline"
+                  className="underline hover:text-emerald-900"
                 >
                   LinkedIn
                 </a>

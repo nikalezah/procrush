@@ -1,10 +1,10 @@
 import {useEffect, useRef, useState} from 'react'
-import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions,} from '../../api/seekerApi'
+import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions} from '../../api/seekerApi'
 import type {
-  JobRecommendationDto,
-  MatchInterestEventDto,
-  OccupationDto,
-  SeekerInterestsResponseDto,
+    JobRecommendationDto,
+    MatchInterestEventDto,
+    OccupationDto,
+    SeekerInterestsResponseDto,
 } from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
@@ -14,6 +14,10 @@ import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 import {OccupationPicker} from '../../components/OccupationPicker'
 import {RespondButton} from '../../components/RespondButton'
 import {Spinner} from '../../components/Spinner'
+import {Alert} from '../../components/ui/Alert'
+import {Avatar} from '../../components/ui/Avatar'
+import {Card} from '../../components/ui/Card'
+import {PageHeader} from '../../components/ui/PageHeader'
 import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
 
 function patchSeekerJobFromEvent(
@@ -39,30 +43,37 @@ function JobRecommendationCard({
   highlighted?: boolean
   onRespond: (jobProfileId: number) => void
 }) {
+  const isMutual = job.interestStatus === 'MUTUAL'
+
   return (
-    <article
-      className={`flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 sm:flex-row sm:items-start sm:justify-between ${
-        highlighted ? 'ring-2 ring-amber-300' : ''
-      }`}
-    >
-      <div>
-        <h3 className="font-medium">{job.positionName}</h3>
-        <p className="text-sm text-neutral-600">{job.companyName}</p>
-        <p className="mt-2 text-sm text-neutral-700">{job.description}</p>
-      </div>
-      <div className="flex w-full flex-col items-end gap-2 sm:w-auto">
-        <MatchScoreBadge score={job.matchScoreDisplay} />
-        <InterestStatusBadge status={job.interestStatus} perspective="seeker" />
-        <RespondButton
-          status={job.interestStatus}
-          loading={respondingId === job.id}
-          onRespond={() => onRespond(job.id)}
-        />
-        {job.interestStatus === 'MUTUAL' && job.contactInfo != null && (
+    <Card highlighted={highlighted} className={isMutual ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/50' : ''}>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-4">
+          <Avatar name={job.companyName} size="lg" />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-semibold text-stone-900">{job.positionName}</h3>
+            <p className="text-sm text-stone-500">{job.companyName}</p>
+            {job.description != null && job.description !== '' && (
+              <p className="mt-2 text-sm leading-relaxed text-stone-600">{job.description}</p>
+            )}
+          </div>
+          <MatchScoreBadge score={job.matchScoreDisplay} />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-50 pt-4">
+          <InterestStatusBadge status={job.interestStatus} perspective="seeker" />
+          <RespondButton
+            status={job.interestStatus}
+            loading={respondingId === job.id}
+            onRespond={() => onRespond(job.id)}
+          />
+        </div>
+
+        {isMutual && job.contactInfo != null && (
           <ContactInfoPanel contactInfo={job.contactInfo} perspective="seeker" />
         )}
       </div>
-    </article>
+    </Card>
   )
 }
 
@@ -105,12 +116,10 @@ export function SeekerPositionsPage() {
     lastHandledEventId.current = lastEventId
 
     setRecommendations((prev) => prev.map((job) => patchSeekerJobFromEvent(job, lastEvent)))
-    void fetchSeekerInterests().then(setInterests).catch(() => {
-      // ignore refresh errors
-    })
+    void fetchSeekerInterests().then(setInterests).catch(() => {})
 
     setHighlightedId(lastEvent.jobProfileId)
-    const timer = window.setTimeout(() => setHighlightedId(null), 2000)
+    const timer = window.setTimeout(() => setHighlightedId(null), 2500)
     return () => window.clearTimeout(timer)
   }, [lastEvent, lastEventId])
 
@@ -135,12 +144,10 @@ export function SeekerPositionsPage() {
     setRespondingId(jobProfileId)
     try {
       const updated = await respondToJob(jobProfileId)
-      setRecommendations((prev) =>
-        prev.map((job) => (job.id === jobProfileId ? updated : job)),
-      )
+      setRecommendations((prev) => prev.map((job) => (job.id === jobProfileId ? updated : job)))
       const outside = await fetchSeekerInterests()
       setInterests(outside)
-      setMessage('Отклик отправлен')
+      setMessage('Отклик отправлен! Ждём ответа работодателя')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось отправить отклик')
     } finally {
@@ -155,7 +162,7 @@ export function SeekerPositionsPage() {
     if (occupationIds.length === 0) {
       return 'Укажите одну или несколько желаемых должностей'
     }
-    return 'Пока нет подходящих активных вакансий'
+    return 'Пока нет подходящих активных вакансий — загляните позже'
   }
 
   if (loading) {
@@ -168,18 +175,17 @@ export function SeekerPositionsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Должности и рекомендации</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Выберите интересующие должности и просмотрите подборку вакансий
-        </p>
-      </div>
-      {message != null && <p className="text-sm text-green-700">{message}</p>}
-      {error != null && <p className="text-sm text-red-600">{error}</p>}
+      <PageHeader
+        title="Мэтчи 💕"
+        subtitle="Вакансии, которые подходят вам по навыкам и личности"
+      />
+
+      {message != null && <Alert variant="success">{message}</Alert>}
+      {error != null && <Alert variant="error">{error}</Alert>}
 
       <FormSection
-        title="Желаемые должности"
-        description="Выберите одну или несколько профессий"
+        title="Что ищете?"
+        description="Выберите должности — мы покажем лучшие мэтчи"
       >
         <OccupationPicker
           selectedIds={occupationIds}
@@ -188,14 +194,15 @@ export function SeekerPositionsPage() {
         />
       </FormSection>
 
-      <FormSection title="Рекомендованные вакансии" description="Подбор на основе навыков и личностного профиля">
+      <FormSection title="Рекомендации для вас" description="Подбор на основе навыков и личностного профиля">
         {recommendations.length === 0 ? (
           <EmptyState
-            title="Рекомендаций пока нет"
+            title="Пока пусто"
             description={recommendationsEmptyMessage()}
+            icon="🔍"
           />
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {recommendations.map((job) => (
               <JobRecommendationCard
                 key={job.id}
@@ -213,10 +220,10 @@ export function SeekerPositionsPage() {
         <>
           {interests.respondedOutside.length > 0 && (
             <FormSection
-              title="Мои отклики вне рекомендаций"
-              description="Вакансии, на которые вы откликнулись, но они больше не в текущем подборе"
+              title="Ваши отклики"
+              description="Вакансии вне текущего подбора"
             >
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {interests.respondedOutside.map((job) => (
                   <JobRecommendationCard
                     key={`responded-${job.id}`}
@@ -231,10 +238,10 @@ export function SeekerPositionsPage() {
 
           {interests.mutualOutside.length > 0 && (
             <FormSection
-              title="Взаимные отклики вне рекомендаций"
-              description="Взаимный интерес с работодателями вне текущего подбора"
+              title="Взаимные мэтчи"
+              description="Работодатели, с которыми совпали интересы"
             >
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {interests.mutualOutside.map((job) => (
                   <JobRecommendationCard
                     key={`mutual-${job.id}`}

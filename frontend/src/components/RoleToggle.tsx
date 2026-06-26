@@ -1,5 +1,5 @@
-import type { UserRole } from '../api/types'
-import { displayRoleLabel } from '../lib/roleLabels'
+import type {UserRole} from '../api/types'
+import {displayRoleLabel} from '../lib/roleLabels'
 
 interface RoleToggleProps {
   value: UserRole
@@ -9,10 +9,15 @@ interface RoleToggleProps {
 
 const roles: UserRole[] = ['SEEKER', 'EMPLOYER']
 
-export function RoleToggle({ value, onChange, disabled = false }: RoleToggleProps) {
+const roleIcons: Record<UserRole, string> = {
+  SEEKER: '🔍',
+  EMPLOYER: '🏢',
+}
+
+export function RoleToggle({value, onChange, disabled = false}: RoleToggleProps) {
   return (
     <div
-      className="flex w-full rounded-lg border border-neutral-300 bg-neutral-100 p-1"
+      className="flex w-full rounded-2xl border border-brand-200 bg-brand-50/50 p-1"
       role="radiogroup"
       aria-label="Тип аккаунта"
     >
@@ -26,12 +31,15 @@ export function RoleToggle({ value, onChange, disabled = false }: RoleToggleProp
             aria-checked={selected}
             disabled={disabled}
             onClick={() => onChange(role)}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={[
+              'flex flex-1 flex-col items-center gap-1 rounded-xl px-3 py-3 text-sm font-medium transition sm:flex-row sm:justify-center',
+              'disabled:cursor-not-allowed disabled:opacity-60',
               selected
-                ? 'bg-white text-neutral-900 shadow-sm'
-                : 'text-neutral-600 hover:text-neutral-900'
-            }`}
+                ? 'gradient-brand text-white shadow-md shadow-brand-500/20'
+                : 'text-stone-600 hover:bg-white/60 hover:text-stone-900',
+            ].join(' ')}
           >
+            <span aria-hidden>{roleIcons[role]}</span>
             {displayRoleLabel(role)}
           </button>
         )

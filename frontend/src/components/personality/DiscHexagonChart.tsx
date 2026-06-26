@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import {useEffect, useMemo, useState} from 'react'
 
 const AXES_COUNT = 6
 const GRID_LEVELS = [0.25, 0.5, 0.75, 1]
@@ -37,8 +37,8 @@ const MOBILE_LAYOUT: ChartLayout = {
   sideTextExtend: 76,
   containerClassName: '-mx-4 w-[calc(100%+2rem)]',
   svgClassName: 'h-auto w-full',
-  labelClassName: 'fill-neutral-600 text-[10px]',
-  percentClassName: 'fill-neutral-900 text-[10px] font-semibold tabular-nums',
+  labelClassName: 'fill-brand-600 text-[10px]',
+  percentClassName: 'fill-brand-700 text-[10px] font-semibold tabular-nums',
   lockRenderWidth: false,
 }
 
@@ -52,8 +52,8 @@ const DESKTOP_LAYOUT: ChartLayout = {
   sideTextExtend: 86,
   containerClassName: '-mx-1 w-full',
   svgClassName: 'h-auto max-w-full shrink-0',
-  labelClassName: 'fill-neutral-600 text-[11px]',
-  percentClassName: 'fill-neutral-900 text-[11px] font-semibold tabular-nums',
+  labelClassName: 'fill-brand-600 text-[11px]',
+  percentClassName: 'fill-brand-700 text-[11px] font-semibold tabular-nums',
   lockRenderWidth: true,
 }
 
@@ -174,7 +174,7 @@ export function DiscHexagonChart({ labels, values }: DiscHexagonChartProps) {
             fill="none"
             stroke="currentColor"
             strokeWidth={1}
-            className="text-neutral-200"
+            className="text-brand-100"
           />
         ))}
 
@@ -189,7 +189,7 @@ export function DiscHexagonChart({ labels, values }: DiscHexagonChartProps) {
               y2={y}
               stroke="currentColor"
               strokeWidth={1}
-              className="text-neutral-200"
+              className="text-brand-100"
             />
           )
         })}
@@ -201,7 +201,7 @@ export function DiscHexagonChart({ labels, values }: DiscHexagonChartProps) {
           stroke="currentColor"
           strokeWidth={2}
           strokeLinejoin="round"
-          className="text-neutral-900"
+          className="text-brand-500"
         />
 
         {normalizedValues.map((value, index) => {
@@ -213,7 +213,7 @@ export function DiscHexagonChart({ labels, values }: DiscHexagonChartProps) {
               cy={y}
               r={4}
               fill="currentColor"
-              className="text-neutral-900"
+              className="text-brand-500"
             />
           )
         })}

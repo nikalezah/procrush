@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import type { AuthUserDto, CompleteRegistrationRequest, UserRole } from '../api/types'
-import { AdaptiveLayout } from '../components/AdaptiveLayout'
-import { RoleToggle } from '../components/RoleToggle'
+import {useState} from 'react'
+import type {AuthUserDto, CompleteRegistrationRequest, UserRole} from '../api/types'
+import {AdaptiveLayout} from '../components/AdaptiveLayout'
+import {RoleToggle} from '../components/RoleToggle'
+import {Button} from '../components/ui/Button'
+import {Input} from '../components/ui/Input'
 
 interface RoleSelectionPageProps {
   user: AuthUserDto
@@ -44,82 +46,65 @@ export function RoleSelectionPage({
 
   return (
     <AdaptiveLayout>
-      <form className="flex w-full flex-col gap-4" onSubmit={handleSubmit} autoComplete="on">
-        <h1 className="text-center text-xl font-semibold">Завершите регистрацию</h1>
-        <p className="text-center text-sm text-neutral-600">
-          Добро пожаловать. Выберите тип аккаунта для {user.email} — его нельзя
-          будет изменить позже.
-        </p>
-        <p className="text-center text-sm text-neutral-500">
-          Эти данные можно изменить в любое время.
-        </p>
+      <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit} autoComplete="on">
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-stone-900">Создайте профиль</h1>
+          <p className="mt-2 text-sm text-stone-500">
+            Добро пожаловать, {user.email}. Выберите, кто вы — это нельзя изменить позже.
+          </p>
+        </div>
 
         <RoleToggle value={role} onChange={setRole} disabled={isBusy} />
 
         {role === 'SEEKER' ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-neutral-700">Имя</span>
-              <input
-                name="given-name"
-                autoComplete="given-name"
-                required
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                disabled={isBusy}
-                className="rounded-lg border border-neutral-300 px-3 py-2 text-sm disabled:bg-neutral-50"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-neutral-700">Фамилия</span>
-              <input
-                name="family-name"
-                autoComplete="family-name"
-                required
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                disabled={isBusy}
-                className="rounded-lg border border-neutral-300 px-3 py-2 text-sm disabled:bg-neutral-50"
-              />
-            </label>
-            <label className="flex flex-col gap-1 sm:col-span-2">
-              <span className="text-sm font-medium text-neutral-700">Отчество</span>
-              <input
+            <Input
+              label="Имя"
+              name="given-name"
+              autoComplete="given-name"
+              required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              disabled={isBusy}
+            />
+            <Input
+              label="Фамилия"
+              name="family-name"
+              autoComplete="family-name"
+              required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              disabled={isBusy}
+            />
+            <div className="sm:col-span-2">
+              <Input
+                label="Отчество"
                 name="additional-name"
                 autoComplete="additional-name"
                 value={middleName}
                 onChange={(e) => setMiddleName(e.target.value)}
                 disabled={isBusy}
-                className="rounded-lg border border-neutral-300 px-3 py-2 text-sm disabled:bg-neutral-50"
+                hint="Необязательно"
               />
-            </label>
+            </div>
           </div>
         ) : (
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-neutral-700">Название компании</span>
-            <input
-              name="organization"
-              autoComplete="organization"
-              required
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              disabled={isBusy}
-              className="rounded-lg border border-neutral-300 px-3 py-2 text-sm disabled:bg-neutral-50"
-            />
-          </label>
+          <Input
+            label="Название компании"
+            name="organization"
+            autoComplete="organization"
+            required
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            disabled={isBusy}
+          />
         )}
 
-        {errorMessage != null && (
-          <p className="w-full text-sm text-red-600">{errorMessage}</p>
-        )}
+        {errorMessage != null && <p className="text-sm text-red-600">{errorMessage}</p>}
 
-        <button
-          type="submit"
-          disabled={isBusy}
-          className="w-full rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isBusy ? 'Создание аккаунта…' : 'Создать аккаунт'}
-        </button>
+        <Button type="submit" fullWidth size="lg" disabled={isBusy}>
+          {isBusy ? 'Создание аккаунта…' : 'Начать'}
+        </Button>
       </form>
     </AdaptiveLayout>
   )

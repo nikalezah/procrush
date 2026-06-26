@@ -1,13 +1,17 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { completeSurvey, fetchSurvey, saveSurveyAnswers, startSurvey } from '../../api/seekerApi'
-import type { SurveyDetailDto } from '../../api/types'
+import {useNavigate, useParams} from 'react-router-dom'
+import {useCallback, useEffect, useMemo, useState} from 'react'
+import {completeSurvey, fetchSurvey, saveSurveyAnswers, startSurvey} from '../../api/seekerApi'
+import type {SurveyDetailDto} from '../../api/types'
 import {
-  SurveyQuestionRenderer,
-  isSurveyComplete,
-  parseAnswersJson,
-  parseSurveyDefinition,
+    isSurveyComplete,
+    parseAnswersJson,
+    parseSurveyDefinition,
+    SurveyQuestionRenderer,
 } from '../../components/survey/SurveyQuestionRenderer'
+import {Alert} from '../../components/ui/Alert'
+import {Button} from '../../components/ui/Button'
+import {PageHeader} from '../../components/ui/PageHeader'
+import {Spinner} from '../../components/Spinner'
 
 const SCALE_PAGE_SIZE = 8
 
@@ -34,7 +38,7 @@ function shouldRedirectCompleted(survey: SurveyDetailDto): boolean {
 }
 
 export function SeekerTestTakePage() {
-  const { surveyId } = useParams()
+  const {surveyId} = useParams()
   const navigate = useNavigate()
   const id = Number(surveyId)
   const [survey, setSurvey] = useState<SurveyDetailDto | null>(null)
@@ -55,7 +59,7 @@ export function SeekerTestTakePage() {
       return
     }
     if (detail.status === 'COMPLETED' && shouldRedirectCompleted(detail)) {
-      navigate('/seeker/personality/tests', { replace: true })
+      navigate('/seeker/personality/tests', {replace: true})
       return
     }
     if (detail.status === 'NOT_STARTED') {
@@ -136,19 +140,27 @@ export function SeekerTestTakePage() {
     navigate(`/seeker/personality/tests/${survey.prevSurveyId}`)
   }
 
-  if (error != null && survey == null) return <p className="text-sm text-red-600">{error}</p>
+  if (error != null && survey == null) {
+    return <Alert variant="error">{error}</Alert>
+  }
   if (survey == null || definition == null) {
     if (survey?.locked === true) {
       return (
         <div className="flex flex-col gap-4">
-          <Link to="/seeker/personality/tests" className="text-sm text-neutral-600 underline">
-            ← К тестам
-          </Link>
-          <p className="text-sm text-red-600">{error ?? 'Тест заблокирован'}</p>
+          <PageHeader
+            title="Тест заблокирован"
+            backTo="/seeker/personality/tests"
+            backLabel="К тестам"
+          />
+          <Alert variant="error">{error ?? 'Сначала завершите предыдущий тест'}</Alert>
         </div>
       )
     }
-    return <p className="text-sm text-neutral-500">Загрузка…</p>
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    )
   }
 
   const complete = isSurveyComplete(definition, answers)
@@ -180,61 +192,42 @@ export function SeekerTestTakePage() {
       ? !complete || submitting
       : submitting
 
+  const progressLabel = hasCoreSteps
+    ? `Часть ${survey.stepNumber} / ${survey.stepTotal}`
+    : hasScalePages
+      ? `Страница ${scalePage + 1} / ${scalePageCount}`
+      : null
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Link to="/seeker/personality/tests" className="text-sm text-neutral-600 underline">
-          ← К тестам
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold">{testTitle}</h1>
-      </div>
+      <PageHeader title={testTitle} backTo="/seeker/personality/tests" backLabel="К тестам" />
 
-      {error != null && <p className="text-sm text-red-600">{error}</p>}
+      {error != null && <Alert variant="error">{error}</Alert>}
 
       {showNavBar && (
-        <div className="sticky top-0 z-10 -mx-5 border-b border-neutral-200 bg-neutral-50/95 px-5 py-3 backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-4 text-sm text-neutral-600">
-            <span>
-              {hasCoreSteps && (
-                <>
-                  Часть {survey.stepNumber} / {survey.stepTotal}
-                </>
-              )}
-              {hasScalePages && (
-                <>
-                  Страница {scalePage + 1} / {scalePageCount}
-                </>
-              )}
-            </span>
-            <div className="flex shrink-0 gap-2">
+        <div className="sticky top-0 z-10 rounded-2xl border border-brand-100 bg-white/95 p-4 card-shadow backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-4">
+            {progressLabel != null && (
+              <span className="text-sm font-medium text-stone-600">{progressLabel}</span>
+            )}
+            <div className="ml-auto flex shrink-0 gap-2">
               {(hasCoreSteps || hasScalePages) && (
-                <button
-                  type="button"
+                <Button
+                  size="sm"
+                  variant="secondary"
                   disabled={
-                    hasCoreSteps
-                      ? survey.stepNumber! <= 1 || submitting
-                      : scalePage === 0
+                    hasCoreSteps ? survey.stepNumber! <= 1 || submitting : scalePage === 0
                   }
                   onClick={() =>
                     hasCoreSteps ? void handleBack() : setScalePage((p) => p - 1)
                   }
-                  className="rounded border border-neutral-300 px-3 py-1 disabled:opacity-40"
                 >
                   Назад
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
-                disabled={primaryDisabled}
-                onClick={handlePrimary}
-                className={
-                  showFinishAction
-                    ? 'rounded-lg bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50'
-                    : 'rounded border border-neutral-300 px-3 py-1 disabled:opacity-40'
-                }
-              >
+              <Button size="sm" disabled={primaryDisabled} onClick={handlePrimary}>
                 {primaryLabel}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

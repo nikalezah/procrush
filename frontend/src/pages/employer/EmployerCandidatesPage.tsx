@@ -1,6 +1,6 @@
-import {Link, useParams} from 'react-router-dom'
+import {useParams} from 'react-router-dom'
 import {useEffect, useRef, useState} from 'react'
-import {fetchCandidatesOverview, fetchEmployerInterests, respondToCandidate,} from '../../api/employerApi'
+import {fetchCandidatesOverview, fetchEmployerInterests, respondToCandidate} from '../../api/employerApi'
 import type {CandidateRecommendationDto, EmployerInterestsResponseDto, MatchInterestEventDto} from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
@@ -9,6 +9,10 @@ import {InterestStatusBadge} from '../../components/InterestStatusBadge'
 import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 import {RespondButton} from '../../components/RespondButton'
 import {Spinner} from '../../components/Spinner'
+import {Alert} from '../../components/ui/Alert'
+import {Avatar} from '../../components/ui/Avatar'
+import {Card} from '../../components/ui/Card'
+import {PageHeader} from '../../components/ui/PageHeader'
 import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
 
 function patchEmployerCandidateFromEvent(
@@ -34,43 +38,53 @@ function CandidateRecommendationCard({
   highlighted?: boolean
   onRespond: (seekerId: number) => void
 }) {
+  const fullName = `${candidate.firstName} ${candidate.lastName}`
+  const isMutual = candidate.interestStatus === 'MUTUAL'
+
   return (
-    <li
-      className={`flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between ${
-        highlighted ? 'ring-2 ring-amber-300' : ''
-      }`}
+    <Card
+      highlighted={highlighted}
+      className={isMutual ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/50' : ''}
     >
-      <div>
-        <h3 className="font-medium">
-          {candidate.firstName} {candidate.lastName}
-        </h3>
-        <p className="text-sm text-neutral-600">{candidate.positionName}</p>
-        <div className="mt-2 flex flex-wrap gap-1">
-          {candidate.skills.map((skill) => (
-            <span key={skill} className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs">
-              {skill}
-            </span>
-          ))}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start gap-4">
+          <Avatar name={fullName} size="lg" />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-semibold text-stone-900">{fullName}</h3>
+            <p className="text-sm text-stone-500">{candidate.positionName}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {candidate.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+          <MatchScoreBadge score={candidate.matchScoreDisplay} />
         </div>
-      </div>
-      <div className="flex w-full flex-col items-end gap-2 sm:w-auto">
-        <MatchScoreBadge score={candidate.matchScoreDisplay} />
-        <InterestStatusBadge status={candidate.interestStatus} perspective="employer" />
-        <RespondButton
-          status={candidate.interestStatus}
-          loading={respondingId === candidate.id}
-          onRespond={() => onRespond(candidate.id)}
-        />
-        {candidate.interestStatus === 'MUTUAL' && candidate.contactInfo != null && (
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-50 pt-4">
+          <InterestStatusBadge status={candidate.interestStatus} perspective="employer" />
+          <RespondButton
+            status={candidate.interestStatus}
+            loading={respondingId === candidate.id}
+            onRespond={() => onRespond(candidate.id)}
+          />
+        </div>
+
+        {isMutual && candidate.contactInfo != null && (
           <ContactInfoPanel contactInfo={candidate.contactInfo} perspective="employer" />
         )}
       </div>
-    </li>
+    </Card>
   )
 }
 
 export function EmployerCandidatesPage() {
-  const { id } = useParams<{ id: string }>()
+  const {id} = useParams<{id: string}>()
   const profileId = Number(id)
   const {lastEvent, lastEventId} = useMatchInterestEvents()
   const [candidates, setCandidates] = useState<CandidateRecommendationDto[]>([])
@@ -108,12 +122,10 @@ export function EmployerCandidatesPage() {
     setCandidates((prev) =>
       prev.map((candidate) => patchEmployerCandidateFromEvent(candidate, lastEvent)),
     )
-    void fetchEmployerInterests(profileId).then(setInterests).catch(() => {
-      // ignore refresh errors
-    })
+    void fetchEmployerInterests(profileId).then(setInterests).catch(() => {})
 
     setHighlightedId(lastEvent.seekerId)
-    const timer = window.setTimeout(() => setHighlightedId(null), 2000)
+    const timer = window.setTimeout(() => setHighlightedId(null), 2500)
     return () => window.clearTimeout(timer)
   }, [lastEvent, lastEventId, profileId])
 
@@ -128,7 +140,7 @@ export function EmployerCandidatesPage() {
       )
       const outside = await fetchEmployerInterests(profileId)
       setInterests(outside)
-      setMessage('Отклик отправлен')
+      setMessage('Отклик отправлен! Ждём ответа кандидата')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось отправить отклик')
     } finally {
@@ -146,33 +158,33 @@ export function EmployerCandidatesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Link to="/employer/profiles" className="text-sm text-neutral-600 underline">
-          ← К профилям
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold">Подобранные кандидаты</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Кандидаты с пройденными тестами и совпадающей желаемой должностью
-        </p>
-      </div>
-      {message != null && <p className="text-sm text-green-700">{message}</p>}
-      {error != null && <p className="text-sm text-red-600">{error}</p>}
+      <PageHeader
+        title="Кандидаты 👥"
+        subtitle="Люди с подходящей личностью и навыками"
+        backTo="/employer/profiles"
+        backLabel="К вакансиям"
+      />
+
+      {message != null && <Alert variant="success">{message}</Alert>}
+      {error != null && <Alert variant="error">{error}</Alert>}
 
       {candidates.length === 0 ? (
         <EmptyState
-          title="Кандидаты не найдены"
-          description="Пока нет соискателей, прошедших оба теста и указавших эту должность"
+          title="Пока никого нет"
+          description="Нет соискателей, прошедших тесты и указавших эту должность"
+          icon="🔍"
         />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-4">
           {candidates.map((candidate) => (
-            <CandidateRecommendationCard
-              key={candidate.id}
-              candidate={candidate}
-              respondingId={respondingId}
-              highlighted={highlightedId === candidate.id}
-              onRespond={(seekerId) => void handleRespond(seekerId)}
-            />
+            <li key={candidate.id}>
+              <CandidateRecommendationCard
+                candidate={candidate}
+                respondingId={respondingId}
+                highlighted={highlightedId === candidate.id}
+                onRespond={(seekerId) => void handleRespond(seekerId)}
+              />
+            </li>
           ))}
         </ul>
       )}
@@ -180,36 +192,32 @@ export function EmployerCandidatesPage() {
       {(interests.respondedOutside.length > 0 || interests.mutualOutside.length > 0) && (
         <>
           {interests.respondedOutside.length > 0 && (
-            <FormSection
-              title="Мои отклики вне рекомендаций"
-              description="Кандидаты, на которых вы откликнулись, но они больше не в текущем подборе"
-            >
-              <ul className="flex flex-col gap-3">
+            <FormSection title="Ваши отклики" description="Кандидаты вне текущего подбора">
+              <ul className="flex flex-col gap-4">
                 {interests.respondedOutside.map((candidate) => (
-                  <CandidateRecommendationCard
-                    key={`responded-${candidate.id}`}
-                    candidate={candidate}
-                    respondingId={respondingId}
-                    onRespond={(seekerId) => void handleRespond(seekerId)}
-                  />
+                  <li key={`responded-${candidate.id}`}>
+                    <CandidateRecommendationCard
+                      candidate={candidate}
+                      respondingId={respondingId}
+                      onRespond={(seekerId) => void handleRespond(seekerId)}
+                    />
+                  </li>
                 ))}
               </ul>
             </FormSection>
           )}
 
           {interests.mutualOutside.length > 0 && (
-            <FormSection
-              title="Взаимные отклики вне рекомендаций"
-              description="Взаимный интерес с кандидатами вне текущего подбора"
-            >
-              <ul className="flex flex-col gap-3">
+            <FormSection title="Взаимные мэтчи" description="Кандидаты с совпавшими интересами">
+              <ul className="flex flex-col gap-4">
                 {interests.mutualOutside.map((candidate) => (
-                  <CandidateRecommendationCard
-                    key={`mutual-${candidate.id}`}
-                    candidate={candidate}
-                    respondingId={respondingId}
-                    onRespond={(seekerId) => void handleRespond(seekerId)}
-                  />
+                  <li key={`mutual-${candidate.id}`}>
+                    <CandidateRecommendationCard
+                      candidate={candidate}
+                      respondingId={respondingId}
+                      onRespond={(seekerId) => void handleRespond(seekerId)}
+                    />
+                  </li>
                 ))}
               </ul>
             </FormSection>

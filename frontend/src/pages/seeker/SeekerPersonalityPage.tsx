@@ -10,6 +10,10 @@ import {FormSection} from '../../components/FormSection'
 import {DiscHexagonChart} from '../../components/personality/DiscHexagonChart'
 import {PersonalityCategoryTabs} from '../../components/personality/PersonalityCategoryTabs'
 import {SuperpowersAndTalentsSection} from '../../components/personality/SuperpowersAndTalentsSection'
+import {Alert} from '../../components/ui/Alert'
+import {Button} from '../../components/ui/Button'
+import {PageHeader} from '../../components/ui/PageHeader'
+import {Spinner} from '../../components/Spinner'
 
 const AXIS_LABELS: Record<string, string> = {
   axisDominance: 'Доминантность',
@@ -69,34 +73,37 @@ export function SeekerPersonalityPage() {
   if (error != null && data == null) {
     return <p className="text-sm text-red-600">{error}</p>
   }
-  if (data == null) return <p className="text-sm text-neutral-500">Загрузка…</p>
+  if (data == null) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner />
+      </div>
+    )
+  }
 
   const testsBanner = (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p>
-          Пройдено тестов: {data.testsCompleted}/{data.testsTotal}. Для точного мэтчинга завершите все
-          методики в каждом тесте.
-        </p>
-        <Link
-          to="/seeker/personality/tests"
-          className="rounded-lg bg-amber-900 px-4 py-2 text-sm font-medium text-white"
-        >
-          {data.testsCompleted >= data.testsTotal ? 'Смотреть тесты' : 'Пройти тесты'}
+    <Alert
+      variant="warning"
+      title={`Тесты: ${data.testsCompleted}/${data.testsTotal}`}
+      action={
+        <Link to="/seeker/personality/tests">
+          <Button size="sm">
+            {data.testsCompleted >= data.testsTotal ? 'Смотреть' : 'Пройти'}
+          </Button>
         </Link>
-      </div>
-    </div>
+      }
+    >
+      Для точного мэтчинга завершите все методики в каждом тесте
+    </Alert>
   )
 
   if (data.status === 'NOT_READY') {
     return (
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Личностные характеристики</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            Пройдите все тесты для формирования профиля
-          </p>
-        </div>
+        <PageHeader
+          title="Ваша личность ✨"
+          subtitle="Пройдите тесты, чтобы мы узнали вас лучше"
+        />
         {testsBanner}
       </div>
     )
@@ -105,20 +112,15 @@ export function SeekerPersonalityPage() {
   if (data.status === 'PROCESSING') {
     return (
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Личностные характеристики</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            Все тесты пройдены — формируем ваш профиль
-          </p>
-        </div>
+        <PageHeader
+          title="Ваша личность ✨"
+          subtitle="Формируем ваш уникальный профиль"
+        />
         {testsBanner}
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-8">
-          <div
-            className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900"
-            aria-hidden
-          />
-          <p className="text-sm text-neutral-700">
-            Формируем ваш личностный профиль… Это может занять время.
+        <div className="flex flex-col items-center gap-4 rounded-[var(--radius-card)] border border-brand-100 bg-white p-10 card-shadow">
+          <Spinner />
+          <p className="text-center text-sm text-stone-600">
+            Анализируем ваши ответы… Это может занять несколько минут
           </p>
         </div>
       </div>
@@ -128,21 +130,16 @@ export function SeekerPersonalityPage() {
   if (data.status === 'FAILED') {
     return (
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Личностные характеристики</h1>
-        </div>
+        <PageHeader title="Ваша личность ✨" />
         {testsBanner}
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-          <p>{data.generationError ?? 'Не удалось сформировать профиль'}</p>
-          <button
-            type="button"
-            onClick={() => void handleRetry()}
-            disabled={retrying}
-            className="mt-3 rounded-lg bg-red-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {retrying ? 'Запуск…' : 'Повторить'}
-          </button>
-        </div>
+        <Alert variant="error" title="Не удалось сформировать профиль">
+          {data.generationError ?? 'Произошла ошибка при генерации'}
+          <div className="mt-3">
+            <Button size="sm" onClick={() => void handleRetry()} disabled={retrying}>
+              {retrying ? 'Запуск…' : 'Повторить'}
+            </Button>
+          </div>
+        </Alert>
         {error != null && <p className="text-sm text-red-600">{error}</p>}
       </div>
     )
@@ -165,33 +162,33 @@ export function SeekerPersonalityPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Личностные характеристики</h1>
-        <p className="mt-1 text-sm text-neutral-600">Ваш сформированный личностный профиль</p>
-      </div>
+      <PageHeader
+        title="Ваша личность ✨"
+        subtitle="Уникальный профиль для точного подбора работы"
+      />
       {testsBanner}
       <FormSection title={data.title ?? ''} description={data.description ?? undefined}>
         {data.profile != null && (
-          <p className="text-sm text-neutral-700">{data.profile}</p>
+          <p className="text-sm leading-relaxed text-stone-700">{data.profile}</p>
         )}
         {(data.autonomy != null || data.thinkingStyle != null || data.burnoutRisk != null) && (
           <dl className="grid gap-4 sm:grid-cols-3">
             {data.autonomy != null && (
-              <div>
-                <dt className="font-medium text-sm">Автономность</dt>
-                <dd className="mt-1 text-sm text-neutral-600">{data.autonomy}</dd>
+              <div className="rounded-xl bg-brand-50/50 p-3">
+                <dt className="text-sm font-semibold text-stone-800">Автономность</dt>
+                <dd className="mt-1 text-sm text-stone-600">{data.autonomy}</dd>
               </div>
             )}
             {data.thinkingStyle != null && (
-              <div>
-                <dt className="font-medium text-sm">Стиль мышления</dt>
-                <dd className="mt-1 text-sm text-neutral-600">{data.thinkingStyle}</dd>
+              <div className="rounded-xl bg-brand-50/50 p-3">
+                <dt className="text-sm font-semibold text-stone-800">Стиль мышления</dt>
+                <dd className="mt-1 text-sm text-stone-600">{data.thinkingStyle}</dd>
               </div>
             )}
             {data.burnoutRisk != null && (
-              <div>
-                <dt className="font-medium text-sm">Риск выгорания</dt>
-                <dd className="mt-1 text-sm text-neutral-600">{data.burnoutRisk}</dd>
+              <div className="rounded-xl bg-brand-50/50 p-3">
+                <dt className="text-sm font-semibold text-stone-800">Риск выгорания</dt>
+                <dd className="mt-1 text-sm text-stone-600">{data.burnoutRisk}</dd>
               </div>
             )}
           </dl>
@@ -220,9 +217,9 @@ export function SeekerPersonalityPage() {
               <FormSection title={energySources.title}>
                 <ul className="flex flex-col gap-3">
                   {energySources.items.map((item) => (
-                    <li key={item.title}>
-                      <p className="font-medium text-sm">{item.title}</p>
-                      <p className="text-sm text-neutral-600">{item.description}</p>
+                    <li key={item.title} className="rounded-xl bg-brand-50/40 p-3">
+                      <p className="text-sm font-semibold text-stone-800">{item.title}</p>
+                      <p className="text-sm text-stone-600">{item.description}</p>
                     </li>
                   ))}
                 </ul>
@@ -234,9 +231,9 @@ export function SeekerPersonalityPage() {
               <FormSection title={stopFactors.title}>
                 <ul className="flex flex-col gap-3">
                   {stopFactors.items.map((item) => (
-                    <li key={item.title}>
-                      <p className="font-medium text-sm">{item.title}</p>
-                      <p className="text-sm text-neutral-600">{item.description}</p>
+                    <li key={item.title} className="rounded-xl bg-brand-50/40 p-3">
+                      <p className="text-sm font-semibold text-stone-800">{item.title}</p>
+                      <p className="text-sm text-stone-600">{item.description}</p>
                     </li>
                   ))}
                 </ul>

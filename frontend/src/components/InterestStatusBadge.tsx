@@ -4,21 +4,21 @@ const SEEKER_LABELS: Record<InterestStatus, string | null> = {
   NONE: null,
   RESPONDED: 'Вы откликнулись',
   INCOMING: 'Работодатель заинтересован',
-  MUTUAL: 'Взаимный интерес',
+  MUTUAL: 'Взаимный интерес!',
 }
 
 const EMPLOYER_LABELS: Record<InterestStatus, string | null> = {
   NONE: null,
   RESPONDED: 'Вы откликнулись',
   INCOMING: 'Кандидат откликнулся',
-  MUTUAL: 'Взаимный интерес',
+  MUTUAL: 'Взаимный интерес!',
 }
 
 const STATUS_STYLES: Record<InterestStatus, string> = {
   NONE: '',
-  RESPONDED: 'bg-blue-100 text-blue-800',
-  INCOMING: 'bg-amber-100 text-amber-900',
-  MUTUAL: 'bg-green-100 text-green-800',
+  RESPONDED: 'bg-sky-100 text-sky-800',
+  INCOMING: 'bg-brand-100 text-brand-800',
+  MUTUAL: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200',
 }
 
 interface InterestStatusBadgeProps {
@@ -26,7 +26,7 @@ interface InterestStatusBadgeProps {
   perspective: 'seeker' | 'employer'
 }
 
-export function InterestStatusBadge({ status, perspective }: InterestStatusBadgeProps) {
+export function InterestStatusBadge({status, perspective}: InterestStatusBadgeProps) {
   const resolved = status ?? 'NONE'
   if (resolved === 'NONE') return null
 
@@ -34,7 +34,8 @@ export function InterestStatusBadge({ status, perspective }: InterestStatusBadge
   if (label == null) return null
 
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[resolved]}`}>
+    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[resolved]}`}>
+      {resolved === 'MUTUAL' ? '💕 ' : ''}
       {label}
     </span>
   )

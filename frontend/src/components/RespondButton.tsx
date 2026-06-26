@@ -6,18 +6,18 @@ interface RespondButtonProps {
   onRespond: () => void
 }
 
-export function RespondButton({ status, loading = false, onRespond }: RespondButtonProps) {
+export function RespondButton({status, loading = false, onRespond}: RespondButtonProps) {
   const resolved = status ?? 'NONE'
   const canRespond = resolved === 'NONE' || resolved === 'INCOMING'
   const disabled = !canRespond || loading
 
-  let label = 'Откликнуться'
+  let label = '❤️ Откликнуться'
   if (loading) {
     label = 'Отправка…'
   } else if (resolved === 'RESPONDED') {
-    label = 'Ожидание ответа'
+    label = '⏳ Ожидание ответа'
   } else if (resolved === 'MUTUAL') {
-    label = 'Взаимный интерес'
+    label = '💕 Взаимный интерес!'
   }
 
   return (
@@ -27,8 +27,8 @@ export function RespondButton({ status, loading = false, onRespond }: RespondBut
       onClick={onRespond}
       className={
         disabled
-          ? 'rounded-lg bg-neutral-200 px-3 py-1.5 text-sm text-neutral-500'
-          : 'rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-800'
+          ? 'rounded-full bg-stone-100 px-4 py-2 text-sm text-stone-400'
+          : 'gradient-brand rounded-full px-5 py-2 text-sm font-semibold text-white shadow-md shadow-brand-500/25 transition hover:brightness-110 active:scale-95'
       }
     >
       {label}

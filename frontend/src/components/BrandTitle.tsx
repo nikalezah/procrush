@@ -1,19 +1,21 @@
 import {AlphaBadge} from './AlphaBadge'
 
 interface BrandTitleProps {
-  size?: 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg'
 }
 
-export function BrandTitle({ size = 'md' }: BrandTitleProps) {
+export function BrandTitle({size = 'md'}: BrandTitleProps) {
   const titleClass =
     size === 'lg'
-      ? 'text-3xl font-semibold tracking-tight'
-      : 'text-lg font-semibold tracking-tight'
+      ? 'text-4xl font-bold tracking-tight'
+      : size === 'sm'
+        ? 'text-base font-bold tracking-tight'
+        : 'text-xl font-bold tracking-tight'
 
   return (
     <div className="flex items-center gap-2">
-      <span className={titleClass}>ProCrush</span>
-      <AlphaBadge />
+      <span className={`gradient-text ${titleClass}`}>ProCrush</span>
+      {size !== 'sm' && <AlphaBadge />}
     </div>
   )
 }

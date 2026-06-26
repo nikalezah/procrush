@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { AdaptiveLayout } from '../components/AdaptiveLayout'
-import { BrandTitle } from '../components/BrandTitle'
+import {useState} from 'react'
+import {AdaptiveLayout} from '../components/AdaptiveLayout'
+import {Spinner} from '../components/Spinner'
+import {Button} from '../components/ui/Button'
+import {Input} from '../components/ui/Input'
 
 interface LoginPageProps {
   isBusy: boolean
@@ -8,7 +10,7 @@ interface LoginPageProps {
   onSignIn: (email: string) => void
 }
 
-export function LoginPage({ isBusy, errorMessage, onSignIn }: LoginPageProps) {
+export function LoginPage({isBusy, errorMessage, onSignIn}: LoginPageProps) {
   const [email, setEmail] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
@@ -19,56 +21,41 @@ export function LoginPage({ isBusy, errorMessage, onSignIn }: LoginPageProps) {
 
   return (
     <AdaptiveLayout>
-      <form
-        className="flex w-full flex-col items-center gap-4"
-        onSubmit={handleSubmit}
-        autoComplete="on"
-      >
-        <BrandTitle size="lg" />
-        <p className="text-center text-base text-neutral-600">
-          Найдите работу или наймите специалистов. Войдите, чтобы продолжить.
-        </p>
-        <label className="w-full" htmlFor="login-email">
-          <span className="mb-1 block text-sm font-medium text-neutral-700">
-            Электронная почта
-          </span>
-          <input
-            id="login-email"
-            name="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            autoFocus
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={isBusy}
-            className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base outline-none ring-neutral-900 focus:ring-2 disabled:opacity-60"
-          />
-        </label>
-        {errorMessage != null && (
-          <p className="w-full text-sm text-red-600">{errorMessage}</p>
-        )}
+      <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit} autoComplete="on">
+        <div className="text-center">
+          <p className="text-lg font-medium text-stone-800">Найди работу мечты</p>
+          <p className="mt-1 text-sm text-stone-500">
+            Умный подбор по навыкам и личности — как dating, только для карьеры
+          </p>
+        </div>
+
+        <Input
+          label="Электронная почта"
+          id="login-email"
+          name="email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoFocus
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={isBusy}
+          error={errorMessage ?? undefined}
+        />
+
         {isBusy ? (
-          <div className="flex justify-center py-2">
-            <div
-              className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-neutral-900"
-              role="status"
-              aria-label="Загрузка"
-            />
+          <div className="flex justify-center py-3">
+            <Spinner />
           </div>
         ) : (
-          <button
-            type="submit"
-            disabled={email.trim() === ''}
-            className="w-full rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <Button type="submit" fullWidth size="lg" disabled={email.trim() === ''}>
             Продолжить
-          </button>
+          </Button>
         )}
-        <p className="text-center text-xs text-neutral-500">
-          Роль (соискатель или работодатель) выбирается один раз после входа и позже не
-          меняется.
+
+        <p className="text-center text-xs text-stone-400">
+          Роль выбирается один раз после входа и не меняется
         </p>
       </form>
     </AdaptiveLayout>

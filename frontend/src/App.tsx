@@ -25,17 +25,17 @@ import {PersonalityReadyEventsProvider, usePersonalityReadyEvents,} from './hook
 import type {AuthUserDto} from './api/types'
 
 const SEEKER_NAV = [
-  { to: '/seeker', label: 'Дашборд', end: true },
-  { to: '/seeker/personality', label: 'Личность' },
-  { to: '/seeker/profile', label: 'Профиль' },
-  { to: '/seeker/positions', label: 'Должности' },
-  { to: '/seeker/settings', label: 'Настройки' },
+  { to: '/seeker', label: 'Главная', end: true, icon: '🏠' },
+  { to: '/seeker/positions', label: 'Мэтчи', icon: '💕' },
+  { to: '/seeker/personality', label: 'Личность', icon: '✨' },
+  { to: '/seeker/profile', label: 'Профиль', icon: '👤' },
+  { to: '/seeker/settings', label: 'Аккаунт', icon: '🪪' },
 ]
 
 const EMPLOYER_NAV = [
-  { to: '/employer', label: 'Дашборд', end: true },
-  { to: '/employer/profiles', label: 'Профили' },
-  { to: '/employer/settings', label: 'Настройки' },
+  { to: '/employer', label: 'Главная', end: true, icon: '🏠' },
+  { to: '/employer/profiles', label: 'Вакансии', icon: '💼' },
+  { to: '/employer/settings', label: 'Аккаунт', icon: '🪪' },
 ]
 
 function AuthFlow() {

@@ -1,9 +1,84 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --color-brand-50: #fff1f3;
+  --color-brand-100: #ffe4e8;
+  --color-brand-200: #fecdd6;
+  --color-brand-300: #fda4b8;
+  --color-brand-400: #fb7185;
+  --color-brand-500: #f43f5e;
+  --color-brand-600: #e11d48;
+  --color-brand-700: #be123c;
+  --color-brand-800: #9f1239;
+  --color-brand-900: #881337;
+
+  --color-accent-400: #c084fc;
+  --color-accent-500: #a855f7;
+  --color-accent-600: #9333ea;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #faf5f7;
+  --color-surface-elevated: #ffffff;
+
+  --radius-card: 1.25rem;
+  --radius-button: 9999px;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background-color: #fafafa;
-  color: #171717;
+  font-family: var(--font-sans);
+  background: linear-gradient(160deg, #fff1f3 0%, #faf5ff 45%, #fff7ed 100%);
+  background-attachment: fixed;
+  color: #1c1917;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dating-app gradient utilities */
+.gradient-brand {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be185d 100%);
+}
+
+.gradient-brand-soft {
+  background: linear-gradient(135deg, #fff1f3 0%, #fdf4ff 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #e11d48, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.card-shadow {
+  box-shadow:
+    0 1px 2px rgb(225 29 72 / 0.04),
+    0 8px 24px rgb(225 29 72 / 0.08);
+}
+
+.card-shadow-lg {
+  box-shadow:
+    0 2px 4px rgb(225 29 72 / 0.06),
+    0 12px 32px rgb(225 29 72 / 0.12);
+}
+
+@keyframes pulse-match {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(244 63 94 / 0.4); }
+  50% { box-shadow: 0 0 0 8px rgb(244 63 94 / 0); }
+}
+
+.animate-pulse-match {
+  animation: pulse-match 1.5s ease-in-out 2;
+}
+
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.15); }
+  50% { transform: scale(1); }
+}
+
+.animate-heart-beat {
+  animation: heart-beat 0.6s ease-in-out;
 }
