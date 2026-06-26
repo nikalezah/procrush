@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: matching
+  namespace: procrush
+spec:
+  selector:
+    app: matching
+  ports:
+    - name: http
+      port: 8092
+      targetPort: 8092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matching
+  namespace: procrush
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: matching
+  template:
+    metadata:
+      labels:
+        app: matching
+    spec:
+      initContainers:
+        - name: wait-for-infra
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              for host in postgres:5432 matching-postgres:5432 redis:6379 kafka:9092; do
+                name="${host%:*}"
+                port="${host#*:}"
+                echo "Waiting for $name:$port..."
+                until nc -z "$name" "$port"; do sleep 2; done
+              done
+      containers:
+        - name: matching
+          image: procrush-matching:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8092
+          envFrom:
+            - configMapRef:
+                name: procrush-config
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: procrush-secret
+                  key: DATABASE_PASSWORD
+            - name: MATCHING_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: procrush-secret
+                  key: MATCHING_DATABASE_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8092
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8092
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 1000m

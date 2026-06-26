@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: procrush
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          imagePullPolicy: Never
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personality
+  namespace: procrush
+spec:
+  template:
+    spec:
+      containers:
+        - name: personality
+          imagePullPolicy: Never
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matching
+  namespace: procrush
+spec:
+  template:
+    spec:
+      containers:
+        - name: matching
+          imagePullPolicy: Never
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: procrush
+spec:
+  template:
+    spec:
+      containers:
+        - name: frontend
+          imagePullPolicy: Never

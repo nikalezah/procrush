@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: personality
+  namespace: procrush
+spec:
+  selector:
+    app: personality
+  ports:
+    - name: http
+      port: 8091
+      targetPort: 8091
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personality
+  namespace: procrush
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: personality
+  template:
+    metadata:
+      labels:
+        app: personality
+    spec:
+      initContainers:
+        - name: wait-for-infra
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              for host in postgres:5432 redis:6379 rabbitmq:5672 kafka:9092; do
+                name="${host%:*}"
+                port="${host#*:}"
+                echo "Waiting for $name:$port..."
+                until nc -z "$name" "$port"; do sleep 2; done
+              done
+      containers:
+        - name: personality
+          image: procrush-personality:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8091
+          envFrom:
+            - configMapRef:
+                name: procrush-config
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: procrush-secret
+                  key: DATABASE_PASSWORD
+            - name: LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: procrush-secret
+                  key: LLM_API_KEY
+          readinessProbe:
+            tcpSocket:
+              port: 8091
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: 8091
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 1000m

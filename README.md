@@ -109,33 +109,47 @@ flowchart LR
 | [`backend/personality/`](./backend/personality) | Gradle `:backend:personality` — deployable app: RabbitMQ consumer + health endpoint |
 | [`backend/domain/personality/`](./backend/domain/personality) | Gradle `:backend:domain:personality-lib` — библиотека домена (координатор, publisher, worker-логика) |
 | [`backend/matching/`](./backend/matching) | Kafka consumer + HTTP read API, отдельная БД матчинга |
-| [`deploy/`](./deploy) | Dockerfile для Railway                         |
+| [`deploy/`](./deploy) | Dockerfile для Railway, Kubernetes (kind) для локального стека |
 
 ## Локальная разработка
 
 ### Требования
 
-- JDK 17+, Docker (PostgreSQL, **Redis 8**, **RabbitMQ 4**, **Kafka**, matching-postgres)
-- Для React: **Node.js 20+** (см. [frontend/README.md](./frontend/README.md) при ошибке `Unexpected token '||='`)
+- **Полный стек в Kubernetes (рекомендуется):** Docker (≥ 8 GB RAM), [kind](https://kind.sigs.k8s.io/), kubectl — см. [deploy/k8s/README.md](./deploy/k8s/README.md)
+- **Hot-reload (опционально):** JDK 17+, Node.js 20+ для `./gradlew run` / `npm run dev` с port-forward инфраструктуры (см. [env.example](./env.example))
+
+### Запуск полного стека (kind)
+
+1. Добавьте в hosts: `127.0.0.1 procrush.local`
+2. Из корня репозитория:
+
+   ```powershell
+   .\deploy\k8s\scripts\kind-up.ps1
+   ```
+
+   (bash: `./deploy/k8s/scripts/kind-up.sh`)
+
+3. Откройте http://procrush.local — dev-вход (`AUTH_DEV_MODE=true`).
+
+Подробности, пересборка образов и устранение неполадок — в [deploy/k8s/README.md](./deploy/k8s/README.md).
+
+Схема БД и справочные данные — в Flyway-миграциях (`backend/platform/persistence/src/main/kotlin/db/migration/`) и seed (`backend/platform/persistence/src/main/resources/db/seed/init_inserts.sql`). Сброс данных в kind:
+
+```bash
+kubectl delete namespace procrush
+kubectl apply -k deploy/k8s/overlays/kind
+```
 
 ### Аутентификация
 
-Используются **httpOnly session cookies**. Локально — dev-вход (`AUTH_DEV_MODE=true`).
+Используются **httpOnly session cookies**. В kind-стеке включён dev-вход (`AUTH_DEV_MODE=true`).
 
-1. Скопируйте [`env.example`](./env.example) в `.env` (`AUTH_DEV_MODE=true`; `REDIS_URL=redis://localhost:6379`; `RABBITMQ_URL=amqp://procrush:procrush@localhost:5672/%2F`; `KAFKA_BOOTSTRAP_SERVERS=localhost:9092`; в `WEB_ORIGIN` укажите оба origin, если работаете и с React, и с Compose).
-2. PostgreSQL, Redis, RabbitMQ, Kafka и matching-postgres: `docker compose up -d`
-3. API: `./gradlew :backend:api:run` (миграции Flyway применяются автоматически; **без `REDIS_URL`, `RABBITMQ_URL`, `KAFKA_BOOTSTRAP_SERVERS` и `MATCHING_SERVICE_URL` сервер не стартует**)
-4. **Personality** (обязателен для генерации профиля): `./gradlew :backend:personality:run` — в отдельном терминале
-5. **Matching** (обязателен для рекомендаций): `./gradlew :backend:matching:run` — в отдельном терминале
-6. Веб-клиент:
-   - **React:** `cd frontend && npm install && npm run dev` → http://localhost:8081
-   - **Compose:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
-
-Схема БД и справочные данные — в Flyway-миграциях (`backend/platform/persistence/src/main/kotlin/db/migration/`) и seed (`backend/platform/persistence/src/main/resources/db/seed/init_inserts.sql`). При конфликте со старыми миграциями:
-
-```bash
-docker compose down -v && docker compose up -d
-```
+| Endpoint | Описание |
+|----------|----------|
+| `POST /api/auth/dev/login` | Dev-вход (требует `AUTH_DEV_MODE=true`) |
+| `GET /api/auth/me` | Текущий пользователь |
+| `POST /api/auth/logout` | Выход |
+| `POST /api/auth/complete-registration` | Выбор роли (неизменяемо) |
 
 ### Redis (обязателен)
 
@@ -146,19 +160,16 @@ Backend использует **Redis 8** для:
 - кэша сессий (PostgreSQL остаётся source of truth);
 - pub/sub для SSE-уведомлений о новых откликах и статусе генерации профиля (работает при нескольких инстансах API).
 
-Локально Redis поднимается вместе с Postgres и RabbitMQ: `docker compose up -d`. Переменная `REDIS_URL=redis://localhost:6379` обязательна (см. [`env.example`](./env.example)).
+В kind Redis поднимается внутри кластера; с хоста доступен только через `kubectl port-forward` (см. [deploy/k8s/README.md](./deploy/k8s/README.md)).
 
 ### RabbitMQ (обязателен)
 
 **RabbitMQ** — брокер сообщений: API кладёт задачу «сгенерировать личностный профиль» в очередь `personality.generation`; worker забирает задачу и вызывает LLM.
 
-- Локально: `docker compose up -d`, UI — http://localhost:15672 (логин/пароль `procrush` / `procrush`)
-- Переменная `RABBITMQ_URL=amqp://procrush:procrush@localhost:5672/%2F` обязательна (vhost `/` кодируется как `%2F`)
+- В kind: сервис `rabbitmq` в namespace `procrush`; UI — `kubectl port-forward -n procrush svc/rabbitmq 15672:15672` → http://localhost:15672 (`procrush` / `procrush`)
 - При ошибках после 3 попыток сообщение попадает в DLQ `personality.generation.dlq`
 
-Проверка API: `GET /health` → `{"status":"ok","redis":"ok","rabbitmq":"ok","kafka":"ok"}`.
-
-Проверка worker: `GET http://localhost:8091/health` → тот же формат (`WORKER_HEALTH_PORT`, по умолчанию **8091**, не 8081 — React dev server).
+Проверка API (через Ingress): `GET http://procrush.local/health` не проксируется — health на API напрямую: `kubectl port-forward -n procrush svc/api 8080:8080` → `GET http://localhost:8080/health` → `{"status":"ok",...}`.
 
 #### Статус Этапа 3 (RabbitMQ + personality)
 
@@ -179,26 +190,20 @@ Backend использует **Redis 8** для:
 
 **Kafka** — event log для пересчёта матчинга. API и personality публикуют доменные события; **matching** потребляет их и пишет результаты в **отдельную PostgreSQL** (`procrush_matching`).
 
-- Локально: `docker compose up -d` поднимает также Kafka (`localhost:9092`) и matching-postgres (`localhost:5433`)
-- `KAFKA_BOOTSTRAP_SERVERS=localhost:9092`
-- `MATCHING_DATABASE_URL=jdbc:postgresql://localhost:5433/procrush_matching`
-- `MATCHING_SERVICE_URL=http://localhost:8092` — если задан, API читает рекомендации из matching по HTTP
+- В kind: сервисы `kafka`, `matching-postgres`, `matching` в namespace `procrush`
+- API читает рекомендации из matching по HTTP (`MATCHING_SERVICE_URL` обязателен)
 
-Проверка matching: `GET http://localhost:8092/health` → `{"status":"ok","postgres":"ok","kafka":"ok","redis":"ok"}`.
+Проверка matching: `kubectl port-forward -n procrush svc/matching 8092:8092` → `GET http://localhost:8092/health`.
 
-| Endpoint | Описание |
-|----------|----------|
-| `POST /api/auth/dev/login` | Dev-вход (требует `AUTH_DEV_MODE=true`) |
-| `GET /api/auth/me` | Текущий пользователь |
-| `POST /api/auth/logout` | Выход |
-| `POST /api/auth/complete-registration` | Выбор роли (неизменяемо) |
+### Запуск приложений (hot-reload, опционально)
 
-### Запуск приложений
+При port-forward инфраструктуры на localhost (см. [deploy/k8s/README.md](./deploy/k8s/README.md) и [env.example](./env.example)):
 
 - **React:** `cd frontend && npm run dev` → http://localhost:8081
 - **API**: `./gradlew :backend:api:run`
-- **Personality**: `./gradlew :backend:personality:run` → health http://localhost:8091/health
-- **Matching**: `./gradlew :backend:matching:run` → health http://localhost:8092/health
+- **Personality**: `./gradlew :backend:personality:run`
+- **Matching**: `./gradlew :backend:matching:run`
+- **Compose Web:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
 - Android: `./gradlew :app:androidApp:assembleDebug`
 - Desktop: `./gradlew :app:desktopApp:run` (hot reload: `:app:desktopApp:hotRun --auto`)
 - iOS: открыть [`app/iosApp`](./app/iosApp) в Xcode
