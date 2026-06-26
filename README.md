@@ -80,27 +80,19 @@ flowchart LR
 
 ## Выбор архитектуры
 
-### Kotlin Multiplatform (KMP)
-
-Проект собран как **Kotlin Multiplatform** с модулями `core`, `app/shared`, нативными приложениями (Android, iOS, Desktop) и Ktor-сервером. Основной веб-клиент — отдельное **React**-приложение; KMP выбран как задел на будущее: Compose Multiplatform и мобильные приложения смогут делить с сервером бизнес-правила, валидацию и форматирование без переписывания с нуля.
-
 ### React для веб-клиента
 
-Веб-интерфейс реализован как **отдельное React + Vite + Tailwind приложение** (`frontend`), а не через Compose for Web:
+Веб-интерфейс реализован как **отдельное React + Vite + Tailwind приложение** (`frontend`):
 
 - быстрый старт и знакомый стек для итераций UI;
 - независимый деплой фронтенда (nginx + прокси `/api`);
-- меньше связанности с Gradle и KMP при активной доработке экранов опросов и профиля.
+- меньше связанности с Gradle при активной доработке экранов опросов и профиля.
 
 ## Структура репозитория
 
 | Путь | Назначение                                     |
 |------|------------------------------------------------|
-| [`core/`](./core/src) | Общий код для всех таргетов (модели, утилиты)  |
-| [`app/shared/`](./app/shared/src) | UI и логика Compose Multiplatform              |
 | [`frontend/`](./frontend) | Основной веб-клиент (React)                    |
-| [`app/webApp/`](./app/webApp) | Compose Web (JS), экспериментальный auth UI    |
-| [`app/androidApp/`](./app/androidApp), [`app/iosApp/`](./app/iosApp), [`app/desktopApp/`](./app/desktopApp) | Нативные оболочки KMP                          |
 | [`backend/contracts/`](./backend/contracts/src/main/kotlin) | DTO, события, порты и чистая доменная логика без инфраструктуры |
 | [`backend/config/`](./backend/config/src/main/kotlin) | Чтение env и типизированные настройки приложений |
 | [`backend/platform/`](./backend/platform) | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`) |
@@ -203,18 +195,6 @@ Backend использует **Redis 8** для:
 - **API**: `./gradlew :backend:api:run`
 - **Personality**: `./gradlew :backend:personality:run`
 - **Matching**: `./gradlew :backend:matching:run`
-- **Compose Web:** `./gradlew :app:webApp:jsBrowserDevelopmentRun` → http://localhost:8082
-- Android: `./gradlew :app:androidApp:assembleDebug`
-- Desktop: `./gradlew :app:desktopApp:run` (hot reload: `:app:desktopApp:hotRun --auto`)
-- iOS: открыть [`app/iosApp`](./app/iosApp) в Xcode
-
-### Тесты
-
-- Android: `./gradlew :app:shared:testAndroidHostTest`
-- Desktop: `./gradlew :app:shared:jvmTest`
-- Web (Wasm): `./gradlew :app:shared:wasmJsTest`
-- Web (JS): `./gradlew :app:shared:jsTest`
-- iOS: `./gradlew :app:shared:iosSimulatorArm64Test`
 
 ---
 
@@ -236,7 +216,7 @@ Backend использует **Redis 8** для:
 | RabbitMQ | — | — (Railway template / Docker image) |
 | Kafka | — | — (Railway template / Redpanda / Upstash) |
 
-Образы собираются **из корня репозитория** (backend нуждается в `:core` + `backend/`; frontend — `deploy/Dockerfile.frontend`).
+Образы собираются **из корня репозитория** (backend — `backend/`; frontend — `deploy/Dockerfile.frontend`).
 
 Для backend **не используйте** Railpack/Nixpacks auto-detect — только `builder = "DOCKERFILE"` в конфиге.
 

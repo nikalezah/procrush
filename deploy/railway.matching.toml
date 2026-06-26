@@ -8,7 +8,6 @@ watchPatterns = [
   "/backend/contracts/**",
   "/backend/config/**",
   "/backend/platform/**",
-  "/core/**",
   "/deploy/Dockerfile.matching",
   "/gradle/**",
   "/gradlew",

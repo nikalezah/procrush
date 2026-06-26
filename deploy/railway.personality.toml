@@ -9,7 +9,6 @@ watchPatterns = [
   "/backend/config/**",
   "/backend/platform/**",
   "/backend/domain/**",
-  "/core/**",
   "/deploy/Dockerfile.personality",
   "/gradle/**",
   "/gradlew",
