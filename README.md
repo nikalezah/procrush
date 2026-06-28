@@ -141,7 +141,7 @@ openapi/
 ### Требования
 
 - **Полный стек в Kubernetes (рекомендуется):** Docker (≥ 8 GB RAM), [kind](https://kind.sigs.k8s.io/), kubectl — см. [deploy/k8s/README.md](./deploy/k8s/README.md)
-- **Hot-reload (опционально):** JDK 17+, Node.js 20+ для `./gradlew run` / `npm run dev`; инфраструктура kind доступна по loopback-IP `127.10.0.x` (см. [env.example](./env.example))
+- **Hot-reload (опционально):** JDK 17+, Node.js 20+ для `./gradlew run` / `npm run dev`; инфраструктура kind доступна по loopback-IP `127.10.0.x` (см. [deploy/k8s/README.md](./deploy/k8s/README.md))
 
 ### Запуск полного стека (kind)
 
@@ -220,7 +220,7 @@ Backend использует **Redis 8** для:
 
 ### Запуск приложений (hot-reload, опционально)
 
-При port-forward инфраструктуры на localhost (см. [deploy/k8s/README.md](./deploy/k8s/README.md) и [env.example](./env.example)):
+При port-forward инфраструктуры на localhost (см. [deploy/k8s/README.md](./deploy/k8s/README.md); переменные — в [`deploy/k8s/base/configmap.yaml`](./deploy/k8s/base/configmap.yaml) и локальном [`secret.yaml`](./deploy/k8s/base/secret.yaml), скопированном из [`secret.yaml.example`](./deploy/k8s/base/secret.yaml.example)):
 
 - **React:** `cd frontend && npm run dev` → http://localhost:8081
 - **API**: `./gradlew :backend:api:run`
@@ -303,7 +303,9 @@ git push -u origin master
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
    | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
    | `RABBITMQ_URL` | `${{RabbitMQ.RABBITMQ_URL}}` |
-   | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | см. [`env.example`](./env.example) |
+   | `LLM_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta/openai` |
+   | `LLM_MODEL` | `gemini-3.1-flash-lite` |
+   | `LLM_API_KEY` | ключ провайдера (Gemini / OpenRouter и т.д.) |
    | `WORKER_HEALTH_PORT` | `8091` локально; на Railway можно не задавать — используется `PORT` |
 
 6. **Networking → Public Networking**: опционально (health: `GET /health` на порту worker).
@@ -357,4 +359,4 @@ git push -u origin master
 - Railway выставляет `PORT` для обоих сервисов.
 - `DATABASE_URL` от Postgres — `postgresql://...`; сервер добавляет JDBC `sslmode=require`.
 
-Переменные LLM для **Personality** (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.) — см. комментарии в [`env.example`](./env.example). В kind: `LLM_BASE_URL` / `LLM_MODEL` — в [`deploy/k8s/base/configmap.yaml`](./deploy/k8s/base/configmap.yaml), `LLM_API_KEY` — в [`deploy/k8s/base/secret.yaml`](./deploy/k8s/base/secret.yaml).
+Переменные LLM для **Personality** (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.). В kind: `LLM_BASE_URL` / `LLM_MODEL` — в [`deploy/k8s/base/configmap.yaml`](./deploy/k8s/base/configmap.yaml), `LLM_API_KEY` — в локальном [`deploy/k8s/base/secret.yaml`](./deploy/k8s/base/secret.yaml) (шаблон: [`secret.yaml.example`](./deploy/k8s/base/secret.yaml.example)).

@@ -25,7 +25,7 @@
    - собирает 4 Docker-образа и загружает их в kind (`kind load docker-image`);
    - применяет манифесты: `kubectl apply -k deploy/k8s/overlays/kind`.
 
-   Перед `kind-up` укажите `LLM_API_KEY` в [`deploy/k8s/base/secret.yaml`](./base/secret.yaml) (файл в git с пустым значением — подставьте ключ локально, не коммитьте).
+   Перед `kind-up` скопируйте [`deploy/k8s/base/secret.yaml.example`](./base/secret.yaml.example) в `secret.yaml` и укажите `LLM_API_KEY` (файл в `.gitignore`, не коммитьте).
 
 2. Дождитесь готовности pod'ов:
 
@@ -107,7 +107,7 @@ kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 
 ## Hot-reload без пересборки образов (опционально)
 
-Инфраструктура доступна с хоста по loopback-IP сразу после `kind-up`; запускайте приложения через Gradle/npm с переменными из [env.example](../../env.example). Разные проекты могут одновременно использовать стандартные порты на своих `127.x.x.x` адресах.
+Инфраструктура доступна с хоста по loopback-IP сразу после `kind-up`; для hot-reload задайте переменные окружения по [`configmap.yaml`](./base/configmap.yaml) и локальному `secret.yaml` (из [`secret.yaml.example`](./base/secret.yaml.example)). Разные проекты могут одновременно использовать стандартные порты на своих `127.x.x.x` адресах.
 
 ## Устранение неполадок
 

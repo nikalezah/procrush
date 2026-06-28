@@ -8,7 +8,7 @@
 
 - **Node.js 20+** (LTS 22 recommended)
 - Running API: `./gradlew :backend:api:run` from repo root
-- `.env` with `AUTH_DEV_MODE=true` and `WEB_ORIGIN` including `http://localhost:8081`
+- Переменные окружения: `AUTH_DEV_MODE=true`, `WEB_ORIGIN` с `http://localhost:8081` (см. [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/base/configmap.yaml) для полного списка)
 
 ## Commands
 

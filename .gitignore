@@ -22,4 +22,4 @@ node_modules/
 .junie
 .workspace
 kotlin-js-store
-.env
+deploy/k8s/base/secret.yaml
