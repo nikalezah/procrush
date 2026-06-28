@@ -1,9 +1,11 @@
 package jobs.procrush.survey.service
 
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.personality.port.PersonalitySurveyCoordinator
 import jobs.procrush.seeker.dto.SeekerProfileDto
 import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.shared.SurveyAlreadyCompletedException
+import jobs.procrush.shared.raise
 import jobs.procrush.survey.dto.SaveSurveyAnswersRequest
 import jobs.procrush.survey.dto.SurveyDefinitionDto
 import jobs.procrush.survey.dto.SurveyDetailDto
@@ -45,7 +47,7 @@ class SurveyService(
     )
 
     private fun loadContext(userId: UUID): SurveyContext {
-        val seeker = seekerRepository.findByUserId(userId) ?: error("Соискатель не найден")
+        val seeker = seekerRepository.findByUserId(userId) ?: ErrorCode.SEEKER_NOT_FOUND.raise()
         val surveys = surveyRepository.listSurveys()
         val results = surveyRepository.listResultsForSeeker(seeker.id)
         val statusBySurvey = buildStatusMap(results)
@@ -100,7 +102,7 @@ class SurveyService(
 
     fun getSurvey(userId: UUID, surveyId: Long): SurveyDetailDto {
         val context = loadContext(userId)
-        val survey = surveyRepository.findSurveyById(surveyId) ?: error("Опрос не найден")
+        val survey = surveyRepository.findSurveyById(surveyId) ?: ErrorCode.SURVEY_NOT_FOUND.raise()
         val status = resolveStatus(context.seeker.id, surveyId)
         val inProgress = surveyRepository.findInProgressResult(context.seeker.id, surveyId)
         val completed = surveyRepository.findCompletedResult(context.seeker.id, surveyId)
@@ -127,12 +129,12 @@ class SurveyService(
 
     fun startSurvey(userId: UUID, surveyId: Long): SurveyDetailDto {
         val context = loadContext(userId)
-        val survey = surveyRepository.findSurveyById(surveyId) ?: error("Опрос не найден")
+        val survey = surveyRepository.findSurveyById(surveyId) ?: ErrorCode.SURVEY_NOT_FOUND.raise()
         if (surveyRepository.findCompletedResult(context.seeker.id, surveyId) != null) {
             throw SurveyAlreadyCompletedException()
         }
         if (SurveyFlowRules.isSurveyLocked(survey, context.coreSurveys, context.statusBySurvey)) {
-            error("Сначала завершите предыдущие методики")
+            ErrorCode.SURVEY_PREREQUISITES_NOT_MET.raise()
         }
         if (surveyRepository.findInProgressResult(context.seeker.id, surveyId) == null) {
             surveyRepository.createInProgressResult(context.seeker.id, surveyId)
@@ -142,27 +144,27 @@ class SurveyService(
 
     fun saveAnswers(userId: UUID, surveyId: Long, request: SaveSurveyAnswersRequest): SurveyDetailDto {
         val context = loadContext(userId)
-        val survey = surveyRepository.findSurveyById(surveyId) ?: error("Опрос не найден")
+        val survey = surveyRepository.findSurveyById(surveyId) ?: ErrorCode.SURVEY_NOT_FOUND.raise()
         val answersJson = json.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), request.answers)
         val result =
             surveyRepository.findInProgressResult(context.seeker.id, surveyId)
                 ?: editableCompletedResult(context, survey)
-                ?: error("Сначала начните опрос")
+                ?: ErrorCode.SURVEY_NOT_STARTED.raise()
         surveyRepository.updateAnswers(result.id, answersJson)
-            ?: error("Не удалось сохранить ответы")
+            ?: ErrorCode.SURVEY_SAVE_FAILED.raise()
         return getSurvey(userId, surveyId)
     }
 
     fun completeSurvey(userId: UUID, surveyId: Long, request: SaveSurveyAnswersRequest): CompleteSurveyResult {
         val context = loadContext(userId)
-        val survey = surveyRepository.findSurveyById(surveyId) ?: error("Опрос не найден")
+        val survey = surveyRepository.findSurveyById(surveyId) ?: ErrorCode.SURVEY_NOT_FOUND.raise()
         val coreSurveys = context.coreSurveys.sortedBy { it.sortOrder }
         val completed = surveyRepository.findCompletedResult(context.seeker.id, surveyId)
         val coreGroupComplete = SurveyFlowRules.isCoreGroupComplete(coreSurveys, context.statusBySurvey)
 
         SurveyAnswerValidator.validate(survey.code, survey.questionsJson, request.answers)
         val answersJson = json.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), request.answers)
-        val key = surveyRepository.findSurveyKey(surveyId) ?: error("Ключи подсчёта не найдены")
+        val key = surveyRepository.findSurveyKey(surveyId) ?: ErrorCode.SURVEY_SCORING_KEYS_NOT_FOUND.raise()
         val calculated =
             SurveyScoringService.calculate(
                 surveyCode = survey.code,
@@ -176,15 +178,15 @@ class SurveyService(
             when {
                 completed != null && survey.groupCode == SurveyFlowRules.CORE_GROUP && !coreGroupComplete -> {
                     surveyRepository.updateCompletedResult(completed.id, answersJson, calculated)
-                        ?: error("Не удалось сохранить ответы")
+                        ?: ErrorCode.SURVEY_SAVE_FAILED.raise()
                 }
                 completed != null -> throw SurveyAlreadyCompletedException()
                 else -> {
                     val result =
                         surveyRepository.findInProgressResult(context.seeker.id, surveyId)
-                            ?: error("Сначала начните опрос")
+                            ?: ErrorCode.SURVEY_NOT_STARTED.raise()
                     surveyRepository.completeResult(result.id, answersJson, calculated)
-                        ?: error("Не удалось завершить опрос")
+                        ?: ErrorCode.SURVEY_COMPLETE_FAILED.raise()
                 }
             }
 

@@ -6,13 +6,16 @@ import jobs.procrush.employer.dto.JobProfileDto
 import jobs.procrush.employer.dto.UpdateEmployerProfileRequest
 import jobs.procrush.employer.dto.UpdateJobProfileRequest
 import jobs.procrush.employer.repository.EmployerRepository
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.cache.CachedMatchingService
 import jobs.procrush.matching.dto.EmployerCandidatesOverviewDto
 import jobs.procrush.matching.dto.EmployerInterestsResponseDto
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.matching.service.MatchInterestService
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.ResourceNotFoundException
+import jobs.procrush.shared.raise
 import jobs.procrush.shared.repository.ReferenceRepository
 import java.util.UUID
 
@@ -29,10 +32,10 @@ class EmployerProfileService(
 
     fun updateProfile(userId: UUID, request: UpdateEmployerProfileRequest) {
         val name = request.name.trim()
-        require(name.isNotBlank()) { "Укажите название компании" }
+        if (name.isBlank()) ErrorCode.COMPANY_NAME_REQUIRED.raise()
         val employer = getOrCreateEmployer(userId)
         employerRepository.updateProfile(employer.id, request)
-            ?: throw ResourceNotFoundException("Не удалось обновить профиль компании")
+            ?: throw ResourceNotFoundException(ErrorCode.EMPLOYER_PROFILE_UPDATE_FAILED)
     }
 
     fun listJobProfiles(userId: UUID) =
@@ -40,7 +43,7 @@ class EmployerProfileService(
 
     fun createJobProfile(userId: UUID, request: CreateJobProfileRequest): JobProfileDto {
         referenceRepository.findOccupationById(request.occupationId)
-            ?: throw IllegalArgumentException("Должность не найдена")
+            ?: throw CodedException(ErrorCode.OCCUPATION_NOT_FOUND, mapOf("id" to request.occupationId.toString()))
         val created = employerRepository.createJobProfile(getOrCreateEmployer(userId).id, request)
         matchingCache.invalidateJobCandidates(created.id)
         val employer = getOrCreateEmployer(userId)
@@ -50,10 +53,10 @@ class EmployerProfileService(
 
     fun updateJobProfile(userId: UUID, jobProfileId: Long, request: UpdateJobProfileRequest) {
         referenceRepository.findOccupationById(request.occupationId)
-            ?: throw IllegalArgumentException("Должность не найдена")
+            ?: throw CodedException(ErrorCode.OCCUPATION_NOT_FOUND, mapOf("id" to request.occupationId.toString()))
         val employer = getOrCreateEmployer(userId)
         employerRepository.updateJobProfile(employer.id, jobProfileId, request)
-            ?: throw ResourceNotFoundException("Профиль не найден")
+            ?: throw ResourceNotFoundException(ErrorCode.JOB_PROFILE_NOT_FOUND)
         matchingCache.invalidateJobCandidates(jobProfileId)
         val updated = findJobProfile(userId, jobProfileId)
         matchingEvents.publishJobProfileChanged(updated, employer.id)
@@ -63,7 +66,7 @@ class EmployerProfileService(
         val employer = getOrCreateEmployer(userId)
         val existing = findJobProfile(userId, jobProfileId)
         if (!employerRepository.deleteJobProfile(employer.id, jobProfileId)) {
-            throw ResourceNotFoundException("Профиль не найден")
+            throw ResourceNotFoundException(ErrorCode.JOB_PROFILE_NOT_FOUND)
         }
         matchingCache.invalidateJobCandidates(jobProfileId)
         matchingEvents.publishJobProfileChanged(existing, employer.id, deleted = true)
@@ -71,7 +74,7 @@ class EmployerProfileService(
 
     fun findJobProfile(userId: UUID, jobProfileId: Long) =
         employerRepository.findJobProfile(getOrCreateEmployer(userId).id, jobProfileId)
-            ?: throw ResourceNotFoundException("Профиль не найден")
+            ?: throw ResourceNotFoundException(ErrorCode.JOB_PROFILE_NOT_FOUND)
 
     fun dashboard(userId: UUID): EmployerDashboardDto {
         val employer = getOrCreateEmployer(userId)

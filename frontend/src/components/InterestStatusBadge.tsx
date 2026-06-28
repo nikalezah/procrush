@@ -1,18 +1,5 @@
+import {useTranslation} from 'react-i18next'
 import type {InterestStatus} from '../api/types'
-
-const SEEKER_LABELS: Record<InterestStatus, string | null> = {
-  NONE: null,
-  RESPONDED: 'Вы откликнулись',
-  INCOMING: 'Работодатель заинтересован',
-  MUTUAL: 'Взаимный интерес!',
-}
-
-const EMPLOYER_LABELS: Record<InterestStatus, string | null> = {
-  NONE: null,
-  RESPONDED: 'Вы откликнулись',
-  INCOMING: 'Кандидат откликнулся',
-  MUTUAL: 'Взаимный интерес!',
-}
 
 const STATUS_STYLES: Record<InterestStatus, string> = {
   NONE: '',
@@ -27,11 +14,12 @@ interface InterestStatusBadgeProps {
 }
 
 export function InterestStatusBadge({status, perspective}: InterestStatusBadgeProps) {
+  const {t} = useTranslation()
   const resolved = status ?? 'NONE'
   if (resolved === 'NONE') return null
 
-  const label = perspective === 'seeker' ? SEEKER_LABELS[resolved] : EMPLOYER_LABELS[resolved]
-  if (label == null) return null
+  const labelKey = `components.interestStatus.${perspective}.${resolved.toLowerCase()}` as const
+  const label = t(labelKey)
 
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[resolved]}`}>

@@ -1,5 +1,6 @@
 import {Link} from 'react-router-dom'
 import {useEffect, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {fetchSeekerDashboard} from '../../api/seekerApi'
 import type {SeekerDashboardDto} from '../../api/types'
 import {Alert} from '../../components/ui/Alert'
@@ -10,15 +11,17 @@ import {PageHeader} from '../../components/ui/PageHeader'
 import {Spinner} from '../../components/Spinner'
 import {EmptyState} from '../../components/EmptyState'
 import {Avatar} from '../../components/ui/Avatar'
+import {resolveError} from '../../i18n/resolveApiError'
 
 export function SeekerDashboardPage() {
+  const {t} = useTranslation()
   const [data, setData] = useState<SeekerDashboardDto | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     void fetchSeekerDashboard()
       .then(setData)
-      .catch((e: Error) => setError(e.message))
+      .catch((err) => setError(resolveError(err)))
   }, [])
 
   if (error != null) {
@@ -35,14 +38,14 @@ export function SeekerDashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Привет! 👋"
-        subtitle="Вот как выглядит ваш профиль и свежие мэтчи"
+        title={t('seeker.dashboard.title')}
+        subtitle={t('seeker.dashboard.subtitle')}
       />
 
       <Card className="flex items-center gap-4">
-        <Avatar name="Вы" size="lg" />
+        <Avatar name={t('seeker.dashboard.avatarName')} size="lg" />
         <div className="flex-1">
-          <p className="text-sm text-stone-500">Заполненность профиля</p>
+          <p className="text-sm text-stone-500">{t('seeker.dashboard.profileCompletion')}</p>
           <div className="mt-2 flex items-center gap-3">
             <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-brand-100">
               <div
@@ -56,54 +59,56 @@ export function SeekerDashboardPage() {
             to="/seeker/profile"
             className="mt-2 inline-block text-sm font-medium text-brand-600 hover:text-brand-700"
           >
-            Улучшить профиль →
+            {t('seeker.dashboard.improveProfile')}
           </Link>
         </div>
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <StatCard label="Опыт работы" value={data.experienceCount} icon="💼" />
-        <StatCard label="Желаемые должности" value={data.desiredPositionsCount} icon="🎯" />
+        <StatCard label={t('seeker.dashboard.stats.experience')} value={data.experienceCount} icon="💼" />
+        <StatCard label={t('seeker.dashboard.stats.desiredPositions')} value={data.desiredPositionsCount} icon="🎯" />
       </div>
 
       {!data.testsComplete && (
         <Alert
           variant="warning"
-          title="Пройдите тесты личности"
+          title={t('seeker.dashboard.testsAlert.title')}
           action={
             <Link to="/seeker/personality/tests">
-              <Button size="sm">Пройти тесты</Button>
+              <Button size="sm">{t('seeker.dashboard.testsAlert.action')}</Button>
             </Link>
           }
         >
-          Завершите оба теста, чтобы получать персональные мэтчи с вакансиями
+          {t('seeker.dashboard.testsAlert.body')}
         </Alert>
       )}
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-stone-900">Свежие мэтчи</h2>
+          <h2 className="text-lg font-semibold text-stone-900">{t('seeker.dashboard.recentMatches.title')}</h2>
           <Link
             to="/seeker/positions"
             className="text-sm font-medium text-brand-600 hover:text-brand-700"
           >
-            Все →
+            {t('common.viewAll')}
           </Link>
         </div>
 
         {data.recommendationsPreview.length === 0 ? (
           <EmptyState
-            title="Пока нет мэтчей"
+            title={t('seeker.dashboard.recentMatches.emptyTitle')}
             description={
               data.testsComplete
-                ? 'Укажите желаемые должности — и мы подберём вакансии'
-                : 'Сначала пройдите тесты личности'
+                ? t('seeker.dashboard.recentMatches.emptyDescriptionTestsComplete')
+                : t('seeker.dashboard.recentMatches.emptyDescriptionTestsIncomplete')
             }
             icon="💫"
             action={
               <Link to={data.testsComplete ? '/seeker/positions' : '/seeker/personality/tests'}>
                 <Button size="sm">
-                  {data.testsComplete ? 'Выбрать должности' : 'К тестам'}
+                  {data.testsComplete
+                    ? t('seeker.dashboard.recentMatches.selectPositions')
+                    : t('seeker.dashboard.recentMatches.goToTests')}
                 </Button>
               </Link>
             }

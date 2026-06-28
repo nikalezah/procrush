@@ -1,3 +1,4 @@
+import {useTranslation} from 'react-i18next'
 import type {UserRole} from '../api/types'
 import {displayRoleLabel} from '../lib/roleLabels'
 
@@ -15,11 +16,13 @@ const roleIcons: Record<UserRole, string> = {
 }
 
 export function RoleToggle({value, onChange, disabled = false}: RoleToggleProps) {
+  const {t} = useTranslation()
+
   return (
     <div
       className="flex w-full rounded-2xl border border-brand-200 bg-brand-50/50 p-1"
       role="radiogroup"
-      aria-label="Тип аккаунта"
+      aria-label={t('auth.roleToggle.ariaLabel')}
     >
       {roles.map((role) => {
         const selected = value === role
@@ -40,7 +43,7 @@ export function RoleToggle({value, onChange, disabled = false}: RoleToggleProps)
             ].join(' ')}
           >
             <span aria-hidden>{roleIcons[role]}</span>
-            {displayRoleLabel(role)}
+            {displayRoleLabel(role, t)}
           </button>
         )
       })}

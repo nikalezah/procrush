@@ -3,6 +3,14 @@ FROM node:22-alpine AS build
 WORKDIR /build
 
 COPY openapi openapi
+
+COPY i18n/package.json i18n/package-lock.json i18n/
+WORKDIR /build/i18n
+RUN npm ci
+
+WORKDIR /build
+COPY i18n i18n
+
 COPY frontend/package.json frontend/package-lock.json frontend/
 WORKDIR /build/frontend
 RUN npm ci

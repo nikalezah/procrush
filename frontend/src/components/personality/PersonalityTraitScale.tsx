@@ -1,4 +1,5 @@
-import {LABEL_YOU_ON_SCALE} from './personalityLabels'
+import {useTranslation} from 'react-i18next'
+import {labelYouOnScale} from './personalityLabels'
 
 interface PersonalityTraitScaleProps {
   leftPole: string
@@ -11,6 +12,7 @@ export function PersonalityTraitScale({
   rightPole,
   scalePosition,
 }: PersonalityTraitScaleProps) {
+  const {t} = useTranslation()
   const clamped = Math.min(1, Math.max(0, scalePosition))
   const markerPercent = clamped * 100
 
@@ -32,7 +34,7 @@ export function PersonalityTraitScale({
           className="absolute -translate-x-1/2 text-xs font-medium text-brand-600"
           style={{left: `${markerPercent}%`}}
         >
-          {LABEL_YOU_ON_SCALE}
+          {labelYouOnScale(t)}
         </span>
       </div>
     </div>

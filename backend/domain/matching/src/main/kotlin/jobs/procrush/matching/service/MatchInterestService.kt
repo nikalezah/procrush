@@ -1,6 +1,7 @@
 package jobs.procrush.matching.service
 
 import jobs.procrush.employer.repository.EmployerRepository
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.cache.CachedMatchingService
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.EmployerContactDto
@@ -15,7 +16,9 @@ import jobs.procrush.matching.model.MatchInterestRecord
 import jobs.procrush.matching.repository.MatchInterestRepository
 import jobs.procrush.matching.repository.MatchingRepository
 import jobs.procrush.seeker.repository.SeekerRepository
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.ResourceNotFoundException
+import jobs.procrush.shared.raise
 import jobs.procrush.survey.service.SurveyService
 import java.util.UUID
 
@@ -37,7 +40,7 @@ class MatchInterestService(
         val recommendation =
             matchingService.jobRecommendationForSeeker(seekerId, jobProfileId)
                 ?: matchingService.jobRecommendationDisplay(jobProfileId)
-                ?: throw ResourceNotFoundException("Вакансия не найдена")
+                ?: throw ResourceNotFoundException(ErrorCode.JOB_NOT_FOUND)
         return enrichJobRecommendation(seekerId, recommendation, interest)
     }
 
@@ -51,7 +54,7 @@ class MatchInterestService(
         val recommendation =
             matchingService.candidateRecommendationForJob(seekerId, jobProfileId)
                 ?: matchingService.candidateRecommendationDisplay(seekerId, jobProfileId)
-                ?: throw ResourceNotFoundException("Кандидат не найден")
+                ?: throw ResourceNotFoundException(ErrorCode.CANDIDATE_NOT_FOUND)
         return enrichCandidateRecommendation(jobProfileId, recommendation, interest)
     }
 
@@ -158,7 +161,7 @@ class MatchInterestService(
             employerRepository.findByUserId(userId)
                 ?: return EmployerInterestsResponseDto(emptyList(), emptyList())
         if (employerRepository.findJobProfile(employer.id, jobProfileId) == null) {
-            throw ResourceNotFoundException("Профиль не найден")
+            throw ResourceNotFoundException(ErrorCode.JOB_PROFILE_NOT_FOUND)
         }
 
         val outside =
@@ -315,24 +318,24 @@ class MatchInterestService(
     private fun requireSeekerEligibleForJob(userId: UUID, jobProfileId: Long): Long {
         val seeker =
             seekerRepository.findByUserId(userId)
-                ?: throw ResourceNotFoundException("Профиль соискателя не найден")
+                ?: throw ResourceNotFoundException(ErrorCode.SEEKER_PROFILE_NOT_FOUND)
         val surveyGroups = surveyService.listGroups(userId)
-        require(surveyGroups.testsCompleted >= surveyGroups.testsTotal) {
-            "Пройдите оба теста личности для участия в подборе"
+        if (surveyGroups.testsCompleted < surveyGroups.testsTotal) {
+            ErrorCode.PERSONALITY_TESTS_REQUIRED.raise()
         }
 
         val job =
             matchingRepository.findJobProfileById(jobProfileId)
-                ?: throw ResourceNotFoundException("Вакансия не найдена")
-        require(job.isActive) { "Вакансия неактивна" }
+                ?: throw ResourceNotFoundException(ErrorCode.JOB_NOT_FOUND)
+        if (!job.isActive) ErrorCode.JOB_PROFILE_INACTIVE.raise()
 
         val occupationIds = seekerRepository.getDesiredOccupationIds(seeker.id)
-        require(job.occupationId in occupationIds) {
-            "Укажите эту должность в списке желаемых"
+        if (job.occupationId !in occupationIds) {
+            ErrorCode.DESIRED_OCCUPATION_REQUIRED.raise()
         }
 
         matchingRepository.getSeekerMatchingContext(seeker.id)
-            ?: throw IllegalArgumentException("Профиль не готов для подбора")
+            ?: throw CodedException(ErrorCode.PROFILE_NOT_READY)
 
         return seeker.id
     }
@@ -340,23 +343,23 @@ class MatchInterestService(
     private fun requireEmployerOwnsJobProfile(userId: UUID, jobProfileId: Long): Long {
         val employer =
             employerRepository.findByUserId(userId)
-                ?: throw ResourceNotFoundException("Профиль компании не найден")
+                ?: throw ResourceNotFoundException(ErrorCode.EMPLOYER_PROFILE_NOT_FOUND)
         employerRepository.findJobProfile(employer.id, jobProfileId)
-            ?: throw ResourceNotFoundException("Профиль не найден")
+            ?: throw ResourceNotFoundException(ErrorCode.JOB_PROFILE_NOT_FOUND)
         return employer.id
     }
 
     private fun requireSeekerEligibleForOccupation(seekerId: Long, jobProfileId: Long) {
         val job =
             matchingRepository.findJobProfileById(jobProfileId)
-                ?: throw ResourceNotFoundException("Профиль не найден")
+                ?: throw ResourceNotFoundException(ErrorCode.JOB_PROFILE_NOT_FOUND)
         val eligibleSeekerIds = matchingRepository.findSeekerIdsWithAllTestsComplete()
-        require(seekerId in eligibleSeekerIds) {
-            "Кандидат не прошёл обязательные тесты"
+        if (seekerId !in eligibleSeekerIds) {
+            ErrorCode.MANDATORY_TESTS_NOT_PASSED.raise()
         }
         val desiredOccupations = seekerRepository.getDesiredOccupationIds(seekerId)
-        require(job.occupationId in desiredOccupations) {
-            "Кандидат не указал эту должность"
+        if (job.occupationId !in desiredOccupations) {
+            ErrorCode.OCCUPATION_NOT_DESIRED.raise()
         }
     }
 }

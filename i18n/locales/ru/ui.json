@@ -1,0 +1,392 @@
+{
+  "nav": {
+    "seeker": {
+      "home": "Главная",
+      "positions": "Мэтчи",
+      "personality": "Личность",
+      "profile": "Профиль",
+      "account": "Аккаунт"
+    },
+    "employer": {
+      "home": "Главная",
+      "profiles": "Вакансии",
+      "account": "Аккаунт"
+    }
+  },
+  "common": {
+    "back": "Назад",
+    "save": "Сохранить",
+    "saving": "Сохранение…",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "logout": "Выйти",
+    "loading": "Загрузка",
+    "next": "Далее",
+    "start": "Начать",
+    "continue": "Продолжить",
+    "finish": "Завершить",
+    "retry": "Повторить",
+    "retrying": "Запуск…",
+    "viewAll": "Все →",
+    "optional": "Необязательно",
+    "present": "настоящее время",
+    "saveError": "Ошибка сохранения",
+    "respondError": "Не удалось отправить отклик",
+    "fields": {
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "middleName": "Отчество",
+      "companyName": "Название компании",
+      "companyTitle": "Название",
+      "description": "Описание",
+      "website": "Сайт",
+      "phone": "Телефон",
+      "email": "Электронная почта",
+      "emailContact": "Email для связи",
+      "occupation": "Должность",
+      "position": "Должность",
+      "company": "Компания",
+      "skills": "Навыки"
+    }
+  },
+  "role": {
+    "seeker": "Соискатель",
+    "employer": "Работодатель",
+    "unknown": "неизвестно"
+  },
+  "appShell": {
+    "logout": "Выйти"
+  },
+  "alphaBadge": {
+    "tooltip": "Ранняя альфа-версия: возможны ошибки и незавершённые функции"
+  },
+  "auth": {
+    "login": {
+      "title": "Найди работу мечты",
+      "subtitle": "Умный подбор по навыкам и личности — как dating, только для карьеры",
+      "emailLabel": "Электронная почта",
+      "submit": "Продолжить",
+      "roleHint": "Роль выбирается один раз после входа и не меняется"
+    },
+    "roleSelection": {
+      "title": "Создайте профиль",
+      "welcome": "Добро пожаловать, {{email}}. Выберите, кто вы — это нельзя изменить позже.",
+      "creating": "Создание аккаунта…",
+      "submit": "Начать"
+    },
+    "roleToggle": {
+      "ariaLabel": "Тип аккаунта"
+    },
+    "errors": {
+      "invalidEmail": "Введите корректный адрес электронной почты",
+      "sessionLoadFailed": "Не удалось загрузить сессию",
+      "signInFailed": "Не удалось войти",
+      "registrationFailed": "Не удалось завершить регистрацию",
+      "deleteAccountFailed": "Не удалось удалить аккаунт"
+    }
+  },
+  "home": {
+    "loggedIn": "Вы вошли",
+    "logout": "Выйти"
+  },
+  "settings": {
+    "title": "Аккаунт",
+    "subtitle": "Вход, данные и управление аккаунтом",
+    "loggedInAs": "Вы вошли как",
+    "personalData": "Личные данные",
+    "company": "Компания",
+    "profileSaved": "Профиль сохранён",
+    "companySaved": "Данные компании сохранены",
+    "deleteAccountError": "Не удалось удалить аккаунт",
+    "language": {
+      "title": "Язык",
+      "description": "Язык интерфейса",
+      "ru": "Русский",
+      "en": "English"
+    },
+    "emailSection": {
+      "title": "Электронная почта",
+      "description": "Раздел в разработке",
+      "currentAddress": "Текущий адрес",
+      "newAddress": "Новый адрес",
+      "newAddressPlaceholder": "example@mail.ru",
+      "saveSoon": "Сохранить (скоро)"
+    },
+    "passwordSection": {
+      "title": "Пароль",
+      "description": "Раздел в разработке",
+      "currentPassword": "Текущий пароль",
+      "newPassword": "Новый пароль",
+      "confirmPassword": "Подтверждение пароля",
+      "changeSoon": "Изменить пароль (скоро)"
+    },
+    "deleteSection": {
+      "title": "Удаление аккаунта",
+      "description": "Необратимое удаление всех данных",
+      "warning": "Удаление аккаунта необратимо. Будут удалены профиль, сессии, опыт работы, образование, навыки, опросы и все остальные связанные данные.",
+      "deleteButton": "Удалить аккаунт",
+      "confirmTitle": "Вы уверены? Это действие нельзя отменить.",
+      "confirmButton": "Да, удалить навсегда",
+      "deleting": "Удаление…"
+    }
+  },
+  "seeker": {
+    "dashboard": {
+      "title": "Привет! 👋",
+      "subtitle": "Вот как выглядит ваш профиль и свежие мэтчи",
+      "avatarName": "Вы",
+      "profileCompletion": "Заполненность профиля",
+      "improveProfile": "Улучшить профиль →",
+      "stats": {
+        "experience": "Опыт работы",
+        "desiredPositions": "Желаемые должности"
+      },
+      "testsAlert": {
+        "title": "Пройдите тесты личности",
+        "body": "Завершите оба теста, чтобы получать персональные мэтчи с вакансиями",
+        "action": "Пройти тесты"
+      },
+      "recentMatches": {
+        "title": "Свежие мэтчи",
+        "emptyTitle": "Пока нет мэтчей",
+        "emptyDescriptionTestsComplete": "Укажите желаемые должности — и мы подберём вакансии",
+        "emptyDescriptionTestsIncomplete": "Сначала пройдите тесты личности",
+        "selectPositions": "Выбрать должности",
+        "goToTests": "К тестам"
+      }
+    },
+    "positions": {
+      "title": "Мэтчи 💕",
+      "subtitle": "Вакансии, которые подходят вам по навыкам и личности",
+      "desiredPositionsSaved": "Желаемые должности сохранены",
+      "respondSent": "Отклик отправлен! Ждём ответа работодателя",
+      "whatLookingFor": {
+        "title": "Что ищете?",
+        "description": "Выберите должности — мы покажем лучшие мэтчи"
+      },
+      "recommendations": {
+        "title": "Рекомендации для вас",
+        "description": "Подбор на основе навыков и личностного профиля",
+        "emptyTitle": "Пока пусто",
+        "emptyTestsIncomplete": "Пройдите оба теста личности, чтобы участвовать в подборе вакансий",
+        "emptyNoPositions": "Укажите одну или несколько желаемых должностей",
+        "emptyNoJobs": "Пока нет подходящих активных вакансий — загляните позже"
+      },
+      "respondedOutside": {
+        "title": "Ваши отклики",
+        "description": "Вакансии вне текущего подбора"
+      },
+      "mutualOutside": {
+        "title": "Взаимные мэтчи",
+        "description": "Работодатели, с которыми совпали интересы"
+      }
+    },
+    "profile": {
+      "title": "Мой профиль 👤",
+      "subtitle": "Расскажите о себе — так мэтчи будут точнее",
+      "saved": "Профиль сохранён",
+      "skillsSaved": "Навыки сохранены",
+      "skillsSaveError": "Ошибка сохранения навыков",
+      "personalAndContacts": "Личные данные и контакты",
+      "skills": "Навыки",
+      "experience": {
+        "title": "Опыт работы",
+        "empty": "Опыт не добавлен",
+        "addButton": "Добавить опыт",
+        "placeholders": {
+          "company": "Компания",
+          "position": "Должность"
+        }
+      },
+      "education": {
+        "title": "Образование",
+        "empty": "Образование не добавлено",
+        "graduationYear": "Год окончания: {{year}}",
+        "addButton": "Добавить образование",
+        "placeholders": {
+          "institution": "Учебное заведение",
+          "specialization": "Специальность",
+          "degree": "Степень",
+          "endYear": "Год окончания"
+        }
+      }
+    },
+    "personality": {
+      "title": "Ваша личность ✨",
+      "subtitleNotReady": "Пройдите тесты, чтобы мы узнали вас лучше",
+      "subtitleProcessing": "Формируем ваш уникальный профиль",
+      "subtitleReady": "Уникальный профиль для точного подбора работы",
+      "testsBanner": {
+        "title": "Тесты: {{completed}}/{{total}}",
+        "body": "Для точного мэтчинга завершите все методики в каждом тесте",
+        "view": "Смотреть",
+        "take": "Пройти"
+      },
+      "processing": {
+        "message": "Анализируем ваши ответы… Это может занять несколько минут"
+      },
+      "failed": {
+        "title": "Не удалось сформировать профиль",
+        "defaultError": "Произошла ошибка при генерации",
+        "retryError": "Не удалось запустить генерацию"
+      },
+      "traits": {
+        "autonomy": "Автономность",
+        "thinkingStyle": "Стиль мышления",
+        "burnoutRisk": "Риск выгорания"
+      },
+      "discProfile": "Профиль DISC",
+      "superpowers": "Суперсилы и таланты",
+      "categoryTabsAriaLabel": "Разделы личностного профиля"
+    },
+    "tests": {
+      "title": "Тесты личности 📝",
+      "subtitle": "Пройдено {{completed}} из {{total}}",
+      "backLabel": "К личности",
+      "status": {
+        "notStarted": "Не начат",
+        "inProgress": "В процессе",
+        "completed": "Пройден",
+        "locked": "🔒 Заблокирован"
+      },
+      "descriptions": {
+        "core": "Комплексная оценка личности, мотивации и командных ролей",
+        "64qn": "Оценка личностных особенностей по 64 утверждениям"
+      },
+      "continue": "Продолжить",
+      "start": "Начать"
+    },
+    "testTake": {
+      "titles": {
+        "core": "Тест 1",
+        "64qn": "Тест 2"
+      },
+      "backLabel": "К тестам",
+      "invalidId": "Некорректный идентификатор теста",
+      "prerequisite": "Сначала завершите предыдущий тест",
+      "incomplete": "Ответьте на все вопросы, прежде чем продолжить",
+      "saveFailed": "Не удалось сохранить ответы",
+      "lockedTitle": "Тест заблокирован",
+      "progress": {
+        "part": "Часть {{current}} / {{total}}",
+        "page": "Страница {{current}} / {{total}}"
+      }
+    }
+  },
+  "employer": {
+    "dashboard": {
+      "subtitle": "Обзор вакансий и подобранных кандидатов",
+      "stats": {
+        "profiles": "Вакансии",
+        "active": "Активные",
+        "candidates": "Кандидаты"
+      },
+      "manageProfiles": "Управлять вакансиями"
+    },
+    "profiles": {
+      "title": "Вакансии 💼",
+      "subtitle": "Опишите идеального кандидата — мы подберём мэтчи",
+      "create": "+ Создать",
+      "emptyTitle": "Пока нет вакансий",
+      "emptyDescription": "Создайте первый профиль идеального кандидата",
+      "status": {
+        "active": "Активна",
+        "inactive": "Неактивна"
+      },
+      "candidatesButton": "👥 Кандидаты",
+      "edit": "Редактировать",
+      "form": {
+        "editTitle": "Редактирование вакансии",
+        "createTitle": "Новая вакансия",
+        "personalityTraits": "Личностные характеристики",
+        "activeCheckbox": "Вакансия активна (участвует в подборе)",
+        "createSubmit": "Создать вакансию"
+      }
+    },
+    "candidates": {
+      "title": "Кандидаты 👥",
+      "subtitle": "Люди с подходящей личностью и навыками",
+      "backLabel": "К вакансиям",
+      "respondSent": "Отклик отправлен! Ждём ответа кандидата",
+      "emptyTitle": "Пока никого нет",
+      "emptyDescription": "Нет соискателей, прошедших тесты и указавших эту должность",
+      "respondedOutside": {
+        "title": "Ваши отклики",
+        "description": "Кандидаты вне текущего подбора"
+      },
+      "mutualOutside": {
+        "title": "Взаимные мэтчи",
+        "description": "Кандидаты с совпавшими интересами"
+      }
+    }
+  },
+  "components": {
+    "interestStatus": {
+      "seeker": {
+        "responded": "Вы откликнулись",
+        "incoming": "Работодатель заинтересован",
+        "mutual": "Взаимный интерес!"
+      },
+      "employer": {
+        "responded": "Вы откликнулись",
+        "incoming": "Кандидат откликнулся",
+        "mutual": "Взаимный интерес!"
+      }
+    },
+    "respondButton": {
+      "respond": "❤️ Откликнуться",
+      "sending": "Отправка…",
+      "waiting": "⏳ Ожидание ответа",
+      "mutual": "💕 Взаимный интерес!"
+    },
+    "matchScore": {
+      "label": "совпадение"
+    },
+    "contactInfo": {
+      "seekerTitle": "💕 Контакты работодателя",
+      "employerTitle": "💕 Контакты кандидата"
+    },
+    "skillPicker": {
+      "searchPlaceholder": "Поиск навыков…",
+      "removeAriaLabel": "Удалить {{name}}"
+    },
+    "personalityAxesEditor": {
+      "hint": "Укажите желаемый уровень по каждой личностной оси (0–100%)"
+    },
+    "personalityLabels": {
+      "categories": {
+        "connections": "Связи",
+        "creativity": "Креативность",
+        "drive": "Драйв",
+        "thinking": "Мышление"
+      },
+      "axes": {
+        "axisDominance": "Доминантность",
+        "axisInfluence": "Влияние",
+        "axisStability": "Стабильность",
+        "axisIntegrity": "Добросовестность",
+        "axisAutonomy": "Автономность",
+        "axisPace": "Темп"
+      },
+      "goodDay": "В хороший день",
+      "badDay": "В плохой день",
+      "succeedThrough": "Вы добиваетесь успеха через",
+      "topStrength": "Главная сила",
+      "pronounced": "Выраженная",
+      "youOnScale": "Вы"
+    },
+    "discChart": {
+      "ariaLabel": "Профиль DISC — {{values}}"
+    },
+    "survey": {
+      "selectedCount": "Выбрано: {{selected}} / {{max}}",
+      "questionLegend": "Вопрос {{id}}",
+      "pointsComplete": "Распределено {{total}} из {{total}} баллов",
+      "pointsPartial": "Распределено {{sum}} из {{total}} (осталось {{remaining}})",
+      "unsupportedType": "Неподдерживаемый тип опроса: {{type}}"
+    }
+  },
+  "api": {
+    "requestError": "Ошибка запроса: {{status}}"
+  }
+}

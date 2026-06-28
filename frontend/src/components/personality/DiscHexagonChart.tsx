@@ -1,4 +1,5 @@
 import {useEffect, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 
 const AXES_COUNT = 6
 const GRID_LEVELS = [0.25, 0.5, 0.75, 1]
@@ -142,6 +143,7 @@ function useChartLayout(): ChartLayout {
 }
 
 export function DiscHexagonChart({ labels, values }: DiscHexagonChartProps) {
+  const {t} = useTranslation()
   const layout = useChartLayout()
   const { cx, cy, maxRadius, rimGap } = layout
   const percentRadius = maxRadius + rimGap
@@ -159,7 +161,9 @@ export function DiscHexagonChart({ labels, values }: DiscHexagonChartProps) {
         className={layout.svgClassName}
         style={svgStyle}
         role="img"
-        aria-label={`Профиль DISC — ${labels.map((label, index) => `${label} ${Math.round(normalizedValues[index] * 100)}%`).join(', ')}`}
+        aria-label={t('components.discChart.ariaLabel', {
+          values: labels.map((label, index) => `${label} ${Math.round(normalizedValues[index] * 100)}%`).join(', '),
+        })}
       >
         {GRID_LEVELS.map((level) => (
           <polygon

@@ -6,6 +6,7 @@ COPY gradlew gradlew
 COPY gradle gradle
 COPY settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY openapi openapi
+COPY i18n i18n
 COPY backend backend
 
 RUN chmod +x gradlew \

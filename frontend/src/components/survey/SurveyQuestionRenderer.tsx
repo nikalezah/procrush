@@ -1,3 +1,4 @@
+import {useTranslation} from 'react-i18next'
 import type {SurveyQuestionsDefinition} from '../../api/types'
 
 type Answers = Record<string, unknown>
@@ -108,6 +109,7 @@ function PointAllocationRow({ label, value, maxPer, maxAllowed, onChange }: Poin
 }
 
 export function SurveyQuestionRenderer({ definition, answers, onChange, pageIndex = 0, pageSize }: Props) {
+  const {t} = useTranslation()
   const { type, instruction } = definition
 
   if (type === 'open_questions') {
@@ -138,7 +140,7 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
       <div className="flex flex-col gap-4">
         <p className="text-sm text-stone-600">{instruction}</p>
         <p className="text-xs text-stone-500">
-          Выбрано: {selected.length} / {max}
+          {t('components.survey.selectedCount', {selected: selected.length, max})}
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {options.map((opt) => (
@@ -162,7 +164,7 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
         <p className="text-sm text-stone-600">{instruction}</p>
         {definition.questions?.map((q) => (
           <fieldset key={q.id} className="rounded-lg border border-brand-200 p-3">
-            <legend className="px-1 text-sm font-medium">Вопрос {q.id}</legend>
+            <legend className="px-1 text-sm font-medium">{t('components.survey.questionLegend', {id: q.id})}</legend>
             <div className="mt-2 flex flex-col gap-2">
               {[1, 2].map((choice) => (
                 <label key={choice} className="flex items-center gap-2 text-sm">
@@ -228,8 +230,8 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
                 className={`mt-1 text-xs ${sum === total ? 'font-medium text-green-700' : 'text-stone-500'}`}
               >
                 {sum === total
-                  ? `Распределено ${total} из ${total} баллов`
-                  : `Распределено ${sum} из ${total} (осталось ${total - sum})`}
+                  ? t('components.survey.pointsComplete', {total})
+                  : t('components.survey.pointsPartial', {sum, total, remaining: total - sum})}
               </p>
               <div className="mt-3 flex flex-col gap-2">
                 {(q.options ?? []).map((opt) => {
@@ -255,7 +257,7 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
     )
   }
 
-  return <p className="text-sm text-red-600">Неподдерживаемый тип опроса: {type}</p>
+  return <p className="text-sm text-red-600">{t('components.survey.unsupportedType', {type})}</p>
 }
 
 export function isSurveyComplete(definition: SurveyQuestionsDefinition, answers: Answers): boolean {

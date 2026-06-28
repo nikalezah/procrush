@@ -9,16 +9,20 @@
   "scripts": {
     "bundle:openapi": "redocly bundle ../openapi/bundle.yaml -o ../openapi/dist/openapi.yaml",
     "generate:api": "openapi-typescript ../openapi/dist/openapi.yaml -o src/api/generated/schema.d.ts",
-    "predev": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api",
-    "prebuild": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api",
+    "validate:i18n": "node ../i18n/scripts/validate.mjs",
+    "generate:i18n": "node ../i18n/scripts/generate.mjs",
+    "predev": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api && npm run validate:i18n",
+    "prebuild": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api && npm run validate:i18n",
     "prepreview": "node scripts/check-node.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "i18next": "^26.3.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-i18next": "^17.0.8",
     "react-router-dom": "^7.6.2"
   },
   "devDependencies": {

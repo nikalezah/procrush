@@ -1,4 +1,5 @@
 import {BrowserRouter, Navigate, Route, Routes, useLocation} from 'react-router-dom'
+import {useTranslation} from 'react-i18next'
 import type {NavItem} from './components/AppShell'
 import {AppShell} from './components/AppShell'
 import {LoadingSpinner} from './components/LoadingSpinner'
@@ -17,26 +18,12 @@ import {SeekerPositionsPage} from './pages/seeker/SeekerPositionsPage'
 import {SeekerProfilePage} from './pages/seeker/SeekerProfilePage'
 import {SettingsPage} from './pages/shared/SettingsPage'
 import {
-    EmployerMatchInterestEventsProvider,
-    SeekerMatchInterestEventsProvider,
-    useMatchInterestEvents,
+  EmployerMatchInterestEventsProvider,
+  SeekerMatchInterestEventsProvider,
+  useMatchInterestEvents,
 } from './hooks/useMatchInterestEvents'
 import {PersonalityReadyEventsProvider, usePersonalityReadyEvents,} from './hooks/usePersonalityReadyEvents'
 import type {AuthUserDto} from './api/types'
-
-const SEEKER_NAV = [
-  { to: '/seeker', label: 'Главная', end: true, icon: '🏠' },
-  { to: '/seeker/positions', label: 'Мэтчи', icon: '💕' },
-  { to: '/seeker/personality', label: 'Личность', icon: '✨' },
-  { to: '/seeker/profile', label: 'Профиль', icon: '👤' },
-  { to: '/seeker/settings', label: 'Аккаунт', icon: '🪪' },
-]
-
-const EMPLOYER_NAV = [
-  { to: '/employer', label: 'Главная', end: true, icon: '🏠' },
-  { to: '/employer/profiles', label: 'Вакансии', icon: '💼' },
-  { to: '/employer/settings', label: 'Аккаунт', icon: '🪪' },
-]
 
 function AuthFlow() {
   const { state, errorMessage, isBusy, signInDev, completeRegistration } = useAuth()
@@ -101,9 +88,17 @@ function SeekerAppContent({
   user: AuthUserDto
   onLogout: () => void
 }) {
+  const {t} = useTranslation()
   const { badgeCount: matchBadgeCount } = useMatchInterestEvents()
   const { badgeCount: personalityBadgeCount } = usePersonalityReadyEvents()
-  const navItems: NavItem[] = SEEKER_NAV.map((item) => {
+  const seekerNav: NavItem[] = [
+    { to: '/seeker', label: t('nav.seeker.home'), end: true, icon: '🏠' },
+    { to: '/seeker/positions', label: t('nav.seeker.positions'), icon: '💕' },
+    { to: '/seeker/personality', label: t('nav.seeker.personality'), icon: '✨' },
+    { to: '/seeker/profile', label: t('nav.seeker.profile'), icon: '👤' },
+    { to: '/seeker/settings', label: t('nav.seeker.account'), icon: '🪪' },
+  ]
+  const navItems: NavItem[] = seekerNav.map((item) => {
     if (item.to === '/seeker/positions') return { ...item, badge: matchBadgeCount }
     if (item.to === '/seeker/personality') return { ...item, badge: personalityBadgeCount }
     return item
@@ -118,8 +113,14 @@ function EmployerAppContent({
   user: AuthUserDto
   onLogout: () => void
 }) {
+  const {t} = useTranslation()
   const { badgeCount } = useMatchInterestEvents()
-  const navItems: NavItem[] = EMPLOYER_NAV.map((item) =>
+  const employerNav: NavItem[] = [
+    { to: '/employer', label: t('nav.employer.home'), end: true, icon: '🏠' },
+    { to: '/employer/profiles', label: t('nav.employer.profiles'), icon: '💼' },
+    { to: '/employer/settings', label: t('nav.employer.account'), icon: '🪪' },
+  ]
+  const navItems: NavItem[] = employerNav.map((item) =>
     item.to === '/employer/profiles' ? { ...item, badge: badgeCount } : item,
   )
   return <AppShell user={user} role="EMPLOYER" navItems={navItems} onLogout={onLogout} />

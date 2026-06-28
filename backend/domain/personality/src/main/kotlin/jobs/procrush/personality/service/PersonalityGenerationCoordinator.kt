@@ -1,5 +1,6 @@
 package jobs.procrush.personality.service
 
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.personality.dto.PersonalityProfileStatus
@@ -8,6 +9,7 @@ import jobs.procrush.personality.port.PersonalitySurveyCoordinator
 import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
 import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.shared.GenerationInProgressException
+import jobs.procrush.shared.raise
 import jobs.procrush.survey.service.SurveyService
 import java.util.UUID
 
@@ -48,9 +50,11 @@ class PersonalityGenerationCoordinator(
 
     fun triggerGeneration(userId: UUID) {
         val groups = surveyService.listGroups(userId)
-        require(groups.testsCompleted >= groups.testsTotal) { "Сначала пройдите все группы тестов" }
+        if (groups.testsCompleted < groups.testsTotal) {
+            ErrorCode.PERSONALITY_TESTS_NOT_COMPLETED.raise()
+        }
 
-        val seeker = seekerRepository.findByUserId(userId) ?: error("Соискатель не найден")
+        val seeker = seekerRepository.findByUserId(userId) ?: ErrorCode.SEEKER_NOT_FOUND.raise()
         val record = profileRepository.findBySeekerId(seeker.id)
         if (record?.generationStatus == PersonalityProfileStatus.PROCESSING && !lockGuard.isStale(record)) {
             throw GenerationInProgressException()

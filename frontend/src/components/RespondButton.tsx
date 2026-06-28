@@ -1,3 +1,4 @@
+import {useTranslation} from 'react-i18next'
 import type {InterestStatus} from '../api/types'
 
 interface RespondButtonProps {
@@ -7,17 +8,18 @@ interface RespondButtonProps {
 }
 
 export function RespondButton({status, loading = false, onRespond}: RespondButtonProps) {
+  const {t} = useTranslation()
   const resolved = status ?? 'NONE'
   const canRespond = resolved === 'NONE' || resolved === 'INCOMING'
   const disabled = !canRespond || loading
 
-  let label = '❤️ Откликнуться'
+  let label = t('components.respondButton.respond')
   if (loading) {
-    label = 'Отправка…'
+    label = t('components.respondButton.sending')
   } else if (resolved === 'RESPONDED') {
-    label = '⏳ Ожидание ответа'
+    label = t('components.respondButton.waiting')
   } else if (resolved === 'MUTUAL') {
-    label = '💕 Взаимный интерес!'
+    label = t('components.respondButton.mutual')
   }
 
   return (

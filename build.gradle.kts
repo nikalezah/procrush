@@ -5,3 +5,10 @@ plugins {
     alias(libs.plugins.ktor) apply false
     alias(libs.plugins.kotlinSerialization) apply false
 }
+
+tasks.register<Exec>("generateI18n") {
+    group = "i18n"
+    description = "Generate ErrorCode from i18n/error-codes.yaml (requires Node.js)"
+    workingDir = layout.projectDirectory.dir("i18n").asFile
+    commandLine("node", "scripts/generate.mjs")
+}

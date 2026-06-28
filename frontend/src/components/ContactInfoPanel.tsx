@@ -1,3 +1,4 @@
+import {useTranslation} from 'react-i18next'
 import type {EmployerContactDto, SeekerContactDto} from '../api/types'
 
 interface ContactInfoPanelProps {
@@ -12,7 +13,11 @@ function isEmployerContact(
 }
 
 export function ContactInfoPanel({contactInfo, perspective}: ContactInfoPanelProps) {
-  const title = perspective === 'seeker' ? '💕 Контакты работодателя' : '💕 Контакты кандидата'
+  const {t} = useTranslation()
+  const title =
+    perspective === 'seeker'
+      ? t('components.contactInfo.seekerTitle')
+      : t('components.contactInfo.employerTitle')
 
   return (
     <div className="w-full rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-brand-50 p-4 text-sm">

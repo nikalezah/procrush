@@ -1,0 +1,12 @@
+{
+  "name": "procrush-i18n",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "generate": "node scripts/generate.mjs"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.0"
+  }
+}

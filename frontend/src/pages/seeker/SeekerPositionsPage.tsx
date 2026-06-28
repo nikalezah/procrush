@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions} from '../../api/seekerApi'
 import type {
     JobRecommendationDto,
@@ -19,6 +20,7 @@ import {Avatar} from '../../components/ui/Avatar'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
+import {resolveError} from '../../i18n/resolveApiError'
 
 function patchSeekerJobFromEvent(
   job: JobRecommendationDto,
@@ -78,6 +80,7 @@ function JobRecommendationCard({
 }
 
 export function SeekerPositionsPage() {
+  const {t} = useTranslation()
   const {lastEvent, lastEventId} = useMatchInterestEvents()
   const [occupationIds, setOccupationIds] = useState<number[]>([])
   const [occupations, setOccupations] = useState<OccupationDto[]>([])
@@ -106,7 +109,7 @@ export function SeekerPositionsPage() {
   useEffect(() => {
     setLoading(true)
     void loadData()
-      .catch((e: Error) => setError(e.message))
+      .catch((err) => setError(resolveError(err)))
       .finally(() => setLoading(false))
     return () => setHighlightedId(null)
   }, [])
@@ -131,9 +134,9 @@ export function SeekerPositionsPage() {
       await updateDesiredPositions(ids)
       setLoading(true)
       await loadData()
-      setMessage('Желаемые должности сохранены')
+      setMessage(t('seeker.positions.desiredPositionsSaved'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка сохранения')
+      setError(resolveError(err) || t('common.saveError'))
     } finally {
       setLoading(false)
     }
@@ -147,9 +150,9 @@ export function SeekerPositionsPage() {
       setRecommendations((prev) => prev.map((job) => (job.id === jobProfileId ? updated : job)))
       const outside = await fetchSeekerInterests()
       setInterests(outside)
-      setMessage('Отклик отправлен! Ждём ответа работодателя')
+      setMessage(t('seeker.positions.respondSent'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось отправить отклик')
+      setError(resolveError(err) || t('common.respondError'))
     } finally {
       setRespondingId(null)
     }
@@ -157,12 +160,12 @@ export function SeekerPositionsPage() {
 
   function recommendationsEmptyMessage(): string {
     if (testsComplete === false) {
-      return 'Пройдите оба теста личности, чтобы участвовать в подборе вакансий'
+      return t('seeker.positions.recommendations.emptyTestsIncomplete')
     }
     if (occupationIds.length === 0) {
-      return 'Укажите одну или несколько желаемых должностей'
+      return t('seeker.positions.recommendations.emptyNoPositions')
     }
-    return 'Пока нет подходящих активных вакансий — загляните позже'
+    return t('seeker.positions.recommendations.emptyNoJobs')
   }
 
   if (loading) {
@@ -176,16 +179,16 @@ export function SeekerPositionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Мэтчи 💕"
-        subtitle="Вакансии, которые подходят вам по навыкам и личности"
+        title={t('seeker.positions.title')}
+        subtitle={t('seeker.positions.subtitle')}
       />
 
       {message != null && <Alert variant="success">{message}</Alert>}
       {error != null && <Alert variant="error">{error}</Alert>}
 
       <FormSection
-        title="Что ищете?"
-        description="Выберите должности — мы покажем лучшие мэтчи"
+        title={t('seeker.positions.whatLookingFor.title')}
+        description={t('seeker.positions.whatLookingFor.description')}
       >
         <OccupationPicker
           selectedIds={occupationIds}
@@ -194,10 +197,13 @@ export function SeekerPositionsPage() {
         />
       </FormSection>
 
-      <FormSection title="Рекомендации для вас" description="Подбор на основе навыков и личностного профиля">
+      <FormSection
+        title={t('seeker.positions.recommendations.title')}
+        description={t('seeker.positions.recommendations.description')}
+      >
         {recommendations.length === 0 ? (
           <EmptyState
-            title="Пока пусто"
+            title={t('seeker.positions.recommendations.emptyTitle')}
             description={recommendationsEmptyMessage()}
             icon="🔍"
           />
@@ -220,8 +226,8 @@ export function SeekerPositionsPage() {
         <>
           {interests.respondedOutside.length > 0 && (
             <FormSection
-              title="Ваши отклики"
-              description="Вакансии вне текущего подбора"
+              title={t('seeker.positions.respondedOutside.title')}
+              description={t('seeker.positions.respondedOutside.description')}
             >
               <div className="flex flex-col gap-4">
                 {interests.respondedOutside.map((job) => (
@@ -238,8 +244,8 @@ export function SeekerPositionsPage() {
 
           {interests.mutualOutside.length > 0 && (
             <FormSection
-              title="Взаимные мэтчи"
-              description="Работодатели, с которыми совпали интересы"
+              title={t('seeker.positions.mutualOutside.title')}
+              description={t('seeker.positions.mutualOutside.description')}
             >
               <div className="flex flex-col gap-4">
                 {interests.mutualOutside.map((job) => (

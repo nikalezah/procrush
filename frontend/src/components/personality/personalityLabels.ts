@@ -1,28 +1,50 @@
+import type {TFunction} from 'i18next'
 import type {PersonalityAxesDto} from '../../api/types'
-
-export const CATEGORY_LABELS: Record<string, string> = {
-  connections: 'Связи',
-  creativity: 'Креативность',
-  drive: 'Драйв',
-  thinking: 'Мышление',
-}
+import i18n from '../../i18n/config'
 
 export const CATEGORY_ORDER = ['connections', 'creativity', 'drive', 'thinking'] as const
 
-export const AXIS_LABELS: Record<keyof PersonalityAxesDto, string> = {
-  axisDominance: 'Доминантность',
-  axisInfluence: 'Влияние',
-  axisStability: 'Стабильность',
-  axisIntegrity: 'Добросовестность',
-  axisAutonomy: 'Автономность',
-  axisPace: 'Темп',
+export const AXIS_KEYS = [
+  'axisDominance',
+  'axisInfluence',
+  'axisStability',
+  'axisIntegrity',
+  'axisAutonomy',
+  'axisPace',
+] as (keyof PersonalityAxesDto)[]
+
+function translate(t: TFunction | undefined, key: string): string {
+  return t != null ? t(key) : i18n.t(key)
 }
 
-export const AXIS_KEYS = Object.keys(AXIS_LABELS) as (keyof PersonalityAxesDto)[]
+export function categoryLabel(key: string, t?: TFunction): string {
+  return translate(t, `components.personalityLabels.categories.${key}`)
+}
 
-export const LABEL_GOOD_DAY = 'В хороший день'
-export const LABEL_BAD_DAY = 'В плохой день'
-export const LABEL_SUCCEED_THROUGH = 'Вы добиваетесь успеха через'
-export const LABEL_TOP_STRENGTH = 'Главная сила'
-export const LABEL_PRONOUNCED = 'Выраженная'
-export const LABEL_YOU_ON_SCALE = 'Вы'
+export function axisLabel(key: keyof PersonalityAxesDto, t?: TFunction): string {
+  return translate(t, `components.personalityLabels.axes.${key}`)
+}
+
+export function labelGoodDay(t?: TFunction): string {
+  return translate(t, 'components.personalityLabels.goodDay')
+}
+
+export function labelBadDay(t?: TFunction): string {
+  return translate(t, 'components.personalityLabels.badDay')
+}
+
+export function labelSucceedThrough(t?: TFunction): string {
+  return translate(t, 'components.personalityLabels.succeedThrough')
+}
+
+export function labelTopStrength(t?: TFunction): string {
+  return translate(t, 'components.personalityLabels.topStrength')
+}
+
+export function labelPronounced(t?: TFunction): string {
+  return translate(t, 'components.personalityLabels.pronounced')
+}
+
+export function labelYouOnScale(t?: TFunction): string {
+  return translate(t, 'components.personalityLabels.youOnScale')
+}

@@ -10,6 +10,7 @@ import jobs.procrush.api.mapper.toContract
 import jobs.procrush.auth.service.RoleGuard
 import jobs.procrush.employer.service.EmployerProfileService
 import jobs.procrush.matching.service.MatchInterestService
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.ResourceNotFoundException
 
 class EmployerHandler(
@@ -49,8 +50,8 @@ class EmployerHandler(
                 EmployerServerApi.UpdateEmployerProfileResponse.ok(
                     employerProfileService.getOrCreateEmployer(user.id).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                EmployerServerApi.UpdateEmployerProfileResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                EmployerServerApi.UpdateEmployerProfileResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             }
         }
 
@@ -78,8 +79,8 @@ class EmployerHandler(
                 EmployerServerApi.CreateJobProfileResponse.created(
                     employerProfileService.createJobProfile(user.id, request.toContract()).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                EmployerServerApi.CreateJobProfileResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                EmployerServerApi.CreateJobProfileResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             }
         }
 
@@ -96,7 +97,7 @@ class EmployerHandler(
                 employerProfileService.deleteJobProfile(user.id, id)
                 EmployerServerApi.DeleteJobProfileResponse.noContent()
             } catch (_: ResourceNotFoundException) {
-                EmployerServerApi.DeleteJobProfileResponse.notFound(notFound())
+                EmployerServerApi.DeleteJobProfileResponse.notFound(errorNotFound())
             }
         }
 
@@ -115,10 +116,10 @@ class EmployerHandler(
                 EmployerServerApi.UpdateJobProfileResponse.ok(
                     employerProfileService.findJobProfile(user.id, id).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                EmployerServerApi.UpdateJobProfileResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                EmployerServerApi.UpdateJobProfileResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             } catch (_: ResourceNotFoundException) {
-                EmployerServerApi.UpdateJobProfileResponse.notFound(notFound())
+                EmployerServerApi.UpdateJobProfileResponse.notFound(errorNotFound())
             }
         }
 
@@ -136,7 +137,7 @@ class EmployerHandler(
                     employerProfileService.candidates(user.id, id).map { it.toApi() },
                 )
             } catch (_: ResourceNotFoundException) {
-                EmployerServerApi.GetJobCandidatesResponse.notFound(notFound())
+                EmployerServerApi.GetJobCandidatesResponse.notFound(errorNotFound())
             }
         }
 
@@ -154,7 +155,7 @@ class EmployerHandler(
                     employerProfileService.candidatesOverview(user.id, id).toApi(),
                 )
             } catch (_: ResourceNotFoundException) {
-                EmployerServerApi.GetJobCandidatesOverviewResponse.notFound(notFound())
+                EmployerServerApi.GetJobCandidatesOverviewResponse.notFound(errorNotFound())
             }
         }
 
@@ -173,7 +174,7 @@ class EmployerHandler(
                     employerProfileService.respondToCandidate(user.id, id, seekerId).toApi(),
                 )
             } catch (_: ResourceNotFoundException) {
-                EmployerServerApi.EmployerRespondToCandidateResponse.notFound(notFound())
+                EmployerServerApi.EmployerRespondToCandidateResponse.notFound(errorNotFound())
             }
         }
 
@@ -191,7 +192,7 @@ class EmployerHandler(
                     employerProfileService.interestsOutsideRecommendations(user.id, id).toApi(),
                 )
             } catch (_: ResourceNotFoundException) {
-                EmployerServerApi.GetEmployerInterestsResponse.notFound(notFound())
+                EmployerServerApi.GetEmployerInterestsResponse.notFound(errorNotFound())
             }
         }
 

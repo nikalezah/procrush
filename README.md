@@ -94,6 +94,7 @@ flowchart LR
 |------|------------------------------------------------|
 | [`frontend/`](./frontend) | Основной веб-клиент (React)                    |
 | [`openapi/`](./openapi) | **Единый контракт REST API** (OpenAPI 3.1): `specs/` — исходники, `dist/openapi.yaml` — bundle для фронта |
+| [`i18n/`](./i18n) | **Коды ошибок API и переводы UI** (ru/en): `error-codes.yaml`, `locales/`, codegen в `generated/` |
 | [`backend/contracts/`](./backend/contracts/src/main/kotlin) | DTO для доменного слоя, события, порты и чистая доменная логика (синхронизируются с OpenAPI через `ApiMappers` в `backend/api`) |
 | [`backend/config/`](./backend/config/src/main/kotlin) | Чтение env и типизированные настройки приложений |
 | [`backend/platform/`](./backend/platform) | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`) |
@@ -135,6 +136,41 @@ openapi/
 5. Закоммитить `openapi/dist/openapi.yaml` и `frontend/src/api/generated/schema.d.ts`.
 
 После `git clone` перед работой с handlers: один раз `./gradlew :backend:api:compileKotlin`, чтобы IDE увидела generated sources в `build/`. В IntelliJ: *Build and run using → Gradle*.
+
+## Интернационализация (i18n)
+
+Статический UI и пользовательские тексты ошибок API живут в [`i18n/`](./i18n/) — по той же идее, что и OpenAPI: один каталог в корне репозитория, не внутри `frontend/` или `backend/`.
+
+```
+i18n/
+  error-codes.yaml       # коды ошибок + HTTP status + англ. техническое message
+  locales/ru|en/       # errors.json (по кодам) и ui.json (весь интерфейс)
+  generated/             # ErrorCode.kt (бэкенд) и errorCodes.ts (фронт)
+  scripts/generate.mjs   # codegen + валидация
+```
+
+| Слой | Что отдаёт / показывает |
+|------|-------------------------|
+| **Backend** | `{ "code": "SURVEY_ALREADY_COMPLETED", "message": "Survey already completed", "details": {} }` — `message` только для логов и отладки |
+| **Frontend** | `t('seeker.dashboard.title')` для UI; `resolveApiError(err)` переводит `code` по выбранной локали |
+
+Локаль: авто по браузеру → fallback `ru`; переключатель **ru / en** в «Аккаунт» (`localStorage`: `procrush.locale`).
+
+**Не переводится в v1:** тексты опросов из БД, LLM-профиль, названия профессий и навыков.
+
+### Workflow: новый код ошибки или строка UI
+
+1. Добавить код в `i18n/error-codes.yaml` и переводы в `locales/ru/errors.json` и `locales/en/errors.json`.
+2. Для UI — ключи в `locales/ru/ui.json` и `locales/en/ui.json`.
+3. Регенерация и проверка:
+   ```bash
+   cd i18n && npm run generate
+   ```
+   Фронтенд перед `dev`/`build` сам вызывает `validate:i18n` (`npm run prebuild` в `frontend/`).
+4. Backend: `./gradlew :backend:api:compileKotlin` — модуль `contracts` подключает `i18n/generated/kotlin`.
+5. Закоммитить `i18n/generated/` вместе с yaml/json.
+
+Подробнее — [i18n/README.md](./i18n/README.md).
 
 ## Локальная разработка
 

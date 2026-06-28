@@ -1,6 +1,8 @@
 import {createContext, type ReactNode, useCallback, useContext, useEffect, useState,} from 'react'
 import * as authApi from '../api/authApi'
 import type {AuthState, AuthUserDto, CompleteRegistrationRequest} from '../api/types'
+import i18n from '../i18n/config'
+import {resolveError} from '../i18n/resolveApiError'
 
 function userToState(user: AuthUserDto | null): AuthState {
   if (user == null || user.id === '' || user.email === '') return { kind: 'unauthenticated' }
@@ -33,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const user = await authApi.fetchMe()
       setState(userToState(user))
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : 'Не удалось загрузить сессию')
+      setErrorMessage(resolveError(e) || i18n.t('auth.errors.sessionLoadFailed'))
       setState({ kind: 'unauthenticated' })
     } finally {
       setIsBusy(false)
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInDev = useCallback(async (email: string) => {
     const normalizedEmail = email.trim().toLowerCase()
     if (normalizedEmail === '' || !normalizedEmail.includes('@')) {
-      setErrorMessage('Введите корректный адрес электронной почты')
+      setErrorMessage(i18n.t('auth.errors.invalidEmail'))
       return
     }
     setIsBusy(true)
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const user = await authApi.devLogin(normalizedEmail)
       setState(userToState(user))
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : 'Не удалось войти')
+      setErrorMessage(resolveError(e) || i18n.t('auth.errors.signInFailed'))
       setState({ kind: 'unauthenticated' })
     } finally {
       setIsBusy(false)
@@ -70,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const user = await authApi.completeRegistration(request)
       setState({ kind: 'authenticated', user })
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : 'Не удалось завершить регистрацию')
+      setErrorMessage(resolveError(e) || i18n.t('auth.errors.registrationFailed'))
     } finally {
       setIsBusy(false)
     }
@@ -95,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authApi.deleteAccount()
       setState({ kind: 'unauthenticated' })
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : 'Не удалось удалить аккаунт')
+      setErrorMessage(resolveError(e) || i18n.t('auth.errors.deleteAccountFailed'))
       throw e
     } finally {
       setIsBusy(false)

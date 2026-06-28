@@ -5,25 +5,27 @@ import jobs.procrush.api.generated.common_models_yaml.common_models.ErrorRespons
 import jobs.procrush.auth.UserRole
 import jobs.procrush.auth.service.AuthenticatedUser
 import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.i18n.ErrorCode
 
-fun apiError(message: String, error: String? = null): ErrorResponse =
-    ErrorResponse(message = message, error = error)
-
-fun unauthorized(message: String = "Не авторизован"): ErrorResponse = apiError(message)
-
-fun forbidden(message: String = "Доступ запрещён"): ErrorResponse = apiError(message)
-
-fun notFound(message: String = "Не найдено"): ErrorResponse = apiError(message)
-
-fun badRequest(message: String): ErrorResponse = apiError(message)
-
-fun conflict(message: String): ErrorResponse = apiError(message)
-
-fun devAuthDisabled(): ErrorResponse =
-    apiError(
-        message = "Установите AUTH_DEV_MODE=true в .env, чтобы включить вход для разработки.",
-        error = "dev_auth_disabled",
+fun apiError(code: ErrorCode, details: Map<String, String> = emptyMap()): ErrorResponse =
+    ErrorResponse(
+        code = code.name,
+        message = code.formatMessage(details),
+        details = details.takeIf { it.isNotEmpty() },
     )
+
+fun errorUnauthorized(): ErrorResponse = apiError(ErrorCode.UNAUTHORIZED)
+
+fun errorForbidden(): ErrorResponse = apiError(ErrorCode.FORBIDDEN)
+
+fun errorNotFound(): ErrorResponse = apiError(ErrorCode.NOT_FOUND)
+
+fun errorBadRequest(code: ErrorCode = ErrorCode.INVALID_REQUEST, details: Map<String, String> = emptyMap()): ErrorResponse =
+    apiError(code, details)
+
+fun errorConflict(code: ErrorCode, details: Map<String, String> = emptyMap()): ErrorResponse = apiError(code, details)
+
+fun errorDevAuthDisabled(): ErrorResponse = apiError(ErrorCode.DEV_AUTH_DISABLED)
 
 suspend fun RoleGuard.requireSeeker(call: ApplicationCall): AuthenticatedUser? = peekRole(call, UserRole.SEEKER)
 
@@ -33,17 +35,17 @@ suspend fun RoleGuard.requireAnyAuth(call: ApplicationCall): AuthenticatedUser? 
 
 suspend fun RoleGuard.seekerAuthError(call: ApplicationCall): Pair<Boolean, ErrorResponse> {
     val problem = authProblem(call, UserRole.SEEKER)
-    return problem.unauthorized to apiError(problem.message)
+    return problem.unauthorized to apiError(problem.errorCode)
 }
 
 suspend fun RoleGuard.employerAuthError(call: ApplicationCall): Pair<Boolean, ErrorResponse> {
     val problem = authProblem(call, UserRole.EMPLOYER)
-    return problem.unauthorized to apiError(problem.message)
+    return problem.unauthorized to apiError(problem.errorCode)
 }
 
 suspend fun RoleGuard.anyAuthError(call: ApplicationCall): Pair<Boolean, ErrorResponse> {
     val problem = authProblem(call)
-    return problem.unauthorized to apiError(problem.message)
+    return problem.unauthorized to apiError(problem.errorCode)
 }
 
 suspend inline fun <T> RoleGuard.withSeeker(

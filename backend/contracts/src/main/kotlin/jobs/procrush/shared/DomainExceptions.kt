@@ -1,9 +1,27 @@
 package jobs.procrush.shared
 
-class SurveyAlreadyCompletedException(message: String = "Опрос уже пройден") : IllegalStateException(message)
+import jobs.procrush.i18n.ErrorCode
 
-class ResourceNotFoundException(message: String = "Не найдено") : IllegalStateException(message)
+open class CodedException(
+    val errorCode: ErrorCode,
+    val details: Map<String, String> = emptyMap(),
+) : Exception(errorCode.formatMessage(details))
 
-class GenerationInProgressException(message: String = "Генерация уже выполняется") : IllegalStateException(message)
+class SurveyAlreadyCompletedException(
+    details: Map<String, String> = emptyMap(),
+) : CodedException(ErrorCode.SURVEY_ALREADY_COMPLETED, details)
 
-class RegistrationConflictException(message: String = "Пользователь уже зарегистрирован") : IllegalStateException(message)
+class ResourceNotFoundException(
+    errorCode: ErrorCode = ErrorCode.NOT_FOUND,
+    details: Map<String, String> = emptyMap(),
+) : CodedException(errorCode, details)
+
+class GenerationInProgressException(
+    details: Map<String, String> = emptyMap(),
+) : CodedException(ErrorCode.GENERATION_IN_PROGRESS, details)
+
+class RegistrationConflictException(
+    details: Map<String, String> = emptyMap(),
+) : CodedException(ErrorCode.REGISTRATION_CONFLICT, details)
+
+fun ErrorCode.raise(details: Map<String, String> = emptyMap()): Nothing = throw CodedException(this, details)

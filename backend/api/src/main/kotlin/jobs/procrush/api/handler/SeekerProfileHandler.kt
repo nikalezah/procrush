@@ -14,6 +14,7 @@ import jobs.procrush.api.mapper.toContract
 import jobs.procrush.auth.service.RoleGuard
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.seeker.service.SeekerProfileService
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.ResourceNotFoundException
 
 class SeekerProfileHandler(
@@ -53,8 +54,8 @@ class SeekerProfileHandler(
                 SeekerProfileServerApi.UpdateSeekerProfileResponse.ok(
                     seekerProfileService.getOrCreateSeeker(user.id).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerProfileServerApi.UpdateSeekerProfileResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerProfileServerApi.UpdateSeekerProfileResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             }
         }
 
@@ -82,8 +83,8 @@ class SeekerProfileHandler(
                 SeekerProfileServerApi.CreateSeekerExperienceResponse.created(
                     seekerProfileService.createExperience(user.id, request.toContract()).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerProfileServerApi.CreateSeekerExperienceResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerProfileServerApi.CreateSeekerExperienceResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             }
         }
 
@@ -100,7 +101,7 @@ class SeekerProfileHandler(
                 seekerProfileService.deleteExperience(user.id, id)
                 SeekerProfileServerApi.DeleteSeekerExperienceResponse.noContent()
             } catch (_: ResourceNotFoundException) {
-                SeekerProfileServerApi.DeleteSeekerExperienceResponse.notFound(notFound())
+                SeekerProfileServerApi.DeleteSeekerExperienceResponse.notFound(errorNotFound())
             }
         }
 
@@ -118,10 +119,10 @@ class SeekerProfileHandler(
                 SeekerProfileServerApi.UpdateSeekerExperienceResponse.ok(
                     seekerProfileService.updateExperience(user.id, id, request.toContract()).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerProfileServerApi.UpdateSeekerExperienceResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerProfileServerApi.UpdateSeekerExperienceResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             } catch (_: ResourceNotFoundException) {
-                SeekerProfileServerApi.UpdateSeekerExperienceResponse.notFound(notFound())
+                SeekerProfileServerApi.UpdateSeekerExperienceResponse.notFound(errorNotFound())
             }
         }
 
@@ -149,8 +150,8 @@ class SeekerProfileHandler(
                 SeekerProfileServerApi.CreateSeekerEducationResponse.created(
                     seekerProfileService.createEducation(user.id, request.toContract()).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerProfileServerApi.CreateSeekerEducationResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerProfileServerApi.CreateSeekerEducationResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             }
         }
 
@@ -167,7 +168,7 @@ class SeekerProfileHandler(
                 seekerProfileService.deleteEducation(user.id, id)
                 SeekerProfileServerApi.DeleteSeekerEducationResponse.noContent()
             } catch (_: ResourceNotFoundException) {
-                SeekerProfileServerApi.DeleteSeekerEducationResponse.notFound(notFound())
+                SeekerProfileServerApi.DeleteSeekerEducationResponse.notFound(errorNotFound())
             }
         }
 
@@ -185,10 +186,10 @@ class SeekerProfileHandler(
                 SeekerProfileServerApi.UpdateSeekerEducationResponse.ok(
                     seekerProfileService.updateEducation(user.id, id, request.toContract()).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerProfileServerApi.UpdateSeekerEducationResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerProfileServerApi.UpdateSeekerEducationResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             } catch (_: ResourceNotFoundException) {
-                SeekerProfileServerApi.UpdateSeekerEducationResponse.notFound(notFound())
+                SeekerProfileServerApi.UpdateSeekerEducationResponse.notFound(errorNotFound())
             }
         }
 
@@ -214,8 +215,8 @@ class SeekerProfileHandler(
                 SeekerProfileServerApi.SetSeekerSkillsResponse.ok(
                     seekerProfileService.setSkills(user.id, request.skillIds).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerProfileServerApi.SetSeekerSkillsResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerProfileServerApi.SetSeekerSkillsResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             }
         }
 
@@ -243,8 +244,8 @@ class SeekerProfileHandler(
                 SeekerProfileServerApi.SetSeekerDesiredPositionsResponse.ok(
                     seekerProfileService.setDesiredPositions(user.id, request.occupationIds).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerProfileServerApi.SetSeekerDesiredPositionsResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerProfileServerApi.SetSeekerDesiredPositionsResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             }
         }
 
@@ -284,7 +285,7 @@ class SeekerProfileHandler(
                     seekerProfileService.respondToJob(user.id, jobProfileId).toApi(),
                 )
             } catch (_: ResourceNotFoundException) {
-                SeekerProfileServerApi.SeekerRespondToJobResponse.notFound(notFound())
+                SeekerProfileServerApi.SeekerRespondToJobResponse.notFound(errorNotFound())
             }
         }
 

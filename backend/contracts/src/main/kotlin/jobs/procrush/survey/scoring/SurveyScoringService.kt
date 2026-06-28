@@ -1,5 +1,7 @@
 package jobs.procrush.survey.scoring
 
+import jobs.procrush.i18n.ErrorCode
+import jobs.procrush.shared.raise
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -18,8 +20,8 @@ private val json = Json { ignoreUnknownKeys = true }
 object SurveyAnswerValidator {
     fun validate(surveyCode: String, questionsJson: String, answers: JsonElement) {
         val questions = json.parseToJsonElement(questionsJson).jsonObject
-        val type = questions["type"]?.jsonPrimitive?.content ?: error("Неизвестный тип опроса")
-        val answersObj = answers as? JsonObject ?: error("Ответы должны быть объектом")
+        val type = questions["type"]?.jsonPrimitive?.content ?: ErrorCode.SURVEY_UNKNOWN_TYPE.raise()
+        val answersObj = answers as? JsonObject ?: ErrorCode.SURVEY_ANSWERS_MUST_BE_OBJECT.raise()
         when (type) {
             "open_questions" -> validateOpenQuestions(questions, answersObj)
             "multi_select" -> validateMultiSelect(questions, answersObj)
@@ -27,77 +29,96 @@ object SurveyAnswerValidator {
             "scale_0_4" -> validateScale(questions, answersObj)
             "binary_choice" -> validateBinaryChoice(questions, answersObj)
             "belbin_matrix" -> validateBelbin(questions, answersObj)
-            else -> error("Неподдерживаемый тип опроса: $type")
+            else -> ErrorCode.SURVEY_UNSUPPORTED_TYPE.raise(mapOf("type" to type))
         }
     }
 
     private fun validateOpenQuestions(questions: JsonObject, answers: JsonObject) {
-        val items = questions["questions"]?.jsonArray ?: error("Нет вопросов")
+        val items = questions["questions"]?.jsonArray ?: ErrorCode.SURVEY_NO_QUESTIONS.raise()
         items.forEach { q ->
             val id = q.jsonObject["id"]?.jsonPrimitive?.content ?: return@forEach
             val text = answers[id]?.jsonPrimitive?.content?.trim().orEmpty()
-            require(text.isNotBlank()) { "Ответ на вопрос $id обязателен" }
+            if (text.isBlank()) {
+                ErrorCode.SURVEY_ANSWER_REQUIRED.raise(mapOf("questionId" to id))
+            }
         }
     }
 
     private fun validateMultiSelect(questions: JsonObject, answers: JsonObject) {
-        val key = questions["answerKey"]?.jsonPrimitive?.content ?: error("answerKey обязателен")
-        val min = questions["minSelections"]?.jsonPrimitive?.int ?: error("minSelections обязателен")
+        val key = questions["answerKey"]?.jsonPrimitive?.content ?: ErrorCode.INVALID_REQUEST.raise()
+        val min = questions["minSelections"]?.jsonPrimitive?.int ?: ErrorCode.INVALID_REQUEST.raise()
         val max = questions["maxSelections"]?.jsonPrimitive?.int ?: min
-        val selected = answers[key]?.jsonArray ?: error("Выберите варианты ответа")
-        require(selected.size in min..max) { "Нужно выбрать $min${if (max != min) "..$max" else ""} вариантов" }
+        val selected = answers[key]?.jsonArray ?: ErrorCode.SURVEY_ANSWERS_NOT_FOUND.raise()
+        if (selected.size !in min..max) {
+            ErrorCode.SURVEY_SELECTION_COUNT_INVALID.raise(mapOf("min" to min.toString(), "max" to max.toString()))
+        }
     }
 
     private fun validateAllocatePoints(questions: JsonObject, answers: JsonObject) {
         val total = questions["totalPoints"]?.jsonPrimitive?.int ?: 10
         val maxPer = questions["maxPerOption"]?.jsonPrimitive?.int ?: 5
-        val items = questions["questions"]?.jsonArray ?: error("Нет вопросов")
+        val items = questions["questions"]?.jsonArray ?: ErrorCode.SURVEY_NO_QUESTIONS.raise()
         items.forEach { q ->
             val qId = q.jsonObject["id"]?.jsonPrimitive?.content ?: return@forEach
             val block = answers["q$qId"]?.jsonObject ?: answers[qId]?.jsonObject
-                ?: error("Заполните распределение для вопроса $qId")
+                ?: ErrorCode.SURVEY_ANSWER_REQUIRED.raise(mapOf("questionId" to qId))
             var sum = 0
             block.forEach { (_, v) ->
-                val pts = v.jsonPrimitive.intOrNull ?: error("Некорректные баллы")
-                require(pts in 0..maxPer) { "Баллы должны быть от 0 до $maxPer" }
+                val pts = v.jsonPrimitive.intOrNull ?: ErrorCode.SURVEY_POINTS_INVALID.raise(mapOf("maxPer" to maxPer.toString()))
+                if (pts !in 0..maxPer) {
+                    ErrorCode.SURVEY_POINTS_INVALID.raise(mapOf("maxPer" to maxPer.toString()))
+                }
                 sum += pts
             }
-            require(sum == total) { "Сумма баллов для вопроса $qId должна быть $total" }
+            if (sum != total) {
+                ErrorCode.SURVEY_POINTS_SUM_INVALID.raise(mapOf("questionId" to qId, "total" to total.toString()))
+            }
         }
     }
 
     private fun validateScale(questions: JsonObject, answers: JsonObject) {
-        val items = questions["questions"]?.jsonArray ?: error("Нет вопросов")
+        val items = questions["questions"]?.jsonArray ?: ErrorCode.SURVEY_NO_QUESTIONS.raise()
         items.forEach { q ->
             val id = q.jsonObject["id"]?.jsonPrimitive?.content ?: return@forEach
-            val value = answers[id]?.jsonPrimitive?.intOrNull ?: error("Ответьте на вопрос $id")
-            require(value in 0..4) { "Значение для вопроса $id должно быть 0–4" }
+            val value = answers[id]?.jsonPrimitive?.intOrNull
+                ?: ErrorCode.SURVEY_ANSWER_REQUIRED.raise(mapOf("questionId" to id))
+            if (value !in 0..4) {
+                ErrorCode.SURVEY_SCALE_VALUE_INVALID.raise(mapOf("questionId" to id))
+            }
         }
     }
 
     private fun validateBinaryChoice(questions: JsonObject, answers: JsonObject) {
-        val items = questions["questions"]?.jsonArray ?: error("Нет вопросов")
+        val items = questions["questions"]?.jsonArray ?: ErrorCode.SURVEY_NO_QUESTIONS.raise()
         items.forEach { q ->
             val id = q.jsonObject["id"]?.jsonPrimitive?.content ?: return@forEach
-            val choice = answers[id]?.jsonPrimitive?.intOrNull ?: error("Выберите вариант для дилеммы $id")
-            require(choice in 1..2) { "Дилемма $id: выберите 1 или 2" }
+            val choice = answers[id]?.jsonPrimitive?.intOrNull
+                ?: ErrorCode.SURVEY_ANSWER_REQUIRED.raise(mapOf("questionId" to id))
+            if (choice !in 1..2) {
+                ErrorCode.SURVEY_BINARY_CHOICE_INVALID.raise(mapOf("questionId" to id))
+            }
         }
     }
 
     private fun validateBelbin(questions: JsonObject, answers: JsonObject) {
         val total = questions["totalPoints"]?.jsonPrimitive?.int ?: 10
         val maxPer = questions["maxPerOption"]?.jsonPrimitive?.int ?: 5
-        val items = questions["questions"]?.jsonArray ?: error("Нет вопросов")
+        val items = questions["questions"]?.jsonArray ?: ErrorCode.SURVEY_NO_QUESTIONS.raise()
         items.forEach { q ->
             val qId = q.jsonObject["id"]?.jsonPrimitive?.content ?: return@forEach
-            val block = answers["section_$qId"]?.jsonObject ?: error("Заполните вопрос $qId")
+            val block = answers["section_$qId"]?.jsonObject
+                ?: ErrorCode.SURVEY_ANSWER_REQUIRED.raise(mapOf("questionId" to qId))
             var sum = 0
             block.forEach { (_, v) ->
-                val pts = v.jsonPrimitive.intOrNull ?: error("Некорректные баллы")
-                require(pts in 0..maxPer) { "Баллы должны быть от 0 до $maxPer" }
+                val pts = v.jsonPrimitive.intOrNull ?: ErrorCode.SURVEY_POINTS_INVALID.raise(mapOf("maxPer" to maxPer.toString()))
+                if (pts !in 0..maxPer) {
+                    ErrorCode.SURVEY_POINTS_INVALID.raise(mapOf("maxPer" to maxPer.toString()))
+                }
                 sum += pts
             }
-            require(sum == total) { "Сумма баллов для вопроса $qId должна быть $total" }
+            if (sum != total) {
+                ErrorCode.SURVEY_POINTS_SUM_INVALID.raise(mapOf("questionId" to qId, "total" to total.toString()))
+            }
         }
     }
 }
@@ -118,7 +139,7 @@ object SurveyScoringService {
             "matrix" -> scoreMatrix(surveyCode, keys, questions, answers)
             "direct_sum" -> scoreDirectSum(keys, answers)
             "formula" -> scoreFormula(surveyCode, keys, answers)
-            else -> error("Неподдерживаемая scoring_logic: $scoringLogic")
+            else -> ErrorCode.SURVEY_UNSUPPORTED_SCORING_LOGIC.raise(mapOf("logic" to scoringLogic))
         }
     }
 

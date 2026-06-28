@@ -5,6 +5,7 @@ import jobs.procrush.api.generated.personality_paths_yaml.personality_paths.Seek
 import jobs.procrush.api.mapper.toApi
 import jobs.procrush.api.mapper.toGenerationStatusResponse
 import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.service.PersonalityProfileService
 import jobs.procrush.shared.GenerationInProgressException
@@ -39,7 +40,7 @@ class SeekerPersonalityHandler(
                 )
             } catch (_: GenerationInProgressException) {
                 SeekerPersonalityServerApi.TriggerPersonalityGenerationResponse.conflict(
-                    conflict("Генерация уже выполняется"),
+                    errorConflict(ErrorCode.GENERATION_IN_PROGRESS),
                 )
             }
         }

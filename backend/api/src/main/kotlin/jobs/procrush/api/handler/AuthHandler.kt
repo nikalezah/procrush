@@ -12,6 +12,8 @@ import jobs.procrush.auth.service.UserAuthService
 import jobs.procrush.auth.service.clearSessionCookie
 import jobs.procrush.auth.service.setSessionCookie
 import jobs.procrush.bootstrap.config.AppConfig
+import jobs.procrush.i18n.ErrorCode
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.RegistrationConflictException
 import java.util.UUID
 
@@ -26,7 +28,7 @@ class AuthHandler(
         call: ApplicationCall,
     ): AuthServerApi.DevLoginResponse {
         if (!config.authDevMode) {
-            return AuthServerApi.DevLoginResponse.notFound(devAuthDisabled())
+            return AuthServerApi.DevLoginResponse.notFound(errorDevAuthDisabled())
         }
         val user =
             userAuthService.findDevUser(request.email)
@@ -60,21 +62,21 @@ class AuthHandler(
             val email =
                 request.email?.trim()?.lowercase()
                     ?: sessionService.resolveUser(token)?.email
-                    ?: return AuthServerApi.CompleteRegistrationResponse.badRequest(badRequest("Укажите email"))
+                    ?: return AuthServerApi.CompleteRegistrationResponse.badRequest(errorBadRequest(ErrorCode.EMAIL_REQUIRED))
             val updated = userAuthService.completeRegistration(email, request.toContract())
             val sessionToken = sessionService.createSession(UUID.fromString(updated.id))
             call.setSessionCookie(config, sessionToken)
             AuthServerApi.CompleteRegistrationResponse.ok(userAuthService.enrich(updated).toApi())
-        } catch (e: IllegalArgumentException) {
-            AuthServerApi.CompleteRegistrationResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+        } catch (e: CodedException) {
+            AuthServerApi.CompleteRegistrationResponse.badRequest(errorBadRequest(e.errorCode, e.details))
         } catch (_: RegistrationConflictException) {
-            AuthServerApi.CompleteRegistrationResponse.conflict(conflict("Пользователь уже зарегистрирован"))
+            AuthServerApi.CompleteRegistrationResponse.conflict(errorConflict(ErrorCode.REGISTRATION_CONFLICT))
         }
     }
 
     override suspend fun deleteAccount(call: ApplicationCall): AuthServerApi.DeleteAccountResponse {
         val user = roleGuard.peekAuth(call)
-            ?: return AuthServerApi.DeleteAccountResponse.unauthorized(unauthorized())
+            ?: return AuthServerApi.DeleteAccountResponse.unauthorized(errorUnauthorized())
         val token = call.request.cookies[config.sessionCookieName]
         sessionService.invalidate(token)
         userAuthService.deleteAccount(user.id)

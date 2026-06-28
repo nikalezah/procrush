@@ -2,6 +2,7 @@ package jobs.procrush.personality.service
 
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import jobs.procrush.bootstrap.config.LlmConfig
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.llm.LlmClient
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
@@ -11,6 +12,7 @@ import jobs.procrush.personality.llm.PersonalityProfileLlmMapper
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
 import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
+import jobs.procrush.shared.raise
 import jobs.procrush.shared.repository.ReferenceRepository
 import jobs.procrush.survey.service.SurveyService
 import org.slf4j.LoggerFactory
@@ -43,7 +45,9 @@ class PersonalityGenerationHandler(
         }
 
         val context = surveyService.buildLlmContext(userId)
-        require(context.surveys.isNotEmpty()) { "Нет завершённых опросов для интерпретации" }
+        if (context.surveys.isEmpty()) {
+            ErrorCode.NO_COMPLETED_SURVEYS.raise()
+        }
 
         val catalog = referenceRepository.listSuperpowersAndTalents()
         val catalogNames = catalog.map { it.name }.toSet()
@@ -63,11 +67,10 @@ class PersonalityGenerationHandler(
         }
     }
 
-    fun failureMessage(error: Throwable): String =
+    fun failureCode(error: Throwable): String =
         when (error) {
-            is HttpRequestTimeoutException ->
-                "Превышено время ожидания ответа LLM (${llmConfig.requestTimeoutSeconds} с). " +
-                    "Попробуйте ещё раз или увеличьте LLM_REQUEST_TIMEOUT_SECONDS."
-            else -> error.message ?: "Неизвестная ошибка"
+            is HttpRequestTimeoutException -> ErrorCode.LLM_TIMEOUT.name
+            is jobs.procrush.shared.CodedException -> error.errorCode.name
+            else -> ErrorCode.UNKNOWN_ERROR.name
         }
 }

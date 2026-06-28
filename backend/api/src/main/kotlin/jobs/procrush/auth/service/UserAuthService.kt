@@ -4,8 +4,10 @@ import jobs.procrush.auth.AuthUserDto
 import jobs.procrush.auth.CompleteRegistrationRequest
 import jobs.procrush.auth.UserRole
 import jobs.procrush.auth.repository.UserRepository
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.shared.RegistrationConflictException
 import jobs.procrush.shared.ResourceNotFoundException
+import jobs.procrush.shared.raise
 import java.util.UUID
 
 class UserAuthService(
@@ -47,12 +49,14 @@ class UserAuthService(
             middleName = profileData.middleName,
             companyName = profileData.companyName,
         )
-        return profileEnricher.enrich(userRepository.findById(userId) ?: error("Пользователь не найден"))
+        return profileEnricher.enrich(
+            userRepository.findById(userId) ?: throw ResourceNotFoundException(ErrorCode.USER_NOT_FOUND),
+        )
     }
 
     fun deleteAccount(userId: UUID) {
         if (!userRepository.deleteById(userId)) {
-            throw ResourceNotFoundException("Пользователь не найден")
+            throw ResourceNotFoundException(ErrorCode.USER_NOT_FOUND)
         }
     }
 
@@ -70,8 +74,8 @@ class UserAuthService(
             UserRole.SEEKER -> {
                 val firstName = request.firstName?.trim().orEmpty()
                 val lastName = request.lastName?.trim().orEmpty()
-                require(firstName.isNotBlank()) { "Укажите имя" }
-                require(lastName.isNotBlank()) { "Укажите фамилию" }
+                if (firstName.isBlank()) ErrorCode.FIRST_NAME_REQUIRED.raise()
+                if (lastName.isBlank()) ErrorCode.LAST_NAME_REQUIRED.raise()
                 RegistrationProfileData(
                     firstName = firstName,
                     lastName = lastName,
@@ -80,7 +84,7 @@ class UserAuthService(
             }
             UserRole.EMPLOYER -> {
                 val companyName = request.companyName?.trim().orEmpty()
-                require(companyName.isNotBlank()) { "Укажите название компании" }
+                if (companyName.isBlank()) ErrorCode.COMPANY_NAME_REQUIRED.raise()
                 RegistrationProfileData(companyName = companyName)
             }
         }

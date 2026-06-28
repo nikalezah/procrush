@@ -1,13 +1,15 @@
 import {useEffect, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import type {PersonalityCategoryDto} from '../../api/types'
 import {PersonalityTraitAccordion} from './PersonalityTraitAccordion'
-import {CATEGORY_LABELS, CATEGORY_ORDER} from './personalityLabels'
+import {CATEGORY_ORDER, categoryLabel} from './personalityLabels'
 
 interface PersonalityCategoryTabsProps {
   categories: PersonalityCategoryDto[]
 }
 
 export function PersonalityCategoryTabs({categories}: PersonalityCategoryTabsProps) {
+  const {t} = useTranslation()
   const ordered = useMemo(() => {
     const byKey = new Map(categories.map((c) => [c.key, c]))
     return CATEGORY_ORDER.map((key) => byKey.get(key)).filter(
@@ -32,11 +34,11 @@ export function PersonalityCategoryTabs({categories}: PersonalityCategoryTabsPro
       <div
         className="flex flex-wrap gap-1.5 border-b border-brand-100 pb-4"
         role="tablist"
-        aria-label="Разделы личностного профиля"
+        aria-label={t('seeker.personality.categoryTabsAriaLabel')}
       >
         {ordered.map((category) => {
           const isActive = category.key === active.key
-          const label = CATEGORY_LABELS[category.key] ?? category.key
+          const label = categoryLabel(category.key, t)
           return (
             <button
               key={category.key}
@@ -57,7 +59,7 @@ export function PersonalityCategoryTabs({categories}: PersonalityCategoryTabsPro
       </div>
       <div role="tabpanel" className="mt-5">
         <h2 className="text-lg font-semibold text-stone-900">
-          {CATEGORY_LABELS[active.key] ?? active.key}
+          {categoryLabel(active.key, t)}
         </h2>
         <p className="mt-2 text-sm text-stone-500">{active.description}</p>
         <div className="mt-4 flex flex-col gap-3">

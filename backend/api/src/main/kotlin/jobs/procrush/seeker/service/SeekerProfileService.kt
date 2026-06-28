@@ -1,5 +1,6 @@
 package jobs.procrush.seeker.service
 
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.cache.CachedMatchingService
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
 import jobs.procrush.matching.port.MatchingCachePort
@@ -15,7 +16,9 @@ import jobs.procrush.seeker.dto.UpdateSeekerEducationRequest
 import jobs.procrush.seeker.dto.UpdateSeekerExperienceRequest
 import jobs.procrush.seeker.dto.UpdateSeekerProfileRequest
 import jobs.procrush.seeker.repository.SeekerRepository
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.ResourceNotFoundException
+import jobs.procrush.shared.raise
 import jobs.procrush.shared.repository.ReferenceRepository
 import jobs.procrush.survey.service.SurveyService
 import java.util.UUID
@@ -35,11 +38,11 @@ class SeekerProfileService(
     fun updateProfile(userId: UUID, request: UpdateSeekerProfileRequest) {
         val firstName = request.firstName.trim()
         val lastName = request.lastName.trim()
-        require(firstName.isNotBlank()) { "Укажите имя" }
-        require(lastName.isNotBlank()) { "Укажите фамилию" }
+        if (firstName.isBlank()) ErrorCode.FIRST_NAME_REQUIRED.raise()
+        if (lastName.isBlank()) ErrorCode.LAST_NAME_REQUIRED.raise()
         val seeker = getOrCreateSeeker(userId)
         seekerRepository.updateProfile(seeker.id, request)
-            ?: throw ResourceNotFoundException("Не удалось обновить профиль")
+            ?: throw ResourceNotFoundException(ErrorCode.PROFILE_UPDATE_FAILED)
     }
 
     fun listExperience(userId: UUID) =
@@ -50,11 +53,11 @@ class SeekerProfileService(
 
     fun updateExperience(userId: UUID, experienceId: Long, request: UpdateSeekerExperienceRequest) =
         seekerRepository.updateExperience(getOrCreateSeeker(userId).id, experienceId, request)
-            ?: throw ResourceNotFoundException("Запись опыта не найдена")
+            ?: throw ResourceNotFoundException(ErrorCode.EXPERIENCE_NOT_FOUND)
 
     fun deleteExperience(userId: UUID, experienceId: Long) {
         if (!seekerRepository.deleteExperience(getOrCreateSeeker(userId).id, experienceId)) {
-            throw ResourceNotFoundException("Запись опыта не найдена")
+            throw ResourceNotFoundException(ErrorCode.EXPERIENCE_NOT_FOUND)
         }
     }
 
@@ -66,11 +69,11 @@ class SeekerProfileService(
 
     fun updateEducation(userId: UUID, educationId: Long, request: UpdateSeekerEducationRequest) =
         seekerRepository.updateEducation(getOrCreateSeeker(userId).id, educationId, request)
-            ?: throw ResourceNotFoundException("Запись об образовании не найдена")
+            ?: throw ResourceNotFoundException(ErrorCode.EDUCATION_NOT_FOUND)
 
     fun deleteEducation(userId: UUID, educationId: Long) {
         if (!seekerRepository.deleteEducation(getOrCreateSeeker(userId).id, educationId)) {
-            throw ResourceNotFoundException("Запись об образовании не найдена")
+            throw ResourceNotFoundException(ErrorCode.EDUCATION_NOT_FOUND)
         }
     }
 
@@ -100,7 +103,7 @@ class SeekerProfileService(
         val seeker = getOrCreateSeeker(userId)
         occupationIds.forEach { id ->
             referenceRepository.findOccupationById(id)
-                ?: throw IllegalArgumentException("Должность не найдена: $id")
+                ?: throw CodedException(ErrorCode.OCCUPATION_NOT_FOUND, mapOf("id" to id.toString()))
         }
         seekerRepository.setDesiredOccupationIds(seeker.id, occupationIds)
         matchingCache.invalidateSeekerJobs(seeker.id)

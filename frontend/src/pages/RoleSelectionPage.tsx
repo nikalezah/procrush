@@ -1,4 +1,5 @@
 import {useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import type {AuthUserDto, CompleteRegistrationRequest, UserRole} from '../api/types'
 import {AdaptiveLayout} from '../components/AdaptiveLayout'
 import {RoleToggle} from '../components/RoleToggle'
@@ -18,6 +19,7 @@ export function RoleSelectionPage({
   errorMessage,
   onCompleteRegistration,
 }: RoleSelectionPageProps) {
+  const {t} = useTranslation()
   const [role, setRole] = useState<UserRole>('SEEKER')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -48,9 +50,9 @@ export function RoleSelectionPage({
     <AdaptiveLayout>
       <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit} autoComplete="on">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-stone-900">Создайте профиль</h1>
+          <h1 className="text-xl font-bold text-stone-900">{t('auth.roleSelection.title')}</h1>
           <p className="mt-2 text-sm text-stone-500">
-            Добро пожаловать, {user.email}. Выберите, кто вы — это нельзя изменить позже.
+            {t('auth.roleSelection.welcome', {email: user.email})}
           </p>
         </div>
 
@@ -59,7 +61,7 @@ export function RoleSelectionPage({
         {role === 'SEEKER' ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Имя"
+              label={t('common.fields.firstName')}
               name="given-name"
               autoComplete="given-name"
               required
@@ -68,7 +70,7 @@ export function RoleSelectionPage({
               disabled={isBusy}
             />
             <Input
-              label="Фамилия"
+              label={t('common.fields.lastName')}
               name="family-name"
               autoComplete="family-name"
               required
@@ -78,19 +80,19 @@ export function RoleSelectionPage({
             />
             <div className="sm:col-span-2">
               <Input
-                label="Отчество"
+                label={t('common.fields.middleName')}
                 name="additional-name"
                 autoComplete="additional-name"
                 value={middleName}
                 onChange={(e) => setMiddleName(e.target.value)}
                 disabled={isBusy}
-                hint="Необязательно"
+                hint={t('common.optional')}
               />
             </div>
           </div>
         ) : (
           <Input
-            label="Название компании"
+            label={t('common.fields.companyName')}
             name="organization"
             autoComplete="organization"
             required
@@ -103,7 +105,7 @@ export function RoleSelectionPage({
         {errorMessage != null && <p className="text-sm text-red-600">{errorMessage}</p>}
 
         <Button type="submit" fullWidth size="lg" disabled={isBusy}>
-          {isBusy ? 'Создание аккаунта…' : 'Начать'}
+          {isBusy ? t('auth.roleSelection.creating') : t('auth.roleSelection.submit')}
         </Button>
       </form>
     </AdaptiveLayout>

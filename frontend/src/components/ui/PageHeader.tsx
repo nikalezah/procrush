@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react'
 import {Link} from 'react-router-dom'
+import {useTranslation} from 'react-i18next'
 
 interface PageHeaderProps {
   title: string
@@ -10,6 +11,8 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({title, subtitle, backTo, backLabel, action}: PageHeaderProps) {
+  const {t} = useTranslation()
+
   return (
     <header className="flex flex-col gap-3">
       {backTo != null && (
@@ -17,7 +20,7 @@ export function PageHeader({title, subtitle, backTo, backLabel, action}: PageHea
           to={backTo}
           className="inline-flex w-fit items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
         >
-          <span aria-hidden>←</span> {backLabel ?? 'Назад'}
+          <span aria-hidden>←</span> {backLabel ?? t('common.back')}
         </Link>
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">

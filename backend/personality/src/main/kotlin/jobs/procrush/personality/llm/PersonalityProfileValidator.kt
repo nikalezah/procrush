@@ -1,10 +1,12 @@
 package jobs.procrush.personality.llm
 
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.llm.LlmResponseParser
 import jobs.procrush.personality.dto.PersonalityDbJson
 import jobs.procrush.personality.dto.PersonalityTrait
 import jobs.procrush.personality.dto.SeekerPersonalProfileLlmOutput
 import jobs.procrush.personality.dto.SuperpowerAndTalentLlmItem
+import jobs.procrush.shared.CodedException
 
 class PersonalityProfileValidator {
     private val json = PersonalityDbJson
@@ -15,12 +17,21 @@ class PersonalityProfileValidator {
             try {
                 json.decodeFromString<SeekerPersonalProfileLlmOutput>(jsonText)
             } catch (e: Exception) {
-                throw IllegalArgumentException("Не удалось разобрать JSON ответа LLM: ${e.message}")
+                throw CodedException(
+                    ErrorCode.LLM_JSON_PARSE_FAILED,
+                    mapOf("reason" to (e.message ?: "unknown")),
+                )
             }
 
-        require(output.title.isNotBlank()) { "Поле title обязательно" }
-        require(output.description.isNotBlank()) { "Поле description обязательно" }
-        require(output.profile.isNotBlank()) { "Поле profile обязательно" }
+        if (output.title.isBlank()) {
+            throw CodedException(ErrorCode.LLM_OUTPUT_FIELD_REQUIRED, mapOf("field" to "title"))
+        }
+        if (output.description.isBlank()) {
+            throw CodedException(ErrorCode.LLM_OUTPUT_FIELD_REQUIRED, mapOf("field" to "description"))
+        }
+        if (output.profile.isBlank()) {
+            throw CodedException(ErrorCode.LLM_OUTPUT_FIELD_REQUIRED, mapOf("field" to "profile"))
+        }
 
         listOf(
             output.axisDominance,

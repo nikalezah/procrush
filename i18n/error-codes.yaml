@@ -1,0 +1,254 @@
+# Machine-readable API error codes. English messages are for logs/debugging only.
+# User-facing translations live in locales/{ru,en}/errors.json
+
+UNAUTHORIZED:
+  httpStatus: 401
+  message: "User is not authenticated"
+
+FORBIDDEN:
+  httpStatus: 403
+  message: "Access denied"
+
+ROLE_NOT_SELECTED:
+  httpStatus: 403
+  message: "User role is not selected"
+
+DEV_AUTH_DISABLED:
+  httpStatus: 404
+  message: "Set AUTH_DEV_MODE=true in .env to enable development login"
+
+REGISTRATION_CONFLICT:
+  httpStatus: 409
+  message: "User is already registered"
+
+EMAIL_REQUIRED:
+  httpStatus: 400
+  message: "Email is required"
+
+INVALID_EMAIL:
+  httpStatus: 400
+  message: "Invalid email address"
+
+FIRST_NAME_REQUIRED:
+  httpStatus: 400
+  message: "First name is required"
+
+LAST_NAME_REQUIRED:
+  httpStatus: 400
+  message: "Last name is required"
+
+COMPANY_NAME_REQUIRED:
+  httpStatus: 400
+  message: "Company name is required"
+
+NOT_FOUND:
+  httpStatus: 404
+  message: "Resource not found"
+
+INVALID_REQUEST:
+  httpStatus: 400
+  message: "Invalid request data"
+
+INVALID_ID:
+  httpStatus: 400
+  message: "Invalid id"
+
+INVALID_SEEKER_ID:
+  httpStatus: 400
+  message: "Invalid seekerId"
+
+INVALID_JOB_PROFILE_ID:
+  httpStatus: 400
+  message: "Invalid jobProfileId"
+
+INVALID_OCCUPATION_ID:
+  httpStatus: 400
+  message: "Invalid occupationId"
+
+SURVEY_ALREADY_COMPLETED:
+  httpStatus: 409
+  message: "Survey already completed"
+
+GENERATION_IN_PROGRESS:
+  httpStatus: 409
+  message: "Generation already in progress"
+
+USER_NOT_FOUND:
+  httpStatus: 404
+  message: "User not found"
+
+SEEKER_NOT_FOUND:
+  httpStatus: 404
+  message: "Seeker not found"
+
+SURVEY_NOT_FOUND:
+  httpStatus: 404
+  message: "Survey not found"
+
+EXPERIENCE_NOT_FOUND:
+  httpStatus: 404
+  message: "Experience record not found"
+
+EDUCATION_NOT_FOUND:
+  httpStatus: 404
+  message: "Education record not found"
+
+OCCUPATION_NOT_FOUND:
+  httpStatus: 400
+  message: "Occupation not found: {{id}}"
+
+PROFILE_UPDATE_FAILED:
+  httpStatus: 404
+  message: "Failed to update profile"
+
+EMPLOYER_PROFILE_UPDATE_FAILED:
+  httpStatus: 404
+  message: "Failed to update company profile"
+
+JOB_PROFILE_NOT_FOUND:
+  httpStatus: 404
+  message: "Job profile not found"
+
+JOB_NOT_FOUND:
+  httpStatus: 404
+  message: "Job vacancy not found"
+
+JOB_PROFILE_INACTIVE:
+  httpStatus: 400
+  message: "Job vacancy is inactive"
+
+CANDIDATE_NOT_FOUND:
+  httpStatus: 404
+  message: "Candidate not found"
+
+SEEKER_PROFILE_NOT_FOUND:
+  httpStatus: 404
+  message: "Seeker profile not found"
+
+EMPLOYER_PROFILE_NOT_FOUND:
+  httpStatus: 404
+  message: "Employer profile not found"
+
+PERSONALITY_TESTS_REQUIRED:
+  httpStatus: 400
+  message: "Complete both personality test groups to participate in matching"
+
+DESIRED_OCCUPATION_REQUIRED:
+  httpStatus: 400
+  message: "Add this occupation to your desired positions list"
+
+PROFILE_NOT_READY:
+  httpStatus: 400
+  message: "Profile is not ready for matching"
+
+MANDATORY_TESTS_NOT_PASSED:
+  httpStatus: 400
+  message: "Candidate has not completed mandatory tests"
+
+OCCUPATION_NOT_DESIRED:
+  httpStatus: 400
+  message: "Candidate has not listed this occupation"
+
+NO_COMPLETED_SURVEYS:
+  httpStatus: 400
+  message: "No completed surveys available for interpretation"
+
+LLM_TIMEOUT:
+  httpStatus: 500
+  message: "LLM response timed out after {{seconds}} seconds"
+
+PERSONALITY_GENERATION_FAILED:
+  httpStatus: 500
+  message: "Personality profile generation failed"
+
+PROFILE_GENERATION_FAILED:
+  httpStatus: 500
+  message: "Failed to generate personality profile"
+
+UNKNOWN_ERROR:
+  httpStatus: 500
+  message: "Unknown error"
+
+SURVEY_PREREQUISITES_NOT_MET:
+  httpStatus: 400
+  message: "Complete previous survey steps first"
+
+SURVEY_NOT_STARTED:
+  httpStatus: 400
+  message: "Start the survey first"
+
+SURVEY_SAVE_FAILED:
+  httpStatus: 500
+  message: "Failed to save survey answers"
+
+SURVEY_COMPLETE_FAILED:
+  httpStatus: 500
+  message: "Failed to complete survey"
+
+SURVEY_SCORING_KEYS_NOT_FOUND:
+  httpStatus: 500
+  message: "Survey scoring keys not found"
+
+PERSONALITY_TESTS_NOT_COMPLETED:
+  httpStatus: 400
+  message: "Complete all personality test groups first"
+
+SURVEY_UNKNOWN_TYPE:
+  httpStatus: 400
+  message: "Unknown survey type"
+
+SURVEY_ANSWERS_MUST_BE_OBJECT:
+  httpStatus: 400
+  message: "Survey answers must be a JSON object"
+
+SURVEY_UNSUPPORTED_TYPE:
+  httpStatus: 400
+  message: "Unsupported survey type: {{type}}"
+
+SURVEY_NO_QUESTIONS:
+  httpStatus: 400
+  message: "Survey has no questions"
+
+SURVEY_ANSWER_REQUIRED:
+  httpStatus: 400
+  message: "Answer for question {{questionId}} is required"
+
+SURVEY_SELECTION_COUNT_INVALID:
+  httpStatus: 400
+  message: "Select {{min}} to {{max}} options"
+
+SURVEY_POINTS_INVALID:
+  httpStatus: 400
+  message: "Points must be between 0 and {{maxPer}}"
+
+SURVEY_POINTS_SUM_INVALID:
+  httpStatus: 400
+  message: "Points for question {{questionId}} must sum to {{total}}"
+
+SURVEY_SCALE_VALUE_INVALID:
+  httpStatus: 400
+  message: "Answer for question {{questionId}} must be between 0 and 4"
+
+SURVEY_BINARY_CHOICE_INVALID:
+  httpStatus: 400
+  message: "Dilemma {{questionId}}: choose option 1 or 2"
+
+SURVEY_ANSWERS_NOT_FOUND:
+  httpStatus: 400
+  message: "Survey answers not found"
+
+SURVEY_UNSUPPORTED_SCORING_LOGIC:
+  httpStatus: 400
+  message: "Unsupported scoring logic: {{logic}}"
+
+AXIS_VALUE_OUT_OF_RANGE:
+  httpStatus: 400
+  message: "Axis value must be between 0 and 1"
+
+LLM_JSON_PARSE_FAILED:
+  httpStatus: 500
+  message: "Failed to parse LLM JSON response: {{reason}}"
+
+LLM_OUTPUT_FIELD_REQUIRED:
+  httpStatus: 500
+  message: "LLM output field {{field}} is required"

@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {searchSkills} from '../api/referenceApi'
 import type {SkillDto} from '../api/types'
 
@@ -9,6 +10,7 @@ interface SkillPickerProps {
 }
 
 export function SkillPicker({selectedIds, onChange, disabled}: SkillPickerProps) {
+  const {t} = useTranslation()
   const [query, setQuery] = useState('')
   const [skills, setSkills] = useState<SkillDto[]>([])
   const [selectedSkills, setSelectedSkills] = useState<SkillDto[]>([])
@@ -51,7 +53,7 @@ export function SkillPicker({selectedIds, onChange, disabled}: SkillPickerProps)
                 type="button"
                 onClick={() => removeSkill(skill.id)}
                 className="text-brand-500 hover:text-brand-700"
-                aria-label={`Удалить ${skill.name}`}
+                aria-label={t('components.skillPicker.removeAriaLabel', {name: skill.name})}
               >
                 ×
               </button>
@@ -64,7 +66,7 @@ export function SkillPicker({selectedIds, onChange, disabled}: SkillPickerProps)
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         disabled={disabled}
-        placeholder="Поиск навыков…"
+        placeholder={t('components.skillPicker.searchPlaceholder')}
         className="w-full rounded-2xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 disabled:opacity-50"
       />
       <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">

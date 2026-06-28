@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {
     createEducation,
     createExperience,
@@ -25,8 +26,10 @@ import {Alert} from '../../components/ui/Alert'
 import {Button} from '../../components/ui/Button'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {Spinner} from '../../components/Spinner'
+import {resolveError} from '../../i18n/resolveApiError'
 
 export function SeekerProfilePage() {
+  const {t} = useTranslation()
   const [profile, setProfile] = useState<SeekerProfileDto | null>(null)
   const [experience, setExperience] = useState<SeekerExperienceDto[]>([])
   const [education, setEducation] = useState<SeekerEducationDto[]>([])
@@ -49,7 +52,7 @@ export function SeekerProfilePage() {
   }
 
   useEffect(() => {
-    void load().catch((e: Error) => setError(e.message))
+    void load().catch((err) => setError(resolveError(err)))
   }, [])
 
   async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
@@ -68,9 +71,9 @@ export function SeekerProfilePage() {
         linkedin: profile.linkedin,
       })
       setProfile(updated)
-      setMessage('Профиль сохранён')
+      setMessage(t('seeker.profile.saved'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка сохранения')
+      setError(resolveError(err) || t('common.saveError'))
     } finally {
       setSaving(false)
     }
@@ -80,9 +83,9 @@ export function SeekerProfilePage() {
     setSkillIds(ids)
     try {
       await updateSeekerSkills(ids)
-      setMessage('Навыки сохранены')
+      setMessage(t('seeker.profile.skillsSaved'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка сохранения навыков')
+      setError(resolveError(err) || t('seeker.profile.skillsSaveError'))
     }
   }
 
@@ -106,19 +109,16 @@ export function SeekerProfilePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Мой профиль 👤"
-        subtitle="Расскажите о себе — так мэтчи будут точнее"
-      />
+      <PageHeader title={t('seeker.profile.title')} subtitle={t('seeker.profile.subtitle')} />
       {message != null && <Alert variant="success">{message}</Alert>}
       {error != null && <Alert variant="error">{error}</Alert>}
 
       {profile != null && (
         <form onSubmit={(e) => void saveProfile(e)}>
-          <FormSection title="Личные данные и контакты">
+          <FormSection title={t('seeker.profile.personalAndContacts')}>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">Имя</span>
+                <span className="text-sm font-medium">{t('common.fields.firstName')}</span>
                 <input
                   required
                   value={profile.firstName}
@@ -127,7 +127,7 @@ export function SeekerProfilePage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">Отчество</span>
+                <span className="text-sm font-medium">{t('common.fields.middleName')}</span>
                 <input
                   value={profile.middleName ?? ''}
                   onChange={(e) =>
@@ -137,7 +137,7 @@ export function SeekerProfilePage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">Фамилия</span>
+                <span className="text-sm font-medium">{t('common.fields.lastName')}</span>
                 <input
                   required
                   value={profile.lastName}
@@ -146,7 +146,7 @@ export function SeekerProfilePage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium">Телефон</span>
+                <span className="text-sm font-medium">{t('common.fields.phone')}</span>
                 <input
                   value={profile.phone ?? ''}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value || null })}
@@ -171,19 +171,19 @@ export function SeekerProfilePage() {
               </label>
             </div>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Сохранение…' : 'Сохранить'}
+              {saving ? t('common.saving') : t('common.save')}
             </Button>
           </FormSection>
         </form>
       )}
 
-      <FormSection title="Навыки">
+      <FormSection title={t('seeker.profile.skills')}>
         <SkillPicker selectedIds={skillIds} onChange={(ids) => void saveSkills(ids)} />
       </FormSection>
 
-      <FormSection title="Опыт работы">
+      <FormSection title={t('seeker.profile.experience.title')}>
         {experience.length === 0 ? (
-          <EmptyState title="Опыт не добавлен" />
+          <EmptyState title={t('seeker.profile.experience.empty')} />
         ) : (
           <ul className="flex flex-col gap-3">
             {experience.map((item) => (
@@ -193,7 +193,7 @@ export function SeekerProfilePage() {
                     <p className="font-semibold text-stone-900">{item.position}</p>
                     <p className="text-sm text-stone-500">{item.companyName}</p>
                     <p className="text-xs text-stone-400">
-                      {item.startDate} — {item.endDate ?? 'настоящее время'}
+                      {item.startDate} — {item.endDate ?? t('common.present')}
                     </p>
                     {item.description != null && (
                       <p className="mt-1 text-sm text-stone-600">{item.description}</p>
@@ -208,7 +208,7 @@ export function SeekerProfilePage() {
                     }
                     className="text-sm text-red-600 hover:text-red-700"
                   >
-                    Удалить
+                    {t('common.delete')}
                   </button>
                 </div>
               </li>
@@ -218,9 +218,9 @@ export function SeekerProfilePage() {
         <ExperienceForm onAdd={(body) => void handleAddExperience(body)} />
       </FormSection>
 
-      <FormSection title="Образование">
+      <FormSection title={t('seeker.profile.education.title')}>
         {education.length === 0 ? (
-          <EmptyState title="Образование не добавлено" />
+          <EmptyState title={t('seeker.profile.education.empty')} />
         ) : (
           <ul className="flex flex-col gap-3">
             {education.map((item) => (
@@ -232,7 +232,9 @@ export function SeekerProfilePage() {
                     {item.degree != null && (
                       <p className="text-sm text-stone-500">{item.degree}</p>
                     )}
-                    <p className="text-xs text-stone-400">Год окончания: {item.endYear}</p>
+                    <p className="text-xs text-stone-400">
+                      {t('seeker.profile.education.graduationYear', {year: item.endYear})}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -243,7 +245,7 @@ export function SeekerProfilePage() {
                     }
                     className="text-sm text-red-600 hover:text-red-700"
                   >
-                    Удалить
+                    {t('common.delete')}
                   </button>
                 </div>
               </li>
@@ -261,6 +263,7 @@ function ExperienceForm({
 }: {
   onAdd: (body: CreateSeekerExperienceRequest) => void
 }) {
+  const {t} = useTranslation()
   const [companyName, setCompanyName] = useState('')
   const [position, setPosition] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -284,14 +287,14 @@ function ExperienceForm({
     <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl bg-brand-50/50 p-4 sm:grid-cols-2">
       <input
         required
-        placeholder="Компания"
+        placeholder={t('seeker.profile.experience.placeholders.company')}
         value={companyName}
         onChange={(e) => setCompanyName(e.target.value)}
         className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         required
-        placeholder="Должность"
+        placeholder={t('seeker.profile.experience.placeholders.position')}
         value={position}
         onChange={(e) => setPosition(e.target.value)}
         className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
@@ -313,7 +316,7 @@ function ExperienceForm({
         type="submit"
         className="sm:col-span-2 self-start rounded-full gradient-brand px-5 py-2 text-sm font-medium text-white shadow-sm"
       >
-        Добавить опыт
+        {t('seeker.profile.experience.addButton')}
       </button>
     </form>
   )
@@ -324,6 +327,7 @@ function EducationForm({
 }: {
   onAdd: (body: CreateSeekerEducationRequest) => void
 }) {
+  const {t} = useTranslation()
   const [institution, setInstitution] = useState('')
   const [specialization, setSpecialization] = useState('')
   const [degree, setDegree] = useState('')
@@ -347,20 +351,20 @@ function EducationForm({
     <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl bg-brand-50/50 p-4 sm:grid-cols-2">
       <input
         required
-        placeholder="Учебное заведение"
+        placeholder={t('seeker.profile.education.placeholders.institution')}
         value={institution}
         onChange={(e) => setInstitution(e.target.value)}
         className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
         required
-        placeholder="Специальность"
+        placeholder={t('seeker.profile.education.placeholders.specialization')}
         value={specialization}
         onChange={(e) => setSpecialization(e.target.value)}
         className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
       />
       <input
-        placeholder="Степень"
+        placeholder={t('seeker.profile.education.placeholders.degree')}
         value={degree}
         onChange={(e) => setDegree(e.target.value)}
         className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
@@ -368,7 +372,7 @@ function EducationForm({
       <input
         required
         type="number"
-        placeholder="Год окончания"
+        placeholder={t('seeker.profile.education.placeholders.endYear')}
         value={endYear}
         onChange={(e) => setEndYear(e.target.value)}
         className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
@@ -377,7 +381,7 @@ function EducationForm({
         type="submit"
         className="sm:col-span-2 self-start rounded-full gradient-brand px-5 py-2 text-sm font-medium text-white shadow-sm"
       >
-        Добавить образование
+        {t('seeker.profile.education.addButton')}
       </button>
     </form>
   )

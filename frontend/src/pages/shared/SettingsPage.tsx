@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {fetchEmployerProfile, updateEmployerProfile} from '../../api/employerApi'
 import {fetchSeekerProfile, updateSeekerProfile} from '../../api/seekerApi'
 import type {EmployerProfileDto, SeekerProfileDto} from '../../api/types'
@@ -12,8 +13,13 @@ import {PageHeader} from '../../components/ui/PageHeader'
 import {Spinner} from '../../components/Spinner'
 import {displayRoleLabel} from '../../lib/roleLabels'
 import {useAuth} from '../../hooks/useAuth'
+import {applyDocumentLocale} from '../../i18n/detectLocale'
+import i18n from '../../i18n/config'
+import {resolveError} from '../../i18n/resolveApiError'
+import {type AppLocale, setStoredLocale} from '../../i18n/localeStorage'
 
 export function SettingsPage() {
+  const {t} = useTranslation()
   const {state, refreshSession, deleteAccount, signOut, isBusy} = useAuth()
   const [seekerProfile, setSeekerProfile] = useState<SeekerProfileDto | null>(null)
   const [employerProfile, setEmployerProfile] = useState<EmployerProfileDto | null>(null)
@@ -23,7 +29,14 @@ export function SettingsPage() {
   const [profileError, setProfileError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [locale, setLocale] = useState<AppLocale>(i18n.language as AppLocale)
   const role = state.kind === 'authenticated' ? state.user.role : null
+
+  useEffect(() => {
+    const onLanguageChanged = (lng: string) => setLocale(lng as AppLocale)
+    i18n.on('languageChanged', onLanguageChanged)
+    return () => i18n.off('languageChanged', onLanguageChanged)
+  }, [])
 
   useEffect(() => {
     if (role == null) return
@@ -34,13 +47,19 @@ export function SettingsPage() {
         ? fetchSeekerProfile().then(setSeekerProfile)
         : fetchEmployerProfile().then(setEmployerProfile)
     void load
-      .catch((e: Error) => setProfileError(e.message))
+      .catch((err) => setProfileError(resolveError(err)))
       .finally(() => setProfileLoading(false))
   }, [role])
 
   if (state.kind !== 'authenticated') return <LoadingSpinner />
   const {user} = state
   const displayName = user.profileName ?? user.email
+
+  function handleLanguageChange(nextLocale: AppLocale) {
+    setStoredLocale(nextLocale)
+    void i18n.changeLanguage(nextLocale)
+    applyDocumentLocale(nextLocale)
+  }
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -69,9 +88,11 @@ export function SettingsPage() {
         setEmployerProfile(updated)
       }
       await refreshSession()
-      setProfileMessage(user.role === 'EMPLOYER' ? 'Данные компании сохранены' : 'Профиль сохранён')
+      setProfileMessage(
+        user.role === 'EMPLOYER' ? t('settings.companySaved') : t('settings.profileSaved'),
+      )
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Ошибка сохранения')
+      setProfileError(resolveError(err) || t('common.saveError'))
     } finally {
       setProfileSaving(false)
     }
@@ -82,16 +103,16 @@ export function SettingsPage() {
     try {
       await deleteAccount()
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Не удалось удалить аккаунт')
+      setDeleteError(resolveError(err) || t('settings.deleteAccountError'))
       setDeleteConfirmOpen(false)
     }
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Аккаунт" subtitle="Вход, данные и управление аккаунтом" />
+      <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
-      <FormSection title="Вы вошли как">
+      <FormSection title={t('settings.loggedInAs')}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Avatar name={displayName} size="lg" />
@@ -101,17 +122,37 @@ export function SettingsPage() {
               )}
               <p className="text-sm text-stone-500">{user.email}</p>
               <p className="mt-0.5 text-xs font-medium text-brand-600">
-                {displayRoleLabel(user.role)}
+                {displayRoleLabel(user.role, t)}
               </p>
             </div>
           </div>
           <Button variant="secondary" onClick={() => void signOut()} className="shrink-0">
-            Выйти
+            {t('common.logout')}
           </Button>
         </div>
       </FormSection>
 
-      <FormSection title={user.role === 'SEEKER' ? 'Личные данные' : 'Компания'}>
+      <FormSection
+        title={t('settings.language.title')}
+        description={t('settings.language.description')}
+      >
+        <div className="flex flex-wrap gap-2">
+          {(['ru', 'en'] as const).map((option) => (
+            <Button
+              key={option}
+              type="button"
+              variant={locale === option ? 'primary' : 'secondary'}
+              onClick={() => handleLanguageChange(option)}
+            >
+              {t(`settings.language.${option}`)}
+            </Button>
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection
+        title={user.role === 'SEEKER' ? t('settings.personalData') : t('settings.company')}
+      >
         {profileLoading ? (
           <div className="flex justify-center py-6">
             <Spinner />
@@ -121,7 +162,7 @@ export function SettingsPage() {
             {user.role === 'SEEKER' && seekerProfile != null && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Имя"
+                  label={t('common.fields.firstName')}
                   required
                   value={seekerProfile.firstName}
                   onChange={(e) =>
@@ -129,7 +170,7 @@ export function SettingsPage() {
                   }
                 />
                 <Input
-                  label="Фамилия"
+                  label={t('common.fields.lastName')}
                   required
                   value={seekerProfile.lastName}
                   onChange={(e) =>
@@ -138,7 +179,7 @@ export function SettingsPage() {
                 />
                 <div className="sm:col-span-2">
                   <Input
-                    label="Отчество"
+                    label={t('common.fields.middleName')}
                     value={seekerProfile.middleName ?? ''}
                     onChange={(e) =>
                       setSeekerProfile({
@@ -153,7 +194,7 @@ export function SettingsPage() {
             {user.role === 'EMPLOYER' && employerProfile != null && (
               <>
                 <Input
-                  label="Название"
+                  label={t('common.fields.companyTitle')}
                   required
                   value={employerProfile.name}
                   onChange={(e) =>
@@ -161,7 +202,7 @@ export function SettingsPage() {
                   }
                 />
                 <TextArea
-                  label="Описание"
+                  label={t('common.fields.description')}
                   rows={4}
                   value={employerProfile.description ?? ''}
                   onChange={(e) =>
@@ -172,7 +213,7 @@ export function SettingsPage() {
                   }
                 />
                 <Input
-                  label="Сайт"
+                  label={t('common.fields.website')}
                   value={employerProfile.website ?? ''}
                   onChange={(e) =>
                     setEmployerProfile({
@@ -182,7 +223,7 @@ export function SettingsPage() {
                   }
                 />
                 <Input
-                  label="Телефон"
+                  label={t('common.fields.phone')}
                   value={employerProfile.phone ?? ''}
                   onChange={(e) =>
                     setEmployerProfile({
@@ -192,7 +233,7 @@ export function SettingsPage() {
                   }
                 />
                 <Input
-                  label="Email для связи"
+                  label={t('common.fields.emailContact')}
                   type="email"
                   value={employerProfile.emailContact ?? ''}
                   onChange={(e) =>
@@ -207,55 +248,72 @@ export function SettingsPage() {
             {profileMessage != null && <Alert variant="success">{profileMessage}</Alert>}
             {profileError != null && <Alert variant="error">{profileError}</Alert>}
             <Button type="submit" disabled={profileSaving || profileLoading}>
-              {profileSaving ? 'Сохранение…' : 'Сохранить'}
+              {profileSaving ? t('common.saving') : t('common.save')}
             </Button>
           </form>
         )}
       </FormSection>
 
-      <FormSection title="Электронная почта" description="Раздел в разработке">
-        <Input label="Текущий адрес" type="email" value={user.email} readOnly disabled />
-        <Input label="Новый адрес" type="email" disabled placeholder="example@mail.ru" />
+      <FormSection
+        title={t('settings.emailSection.title')}
+        description={t('settings.emailSection.description')}
+      >
+        <Input
+          label={t('settings.emailSection.currentAddress')}
+          type="email"
+          value={user.email}
+          readOnly
+          disabled
+        />
+        <Input
+          label={t('settings.emailSection.newAddress')}
+          type="email"
+          disabled
+          placeholder={t('settings.emailSection.newAddressPlaceholder')}
+        />
         <Button variant="secondary" disabled>
-          Сохранить (скоро)
+          {t('settings.emailSection.saveSoon')}
         </Button>
       </FormSection>
 
-      <FormSection title="Пароль" description="Раздел в разработке">
-        <Input label="Текущий пароль" type="password" disabled />
-        <Input label="Новый пароль" type="password" disabled />
-        <Input label="Подтверждение пароля" type="password" disabled />
+      <FormSection
+        title={t('settings.passwordSection.title')}
+        description={t('settings.passwordSection.description')}
+      >
+        <Input label={t('settings.passwordSection.currentPassword')} type="password" disabled />
+        <Input label={t('settings.passwordSection.newPassword')} type="password" disabled />
+        <Input label={t('settings.passwordSection.confirmPassword')} type="password" disabled />
         <Button variant="secondary" disabled>
-          Изменить пароль (скоро)
+          {t('settings.passwordSection.changeSoon')}
         </Button>
       </FormSection>
 
-      <FormSection title="Удаление аккаунта" description="Необратимое удаление всех данных">
-        <p className="text-sm text-stone-600">
-          Удаление аккаунта необратимо. Будут удалены профиль, сессии, опыт работы, образование,
-          навыки, опросы и все остальные связанные данные.
-        </p>
+      <FormSection
+        title={t('settings.deleteSection.title')}
+        description={t('settings.deleteSection.description')}
+      >
+        <p className="text-sm text-stone-600">{t('settings.deleteSection.warning')}</p>
         {deleteError != null && <Alert variant="error">{deleteError}</Alert>}
         {!deleteConfirmOpen ? (
           <Button variant="danger" disabled={isBusy} onClick={() => setDeleteConfirmOpen(true)}>
-            Удалить аккаунт
+            {t('settings.deleteSection.deleteButton')}
           </Button>
         ) : (
-          <Alert variant="error" title="Вы уверены? Это действие нельзя отменить.">
+          <Alert variant="error" title={t('settings.deleteSection.confirmTitle')}>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
                 variant="danger"
                 disabled={isBusy}
                 onClick={() => void handleDeleteAccount()}
               >
-                {isBusy ? 'Удаление…' : 'Да, удалить навсегда'}
+                {isBusy ? t('settings.deleteSection.deleting') : t('settings.deleteSection.confirmButton')}
               </Button>
               <Button
                 variant="secondary"
                 disabled={isBusy}
                 onClick={() => setDeleteConfirmOpen(false)}
               >
-                Отмена
+                {t('common.cancel')}
               </Button>
             </div>
           </Alert>

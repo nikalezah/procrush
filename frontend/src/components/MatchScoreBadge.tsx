@@ -1,3 +1,5 @@
+import {useTranslation} from 'react-i18next'
+
 interface MatchScoreBadgeProps {
   score: number
   size?: 'sm' | 'md'
@@ -16,6 +18,7 @@ function scoreGradient(score: number): string {
 }
 
 export function MatchScoreBadge({score, size = 'md'}: MatchScoreBadgeProps) {
+  const {t} = useTranslation()
   const ringSize = size === 'sm' ? 'h-12 w-12' : 'h-16 w-16'
   const textSize = size === 'sm' ? 'text-sm' : 'text-lg'
 
@@ -28,7 +31,7 @@ export function MatchScoreBadge({score, size = 'md'}: MatchScoreBadgeProps) {
           <span className={`font-bold tabular-nums ${textSize} ${scoreColor(score)}`}>{score}%</span>
         </div>
       </div>
-      <span className="text-xs font-medium text-stone-500">совпадение</span>
+      <span className="text-xs font-medium text-stone-500">{t('components.matchScore.label')}</span>
     </div>
   )
 }

@@ -129,7 +129,7 @@ class PersonalityJobConsumer(
                 publisher.enqueue(job.seekerId, userId, attempt = job.attempt + 1)
                 channel.basicAck(deliveryTag, false)
             } else {
-                profileRepository.markFailed(job.seekerId, handler.failureMessage(error))
+                profileRepository.markFailed(job.seekerId, handler.failureCode(error))
                 statusNotifier.notify(userId, PersonalityProfileStatus.FAILED)
                 channel.basicNack(deliveryTag, false, false)
             }

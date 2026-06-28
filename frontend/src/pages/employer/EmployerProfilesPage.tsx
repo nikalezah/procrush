@@ -1,5 +1,6 @@
 import {Link} from 'react-router-dom'
 import {useEffect, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {createJobProfile, deleteJobProfile, fetchJobProfiles, updateJobProfile} from '../../api/employerApi'
 import {fetchOccupations} from '../../api/referenceApi'
 import type {CreateJobProfileRequest, JobProfileDto, OccupationDto, PersonalityAxesDto} from '../../api/types'
@@ -7,15 +8,17 @@ import {DEFAULT_PERSONALITY_AXES} from '../../api/types'
 import {EmptyState} from '../../components/EmptyState'
 import {FormSection} from '../../components/FormSection'
 import {PersonalityAxesEditor} from '../../components/PersonalityAxesEditor'
-import {AXIS_KEYS, AXIS_LABELS} from '../../components/personality/personalityLabels'
+import {AXIS_KEYS, axisLabel} from '../../components/personality/personalityLabels'
 import {SkillPicker} from '../../components/SkillPicker'
 import {Spinner} from '../../components/Spinner'
 import {Button} from '../../components/ui/Button'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {Select, TextArea} from '../../components/ui/Input'
+import {resolveError} from '../../i18n/resolveApiError'
 
 export function EmployerProfilesPage() {
+  const {t} = useTranslation()
   const [profiles, setProfiles] = useState<JobProfileDto[]>([])
   const [occupations, setOccupations] = useState<OccupationDto[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +33,7 @@ export function EmployerProfilesPage() {
         setProfiles(p)
         setOccupations(o)
       })
-      .catch((e: Error) => setError(e.message))
+      .catch((err) => setError(resolveError(err)))
       .finally(() => setLoading(false))
   }, [])
 
@@ -62,8 +65,8 @@ export function EmployerProfilesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Вакансии 💼"
-        subtitle="Опишите идеального кандидата — мы подберём мэтчи"
+        title={t('employer.profiles.title')}
+        subtitle={t('employer.profiles.subtitle')}
         action={
           <Button
             size="sm"
@@ -73,7 +76,7 @@ export function EmployerProfilesPage() {
               setShowForm((v) => !v)
             }}
           >
-            {showForm ? 'Отмена' : '+ Создать'}
+            {showForm ? t('common.cancel') : t('employer.profiles.create')}
           </Button>
         }
       />
@@ -95,8 +98,8 @@ export function EmployerProfilesPage() {
 
       {profiles.length === 0 ? (
         <EmptyState
-          title="Пока нет вакансий"
-          description="Создайте первый профиль идеального кандидата"
+          title={t('employer.profiles.emptyTitle')}
+          description={t('employer.profiles.emptyDescription')}
           icon="💼"
         />
       ) : (
@@ -115,7 +118,9 @@ export function EmployerProfilesPage() {
                             : 'bg-stone-100 text-stone-500'
                         }`}
                       >
-                        {profile.isActive ? 'Активна' : 'Неактивна'}
+                        {profile.isActive
+                          ? t('employer.profiles.status.active')
+                          : t('employer.profiles.status.inactive')}
                       </span>
                     </div>
                     {profile.description != null && (
@@ -137,7 +142,7 @@ export function EmployerProfilesPage() {
                           key={key}
                           className="rounded-full bg-stone-50 px-2 py-0.5 text-xs text-stone-500"
                         >
-                          {AXIS_LABELS[key]}: {Math.round(profile.personalityAxes[key] * 100)}%
+                          {axisLabel(key, t)}: {Math.round(profile.personalityAxes[key] * 100)}%
                         </span>
                       ))}
                     </div>
@@ -145,7 +150,7 @@ export function EmployerProfilesPage() {
                   <div className="flex flex-col gap-2">
                     <Link to={`/employer/profiles/${profile.id}/candidates`}>
                       <Button size="sm" fullWidth>
-                        👥 Кандидаты
+                        {t('employer.profiles.candidatesButton')}
                       </Button>
                     </Link>
                     <Button
@@ -157,7 +162,7 @@ export function EmployerProfilesPage() {
                         setEditingProfile(profile)
                       }}
                     >
-                      Редактировать
+                      {t('employer.profiles.edit')}
                     </Button>
                     <Button
                       size="sm"
@@ -165,7 +170,7 @@ export function EmployerProfilesPage() {
                       fullWidth
                       onClick={() => void handleDelete(profile.id)}
                     >
-                      Удалить
+                      {t('common.delete')}
                     </Button>
                   </div>
                 </div>
@@ -189,6 +194,7 @@ function JobProfileForm({
   onSubmit: (body: CreateJobProfileRequest) => void
   onCancel?: () => void
 }) {
+  const {t} = useTranslation()
   const isEditing = initialProfile != null
   const [occupationId, setOccupationId] = useState<number>(
     initialProfile?.occupationId ?? occupations[0]?.id ?? 0,
@@ -212,10 +218,12 @@ function JobProfileForm({
   }
 
   return (
-    <FormSection title={isEditing ? 'Редактирование вакансии' : 'Новая вакансия'}>
+    <FormSection
+      title={isEditing ? t('employer.profiles.form.editTitle') : t('employer.profiles.form.createTitle')}
+    >
       <form onSubmit={submit} className="flex flex-col gap-4">
         <Select
-          label="Должность"
+          label={t('common.fields.occupation')}
           required
           value={occupationId}
           onChange={(e) => setOccupationId(Number(e.target.value))}
@@ -227,19 +235,21 @@ function JobProfileForm({
           ))}
         </Select>
         <TextArea
-          label="Описание"
+          label={t('common.fields.description')}
           rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
         <div>
-          <span className="text-sm font-medium text-stone-700">Навыки</span>
+          <span className="text-sm font-medium text-stone-700">{t('common.fields.skills')}</span>
           <div className="mt-2">
             <SkillPicker selectedIds={skillIds} onChange={setSkillIds} />
           </div>
         </div>
         <div>
-          <span className="text-sm font-medium text-stone-700">Личностные характеристики</span>
+          <span className="text-sm font-medium text-stone-700">
+            {t('employer.profiles.form.personalityTraits')}
+          </span>
           <div className="mt-2">
             <PersonalityAxesEditor value={personalityAxes} onChange={setPersonalityAxes} />
           </div>
@@ -251,13 +261,15 @@ function JobProfileForm({
             onChange={(e) => setIsActive(e.target.checked)}
             className="rounded border-brand-300 text-brand-600 focus:ring-brand-200"
           />
-          Вакансия активна (участвует в подборе)
+          {t('employer.profiles.form.activeCheckbox')}
         </label>
         <div className="flex flex-wrap gap-2">
-          <Button type="submit">{isEditing ? 'Сохранить' : 'Создать вакансию'}</Button>
+          <Button type="submit">
+            {isEditing ? t('common.save') : t('employer.profiles.form.createSubmit')}
+          </Button>
           {onCancel != null && (
             <Button type="button" variant="secondary" onClick={onCancel}>
-              Отмена
+              {t('common.cancel')}
             </Button>
           )}
         </div>

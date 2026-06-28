@@ -648,8 +648,13 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         ErrorResponse: {
+            /** @description Machine-readable error code from i18n/error-codes.yaml */
+            code: string;
+            /** @description English technical message for logs and debugging */
             message: string;
-            error?: string;
+            details?: {
+                [key: string]: string;
+            };
         };
         /** @enum {string} */
         UserRole: "SEEKER" | "EMPLOYER";
@@ -677,7 +682,7 @@ export interface components {
             companyName?: string | null;
         };
         MeResponse: {
-            user: components["schemas"]["AuthUserDto"];
+            user?: components["schemas"]["AuthUserDto"];
         };
         OccupationDto: {
             /** Format: int64 */

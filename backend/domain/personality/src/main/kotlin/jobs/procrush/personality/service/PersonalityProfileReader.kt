@@ -1,11 +1,13 @@
 package jobs.procrush.personality.service
 
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.personality.dto.PersonalityPreviewDto
 import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.llm.PersonalityProfilePreviewMapper
 import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
 import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.seeker.repository.SeekerSuperpowersAndTalentsRepository
+import jobs.procrush.shared.raise
 import jobs.procrush.survey.service.SurveyService
 import java.util.UUID
 
@@ -18,7 +20,7 @@ class PersonalityProfileReader(
 ) {
     fun getPreview(userId: UUID): PersonalityPreviewDto {
         val groups = surveyService.listGroups(userId)
-        val seeker = seekerRepository.findByUserId(userId) ?: error("Соискатель не найден")
+        val seeker = seekerRepository.findByUserId(userId) ?: ErrorCode.SEEKER_NOT_FOUND.raise()
 
         if (groups.testsCompleted < groups.testsTotal) {
             return PersonalityPreviewDto(
@@ -57,7 +59,7 @@ class PersonalityProfileReader(
             PersonalityProfileStatus.FAILED ->
                 PersonalityPreviewDto(
                     status = PersonalityProfileStatus.FAILED,
-                    generationError = current.generationError ?: "Не удалось сформировать профиль",
+                    generationError = current.generationError ?: ErrorCode.PROFILE_GENERATION_FAILED.name,
                     testsCompleted = groups.testsCompleted,
                     testsTotal = groups.testsTotal,
                 )

@@ -1,4 +1,5 @@
 import {useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {AdaptiveLayout} from '../components/AdaptiveLayout'
 import {Spinner} from '../components/Spinner'
 import {Button} from '../components/ui/Button'
@@ -11,6 +12,7 @@ interface LoginPageProps {
 }
 
 export function LoginPage({isBusy, errorMessage, onSignIn}: LoginPageProps) {
+  const {t} = useTranslation()
   const [email, setEmail] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
@@ -23,14 +25,12 @@ export function LoginPage({isBusy, errorMessage, onSignIn}: LoginPageProps) {
     <AdaptiveLayout>
       <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit} autoComplete="on">
         <div className="text-center">
-          <p className="text-lg font-medium text-stone-800">Найди работу мечты</p>
-          <p className="mt-1 text-sm text-stone-500">
-            Умный подбор по навыкам и личности — как dating, только для карьеры
-          </p>
+          <p className="text-lg font-medium text-stone-800">{t('auth.login.title')}</p>
+          <p className="mt-1 text-sm text-stone-500">{t('auth.login.subtitle')}</p>
         </div>
 
         <Input
-          label="Электронная почта"
+          label={t('auth.login.emailLabel')}
           id="login-email"
           name="email"
           type="email"
@@ -50,13 +50,11 @@ export function LoginPage({isBusy, errorMessage, onSignIn}: LoginPageProps) {
           </div>
         ) : (
           <Button type="submit" fullWidth size="lg" disabled={email.trim() === ''}>
-            Продолжить
+            {t('auth.login.submit')}
           </Button>
         )}
 
-        <p className="text-center text-xs text-stone-400">
-          Роль выбирается один раз после входа и не меняется
-        </p>
+        <p className="text-center text-xs text-stone-400">{t('auth.login.roleHint')}</p>
       </form>
     </AdaptiveLayout>
   )

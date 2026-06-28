@@ -1,5 +1,6 @@
 import {useParams} from 'react-router-dom'
 import {useEffect, useRef, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {fetchCandidatesOverview, fetchEmployerInterests, respondToCandidate} from '../../api/employerApi'
 import type {CandidateRecommendationDto, EmployerInterestsResponseDto, MatchInterestEventDto} from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
@@ -14,6 +15,7 @@ import {Avatar} from '../../components/ui/Avatar'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
+import {resolveError} from '../../i18n/resolveApiError'
 
 function patchEmployerCandidateFromEvent(
   candidate: CandidateRecommendationDto,
@@ -84,6 +86,7 @@ function CandidateRecommendationCard({
 }
 
 export function EmployerCandidatesPage() {
+  const {t} = useTranslation()
   const {id} = useParams<{id: string}>()
   const profileId = Number(id)
   const {lastEvent, lastEventId} = useMatchInterestEvents()
@@ -109,7 +112,7 @@ export function EmployerCandidatesPage() {
     if (Number.isNaN(profileId)) return
     setLoading(true)
     void loadData(profileId)
-      .catch((e: Error) => setError(e.message))
+      .catch((err) => setError(resolveError(err)))
       .finally(() => setLoading(false))
     return () => setHighlightedId(null)
   }, [profileId])
@@ -140,9 +143,9 @@ export function EmployerCandidatesPage() {
       )
       const outside = await fetchEmployerInterests(profileId)
       setInterests(outside)
-      setMessage('Отклик отправлен! Ждём ответа кандидата')
+      setMessage(t('employer.candidates.respondSent'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось отправить отклик')
+      setError(resolveError(err) || t('common.respondError'))
     } finally {
       setRespondingId(null)
     }
@@ -159,10 +162,10 @@ export function EmployerCandidatesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Кандидаты 👥"
-        subtitle="Люди с подходящей личностью и навыками"
+        title={t('employer.candidates.title')}
+        subtitle={t('employer.candidates.subtitle')}
         backTo="/employer/profiles"
-        backLabel="К вакансиям"
+        backLabel={t('employer.candidates.backLabel')}
       />
 
       {message != null && <Alert variant="success">{message}</Alert>}
@@ -170,8 +173,8 @@ export function EmployerCandidatesPage() {
 
       {candidates.length === 0 ? (
         <EmptyState
-          title="Пока никого нет"
-          description="Нет соискателей, прошедших тесты и указавших эту должность"
+          title={t('employer.candidates.emptyTitle')}
+          description={t('employer.candidates.emptyDescription')}
           icon="🔍"
         />
       ) : (
@@ -192,7 +195,10 @@ export function EmployerCandidatesPage() {
       {(interests.respondedOutside.length > 0 || interests.mutualOutside.length > 0) && (
         <>
           {interests.respondedOutside.length > 0 && (
-            <FormSection title="Ваши отклики" description="Кандидаты вне текущего подбора">
+            <FormSection
+              title={t('employer.candidates.respondedOutside.title')}
+              description={t('employer.candidates.respondedOutside.description')}
+            >
               <ul className="flex flex-col gap-4">
                 {interests.respondedOutside.map((candidate) => (
                   <li key={`responded-${candidate.id}`}>
@@ -208,7 +214,10 @@ export function EmployerCandidatesPage() {
           )}
 
           {interests.mutualOutside.length > 0 && (
-            <FormSection title="Взаимные мэтчи" description="Кандидаты с совпавшими интересами">
+            <FormSection
+              title={t('employer.candidates.mutualOutside.title')}
+              description={t('employer.candidates.mutualOutside.description')}
+            >
               <ul className="flex flex-col gap-4">
                 {interests.mutualOutside.map((candidate) => (
                   <li key={`mutual-${candidate.id}`}>

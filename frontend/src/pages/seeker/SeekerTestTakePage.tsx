@@ -1,5 +1,6 @@
 import {useNavigate, useParams} from 'react-router-dom'
 import {useCallback, useEffect, useMemo, useState} from 'react'
+import {useTranslation} from 'react-i18next'
 import {completeSurvey, fetchSurvey, saveSurveyAnswers, startSurvey} from '../../api/seekerApi'
 import type {SurveyDetailDto} from '../../api/types'
 import {
@@ -12,13 +13,9 @@ import {Alert} from '../../components/ui/Alert'
 import {Button} from '../../components/ui/Button'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {Spinner} from '../../components/Spinner'
+import {resolveError} from '../../i18n/resolveApiError'
 
 const SCALE_PAGE_SIZE = 8
-
-const TEST_TITLES: Record<string, string> = {
-  core: 'Тест 1',
-  '64qn': 'Тест 2',
-}
 
 function isCoreStepReview(survey: SurveyDetailDto): boolean {
   return (
@@ -38,6 +35,7 @@ function shouldRedirectCompleted(survey: SurveyDetailDto): boolean {
 }
 
 export function SeekerTestTakePage() {
+  const {t} = useTranslation()
   const {surveyId} = useParams()
   const navigate = useNavigate()
   const id = Number(surveyId)
@@ -49,12 +47,12 @@ export function SeekerTestTakePage() {
 
   const load = useCallback(async () => {
     if (!Number.isFinite(id)) {
-      setError('Некорректный идентификатор теста')
+      setError(t('seeker.testTake.invalidId'))
       return
     }
     let detail = await fetchSurvey(id)
     if (detail.locked) {
-      setError('Сначала завершите предыдущий тест')
+      setError(t('seeker.testTake.prerequisite'))
       setSurvey(detail)
       return
     }
@@ -68,10 +66,10 @@ export function SeekerTestTakePage() {
     setSurvey(detail)
     setAnswers(parseAnswersJson(detail.answersJson ?? null))
     setScalePage(0)
-  }, [id, navigate])
+  }, [id, navigate, t])
 
   useEffect(() => {
-    void load().catch((e: Error) => setError(e.message))
+    void load().catch((err) => setError(resolveError(err)))
   }, [load])
 
   const definition = useMemo(
@@ -106,7 +104,7 @@ export function SeekerTestTakePage() {
   async function handleAdvance() {
     if (survey == null || definition == null) return
     if (!isSurveyComplete(definition, answers)) {
-      setError('Ответьте на все вопросы, прежде чем продолжить')
+      setError(t('seeker.testTake.incomplete'))
       return
     }
     setSubmitting(true)
@@ -122,8 +120,8 @@ export function SeekerTestTakePage() {
       } else {
         navigate('/seeker/personality/tests')
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить ответы')
+    } catch (err) {
+      setError(resolveError(err) || t('seeker.testTake.saveFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -148,11 +146,11 @@ export function SeekerTestTakePage() {
       return (
         <div className="flex flex-col gap-4">
           <PageHeader
-            title="Тест заблокирован"
+            title={t('seeker.testTake.lockedTitle')}
             backTo="/seeker/personality/tests"
-            backLabel="К тестам"
+            backLabel={t('seeker.testTake.backLabel')}
           />
-          <Alert variant="error">{error ?? 'Сначала завершите предыдущий тест'}</Alert>
+          <Alert variant="error">{error ?? t('seeker.testTake.prerequisite')}</Alert>
         </div>
       )
     }
@@ -164,7 +162,8 @@ export function SeekerTestTakePage() {
   }
 
   const complete = isSurveyComplete(definition, answers)
-  const testTitle = TEST_TITLES[survey.groupCode] ?? survey.name
+  const testTitleKey = `seeker.testTake.titles.${survey.groupCode}` as const
+  const testTitle = t(testTitleKey, {defaultValue: survey.name})
 
   const hasCoreSteps =
     isCoreTest && survey.stepNumber != null && survey.stepTotal != null
@@ -182,10 +181,10 @@ export function SeekerTestTakePage() {
   }
 
   const primaryLabel = submitting
-    ? 'Сохранение…'
+    ? t('common.saving')
     : showFinishAction
-      ? 'Завершить'
-      : 'Далее'
+      ? t('common.finish')
+      : t('common.next')
   const primaryDisabled = showFinishAction
     ? !complete || submitting
     : hasCoreSteps
@@ -193,14 +192,18 @@ export function SeekerTestTakePage() {
       : submitting
 
   const progressLabel = hasCoreSteps
-    ? `Часть ${survey.stepNumber} / ${survey.stepTotal}`
+    ? t('seeker.testTake.progress.part', {current: survey.stepNumber, total: survey.stepTotal})
     : hasScalePages
-      ? `Страница ${scalePage + 1} / ${scalePageCount}`
+      ? t('seeker.testTake.progress.page', {current: scalePage + 1, total: scalePageCount})
       : null
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={testTitle} backTo="/seeker/personality/tests" backLabel="К тестам" />
+      <PageHeader
+        title={testTitle}
+        backTo="/seeker/personality/tests"
+        backLabel={t('seeker.testTake.backLabel')}
+      />
 
       {error != null && <Alert variant="error">{error}</Alert>}
 
@@ -222,7 +225,7 @@ export function SeekerTestTakePage() {
                     hasCoreSteps ? void handleBack() : setScalePage((p) => p - 1)
                   }
                 >
-                  Назад
+                  {t('common.back')}
                 </Button>
               )}
               <Button size="sm" disabled={primaryDisabled} onClick={handlePrimary}>

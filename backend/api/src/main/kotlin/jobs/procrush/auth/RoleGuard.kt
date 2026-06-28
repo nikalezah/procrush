@@ -5,6 +5,8 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 import jobs.procrush.auth.UserRole
 import jobs.procrush.bootstrap.config.AppConfig
+import jobs.procrush.i18n.ErrorCode
+import jobs.procrush.shared.toResponseBody
 import java.util.UUID
 
 data class AuthenticatedUser(
@@ -19,15 +21,15 @@ class RoleGuard(
 ) {
     suspend fun requireAuth(call: ApplicationCall): AuthenticatedUser? {
         val token = call.request.cookies[config.sessionCookieName] ?: run {
-            call.respond(HttpStatusCode.Unauthorized, mapOf("message" to "Не авторизован"))
+            respondError(call, ErrorCode.UNAUTHORIZED)
             return null
         }
         val user = sessionService.resolveUser(token) ?: run {
-            call.respond(HttpStatusCode.Unauthorized, mapOf("message" to "Не авторизован"))
+            respondError(call, ErrorCode.UNAUTHORIZED)
             return null
         }
         val role = user.role ?: run {
-            call.respond(HttpStatusCode.Forbidden, mapOf("message" to "Роль не выбрана"))
+            respondError(call, ErrorCode.ROLE_NOT_SELECTED)
             return null
         }
         return AuthenticatedUser(
@@ -40,7 +42,7 @@ class RoleGuard(
     suspend fun requireRole(call: ApplicationCall, requiredRole: UserRole): AuthenticatedUser? {
         val authUser = requireAuth(call) ?: return null
         if (authUser.role != requiredRole) {
-            call.respond(HttpStatusCode.Forbidden, mapOf("message" to "Доступ запрещён"))
+            respondError(call, ErrorCode.FORBIDDEN)
             return null
         }
         return authUser
@@ -66,20 +68,24 @@ class RoleGuard(
     suspend fun authProblem(call: ApplicationCall, requiredRole: UserRole? = null): AuthProblem {
         val token = call.request.cookies[config.sessionCookieName]
         if (token == null || sessionService.resolveUser(token) == null) {
-            return AuthProblem(unauthorized = true, message = "Не авторизован")
+            return AuthProblem(unauthorized = true, errorCode = ErrorCode.UNAUTHORIZED)
         }
         val user = sessionService.resolveUser(token)!!
         if (user.role == null) {
-            return AuthProblem(unauthorized = false, message = "Роль не выбрана")
+            return AuthProblem(unauthorized = false, errorCode = ErrorCode.ROLE_NOT_SELECTED)
         }
         if (requiredRole != null && user.role != requiredRole) {
-            return AuthProblem(unauthorized = false, message = "Доступ запрещён")
+            return AuthProblem(unauthorized = false, errorCode = ErrorCode.FORBIDDEN)
         }
-        return AuthProblem(unauthorized = false, message = "Доступ запрещён")
+        return AuthProblem(unauthorized = false, errorCode = ErrorCode.FORBIDDEN)
+    }
+
+    private suspend fun respondError(call: ApplicationCall, code: ErrorCode) {
+        call.respond(HttpStatusCode.fromValue(code.httpStatus), code.toResponseBody())
     }
 }
 
 data class AuthProblem(
     val unauthorized: Boolean,
-    val message: String,
+    val errorCode: ErrorCode,
 )

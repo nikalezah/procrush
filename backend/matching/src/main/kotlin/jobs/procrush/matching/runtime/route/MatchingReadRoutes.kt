@@ -5,10 +5,12 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
 import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
+import jobs.procrush.shared.toResponseBody
 import kotlinx.serialization.json.Json
 
 fun Route.matchingReadRoutes(
@@ -20,7 +22,7 @@ fun Route.matchingReadRoutes(
     route("/internal") {
         get("/seekers/{seekerId}/recommendations") {
             val seekerId = call.parameters["seekerId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный seekerId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_SEEKER_ID.toResponseBody())
             val results = repository.listForSeeker(seekerId)
             call.respond(
                 results.map { row ->
@@ -37,7 +39,7 @@ fun Route.matchingReadRoutes(
         }
         get("/job-profiles/{jobProfileId}/candidates") {
             val jobProfileId = call.parameters["jobProfileId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный jobProfileId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_JOB_PROFILE_ID.toResponseBody())
             val results = repository.listForJob(jobProfileId)
             call.respond(
                 results.map { row ->
@@ -55,11 +57,11 @@ fun Route.matchingReadRoutes(
         }
         get("/seekers/{seekerId}/jobs/{jobProfileId}") {
             val seekerId = call.parameters["seekerId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный seekerId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_SEEKER_ID.toResponseBody())
             val jobProfileId = call.parameters["jobProfileId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный jobProfileId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_JOB_PROFILE_ID.toResponseBody())
             val row = repository.findPair(seekerId, jobProfileId)
-                ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("message" to "Не найдено"))
+                ?: return@get call.respond(HttpStatusCode.NotFound, ErrorCode.NOT_FOUND.toResponseBody())
             call.respond(
                 JobRecommendationDto(
                     id = row.jobProfileId,
@@ -73,11 +75,11 @@ fun Route.matchingReadRoutes(
         }
         get("/seekers/{seekerId}/jobs/{jobProfileId}/candidate") {
             val seekerId = call.parameters["seekerId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный seekerId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_SEEKER_ID.toResponseBody())
             val jobProfileId = call.parameters["jobProfileId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный jobProfileId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_JOB_PROFILE_ID.toResponseBody())
             val row = repository.findPair(seekerId, jobProfileId)
-                ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("message" to "Не найдено"))
+                ?: return@get call.respond(HttpStatusCode.NotFound, ErrorCode.NOT_FOUND.toResponseBody())
             call.respond(
                 CandidateRecommendationDto(
                     id = row.seekerId,
@@ -92,7 +94,7 @@ fun Route.matchingReadRoutes(
         }
         get("/occupations/{occupationId}/candidate-count") {
             val occupationId = call.parameters["occupationId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный occupationId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_OCCUPATION_ID.toResponseBody())
             call.respond(mapOf("count" to (projectionRepository.countEligibleSeekersForOccupations(listOf(occupationId))[occupationId] ?: 0)))
         }
         get("/occupations/candidate-counts") {
@@ -102,9 +104,9 @@ fun Route.matchingReadRoutes(
         }
         get("/job-profiles/{jobProfileId}/display") {
             val jobProfileId = call.parameters["jobProfileId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный jobProfileId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_JOB_PROFILE_ID.toResponseBody())
             val job = projectionRepository.findJobSnapshot(jobProfileId)
-                ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("message" to "Не найдено"))
+                ?: return@get call.respond(HttpStatusCode.NotFound, ErrorCode.NOT_FOUND.toResponseBody())
             call.respond(
                 JobRecommendationDto(
                     id = job.jobProfileId,
@@ -118,11 +120,11 @@ fun Route.matchingReadRoutes(
         }
         get("/seekers/{seekerId}/jobs/{jobProfileId}/display-candidate") {
             val seekerId = call.parameters["seekerId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный seekerId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_SEEKER_ID.toResponseBody())
             val jobProfileId = call.parameters["jobProfileId"]?.toLongOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Некорректный jobProfileId"))
+                ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorCode.INVALID_JOB_PROFILE_ID.toResponseBody())
             val seeker = projectionRepository.findSeekerSnapshotForJob(seekerId, jobProfileId)
-                ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("message" to "Не найдено"))
+                ?: return@get call.respond(HttpStatusCode.NotFound, ErrorCode.NOT_FOUND.toResponseBody())
             call.respond(
                 CandidateRecommendationDto(
                     id = seeker.seekerId,

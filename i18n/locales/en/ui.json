@@ -1,0 +1,392 @@
+{
+  "nav": {
+    "seeker": {
+      "home": "Home",
+      "positions": "Matches",
+      "personality": "Personality",
+      "profile": "Profile",
+      "account": "Account"
+    },
+    "employer": {
+      "home": "Home",
+      "profiles": "Jobs",
+      "account": "Account"
+    }
+  },
+  "common": {
+    "back": "Back",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "logout": "Log out",
+    "loading": "Loading",
+    "next": "Next",
+    "start": "Start",
+    "continue": "Continue",
+    "finish": "Finish",
+    "retry": "Retry",
+    "retrying": "Starting…",
+    "viewAll": "View all →",
+    "optional": "Optional",
+    "present": "present",
+    "saveError": "Failed to save",
+    "respondError": "Failed to send response",
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "middleName": "Middle name",
+      "companyName": "Company name",
+      "companyTitle": "Name",
+      "description": "Description",
+      "website": "Website",
+      "phone": "Phone",
+      "email": "Email",
+      "emailContact": "Contact email",
+      "occupation": "Job title",
+      "position": "Position",
+      "company": "Company",
+      "skills": "Skills"
+    }
+  },
+  "role": {
+    "seeker": "Job seeker",
+    "employer": "Employer",
+    "unknown": "unknown"
+  },
+  "appShell": {
+    "logout": "Log out"
+  },
+  "alphaBadge": {
+    "tooltip": "Early alpha: bugs and incomplete features are expected"
+  },
+  "auth": {
+    "login": {
+      "title": "Find your dream job",
+      "subtitle": "Smart matching by skills and personality — like dating, but for your career",
+      "emailLabel": "Email",
+      "submit": "Continue",
+      "roleHint": "Your role is chosen once after sign-in and cannot be changed"
+    },
+    "roleSelection": {
+      "title": "Create your profile",
+      "welcome": "Welcome, {{email}}. Choose who you are — this cannot be changed later.",
+      "creating": "Creating account…",
+      "submit": "Get started"
+    },
+    "roleToggle": {
+      "ariaLabel": "Account type"
+    },
+    "errors": {
+      "invalidEmail": "Enter a valid email address",
+      "sessionLoadFailed": "Failed to load session",
+      "signInFailed": "Failed to sign in",
+      "registrationFailed": "Failed to complete registration",
+      "deleteAccountFailed": "Failed to delete account"
+    }
+  },
+  "home": {
+    "loggedIn": "You are signed in",
+    "logout": "Log out"
+  },
+  "settings": {
+    "title": "Account",
+    "subtitle": "Sign-in, profile data, and account management",
+    "loggedInAs": "Signed in as",
+    "personalData": "Personal details",
+    "company": "Company",
+    "profileSaved": "Profile saved",
+    "companySaved": "Company details saved",
+    "deleteAccountError": "Failed to delete account",
+    "language": {
+      "title": "Language",
+      "description": "Interface language",
+      "ru": "Русский",
+      "en": "English"
+    },
+    "emailSection": {
+      "title": "Email",
+      "description": "Section under development",
+      "currentAddress": "Current address",
+      "newAddress": "New address",
+      "newAddressPlaceholder": "example@mail.ru",
+      "saveSoon": "Save (coming soon)"
+    },
+    "passwordSection": {
+      "title": "Password",
+      "description": "Section under development",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "changeSoon": "Change password (coming soon)"
+    },
+    "deleteSection": {
+      "title": "Delete account",
+      "description": "Permanent deletion of all data",
+      "warning": "Deleting your account is irreversible. Your profile, sessions, work experience, education, skills, surveys, and all related data will be removed.",
+      "deleteButton": "Delete account",
+      "confirmTitle": "Are you sure? This action cannot be undone.",
+      "confirmButton": "Yes, delete permanently",
+      "deleting": "Deleting…"
+    }
+  },
+  "seeker": {
+    "dashboard": {
+      "title": "Hi! 👋",
+      "subtitle": "Here's how your profile looks and your latest matches",
+      "avatarName": "You",
+      "profileCompletion": "Profile completion",
+      "improveProfile": "Improve profile →",
+      "stats": {
+        "experience": "Work experience",
+        "desiredPositions": "Desired roles"
+      },
+      "testsAlert": {
+        "title": "Take personality tests",
+        "body": "Complete both tests to receive personalized job matches",
+        "action": "Take tests"
+      },
+      "recentMatches": {
+        "title": "Recent matches",
+        "emptyTitle": "No matches yet",
+        "emptyDescriptionTestsComplete": "Add desired roles and we'll find jobs for you",
+        "emptyDescriptionTestsIncomplete": "Complete the personality tests first",
+        "selectPositions": "Choose roles",
+        "goToTests": "Go to tests"
+      }
+    },
+    "positions": {
+      "title": "Matches 💕",
+      "subtitle": "Jobs that fit your skills and personality",
+      "desiredPositionsSaved": "Desired roles saved",
+      "respondSent": "Response sent! Waiting for the employer",
+      "whatLookingFor": {
+        "title": "What are you looking for?",
+        "description": "Choose roles — we'll show the best matches"
+      },
+      "recommendations": {
+        "title": "Recommended for you",
+        "description": "Matching based on skills and personality profile",
+        "emptyTitle": "Nothing here yet",
+        "emptyTestsIncomplete": "Complete both personality tests to join job matching",
+        "emptyNoPositions": "Select one or more desired roles",
+        "emptyNoJobs": "No suitable active jobs yet — check back later"
+      },
+      "respondedOutside": {
+        "title": "Your responses",
+        "description": "Jobs outside current recommendations"
+      },
+      "mutualOutside": {
+        "title": "Mutual matches",
+        "description": "Employers with matching interest"
+      }
+    },
+    "profile": {
+      "title": "My profile 👤",
+      "subtitle": "Tell us about yourself — matches will be more accurate",
+      "saved": "Profile saved",
+      "skillsSaved": "Skills saved",
+      "skillsSaveError": "Failed to save skills",
+      "personalAndContacts": "Personal details and contacts",
+      "skills": "Skills",
+      "experience": {
+        "title": "Work experience",
+        "empty": "No experience added",
+        "addButton": "Add experience",
+        "placeholders": {
+          "company": "Company",
+          "position": "Position"
+        }
+      },
+      "education": {
+        "title": "Education",
+        "empty": "No education added",
+        "graduationYear": "Graduation year: {{year}}",
+        "addButton": "Add education",
+        "placeholders": {
+          "institution": "Institution",
+          "specialization": "Major / specialization",
+          "degree": "Degree",
+          "endYear": "Graduation year"
+        }
+      }
+    },
+    "personality": {
+      "title": "Your personality ✨",
+      "subtitleNotReady": "Take the tests so we can get to know you better",
+      "subtitleProcessing": "Building your unique profile",
+      "subtitleReady": "A unique profile for precise job matching",
+      "testsBanner": {
+        "title": "Tests: {{completed}}/{{total}}",
+        "body": "Complete all sections in each test for accurate matching",
+        "view": "View",
+        "take": "Take"
+      },
+      "processing": {
+        "message": "Analyzing your answers… This may take a few minutes"
+      },
+      "failed": {
+        "title": "Failed to generate profile",
+        "defaultError": "An error occurred during generation",
+        "retryError": "Failed to start generation"
+      },
+      "traits": {
+        "autonomy": "Autonomy",
+        "thinkingStyle": "Thinking style",
+        "burnoutRisk": "Burnout risk"
+      },
+      "discProfile": "DISC profile",
+      "superpowers": "Superpowers and talents",
+      "categoryTabsAriaLabel": "Personality profile sections"
+    },
+    "tests": {
+      "title": "Personality tests 📝",
+      "subtitle": "Completed {{completed}} of {{total}}",
+      "backLabel": "Back to personality",
+      "status": {
+        "notStarted": "Not started",
+        "inProgress": "In progress",
+        "completed": "Completed",
+        "locked": "🔒 Locked"
+      },
+      "descriptions": {
+        "core": "Comprehensive assessment of personality, motivation, and team roles",
+        "64qn": "Personality assessment across 64 statements"
+      },
+      "continue": "Continue",
+      "start": "Start"
+    },
+    "testTake": {
+      "titles": {
+        "core": "Test 1",
+        "64qn": "Test 2"
+      },
+      "backLabel": "Back to tests",
+      "invalidId": "Invalid test identifier",
+      "prerequisite": "Complete the previous test first",
+      "incomplete": "Answer all questions before continuing",
+      "saveFailed": "Failed to save answers",
+      "lockedTitle": "Test locked",
+      "progress": {
+        "part": "Part {{current}} / {{total}}",
+        "page": "Page {{current}} / {{total}}"
+      }
+    }
+  },
+  "employer": {
+    "dashboard": {
+      "subtitle": "Overview of jobs and matched candidates",
+      "stats": {
+        "profiles": "Jobs",
+        "active": "Active",
+        "candidates": "Candidates"
+      },
+      "manageProfiles": "Manage jobs"
+    },
+    "profiles": {
+      "title": "Jobs 💼",
+      "subtitle": "Describe your ideal candidate — we'll find matches",
+      "create": "+ Create",
+      "emptyTitle": "No jobs yet",
+      "emptyDescription": "Create your first ideal-candidate profile",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "candidatesButton": "👥 Candidates",
+      "edit": "Edit",
+      "form": {
+        "editTitle": "Edit job",
+        "createTitle": "New job",
+        "personalityTraits": "Personality traits",
+        "activeCheckbox": "Job is active (included in matching)",
+        "createSubmit": "Create job"
+      }
+    },
+    "candidates": {
+      "title": "Candidates 👥",
+      "subtitle": "People with matching personality and skills",
+      "backLabel": "Back to jobs",
+      "respondSent": "Response sent! Waiting for the candidate",
+      "emptyTitle": "No one here yet",
+      "emptyDescription": "No seekers have completed tests and listed this role",
+      "respondedOutside": {
+        "title": "Your responses",
+        "description": "Candidates outside current recommendations"
+      },
+      "mutualOutside": {
+        "title": "Mutual matches",
+        "description": "Candidates with matching interest"
+      }
+    }
+  },
+  "components": {
+    "interestStatus": {
+      "seeker": {
+        "responded": "You responded",
+        "incoming": "Employer is interested",
+        "mutual": "Mutual interest!"
+      },
+      "employer": {
+        "responded": "You responded",
+        "incoming": "Candidate responded",
+        "mutual": "Mutual interest!"
+      }
+    },
+    "respondButton": {
+      "respond": "❤️ Respond",
+      "sending": "Sending…",
+      "waiting": "⏳ Waiting for reply",
+      "mutual": "💕 Mutual interest!"
+    },
+    "matchScore": {
+      "label": "match"
+    },
+    "contactInfo": {
+      "seekerTitle": "💕 Employer contacts",
+      "employerTitle": "💕 Candidate contacts"
+    },
+    "skillPicker": {
+      "searchPlaceholder": "Search skills…",
+      "removeAriaLabel": "Remove {{name}}"
+    },
+    "personalityAxesEditor": {
+      "hint": "Set the desired level for each personality axis (0–100%)"
+    },
+    "personalityLabels": {
+      "categories": {
+        "connections": "Connections",
+        "creativity": "Creativity",
+        "drive": "Drive",
+        "thinking": "Thinking"
+      },
+      "axes": {
+        "axisDominance": "Dominance",
+        "axisInfluence": "Influence",
+        "axisStability": "Stability",
+        "axisIntegrity": "Conscientiousness",
+        "axisAutonomy": "Autonomy",
+        "axisPace": "Pace"
+      },
+      "goodDay": "On a good day",
+      "badDay": "On a bad day",
+      "succeedThrough": "You succeed through",
+      "topStrength": "Top strength",
+      "pronounced": "Pronounced",
+      "youOnScale": "You"
+    },
+    "discChart": {
+      "ariaLabel": "DISC profile — {{values}}"
+    },
+    "survey": {
+      "selectedCount": "Selected: {{selected}} / {{max}}",
+      "questionLegend": "Question {{id}}",
+      "pointsComplete": "Allocated {{total}} of {{total}} points",
+      "pointsPartial": "Allocated {{sum}} of {{total}} ({{remaining}} left)",
+      "unsupportedType": "Unsupported survey type: {{type}}"
+    }
+  },
+  "api": {
+    "requestError": "Request error: {{status}}"
+  }
+}

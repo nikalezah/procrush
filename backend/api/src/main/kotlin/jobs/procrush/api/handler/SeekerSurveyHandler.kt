@@ -6,7 +6,9 @@ import jobs.procrush.api.generated.survey_paths_yaml.survey_paths.SeekerSurveySe
 import jobs.procrush.api.mapper.toApi
 import jobs.procrush.api.mapper.toContract
 import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.personality.service.PersonalityProfileService
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.ResourceNotFoundException
 import jobs.procrush.shared.SurveyAlreadyCompletedException
 import jobs.procrush.survey.dto.SurveyStatus
@@ -49,7 +51,9 @@ class SeekerSurveyHandler(
             try {
                 SeekerSurveyServerApi.GetSurveyResponse.ok(surveyService.getSurvey(user.id, id).toApi())
             } catch (_: ResourceNotFoundException) {
-                SeekerSurveyServerApi.GetSurveyResponse.notFound(notFound())
+                SeekerSurveyServerApi.GetSurveyResponse.notFound(errorNotFound())
+            } catch (_: CodedException) {
+                SeekerSurveyServerApi.GetSurveyResponse.notFound(errorNotFound())
             }
         }
 
@@ -65,7 +69,7 @@ class SeekerSurveyHandler(
             try {
                 SeekerSurveyServerApi.StartSurveyResponse.ok(surveyService.startSurvey(user.id, id).toApi())
             } catch (_: ResourceNotFoundException) {
-                SeekerSurveyServerApi.StartSurveyResponse.notFound(notFound())
+                SeekerSurveyServerApi.StartSurveyResponse.notFound(errorNotFound())
             }
         }
 
@@ -83,12 +87,12 @@ class SeekerSurveyHandler(
                 SeekerSurveyServerApi.SaveSurveyAnswersResponse.ok(
                     surveyService.saveAnswers(user.id, id, request.toContract()).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerSurveyServerApi.SaveSurveyAnswersResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerSurveyServerApi.SaveSurveyAnswersResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             } catch (_: ResourceNotFoundException) {
-                SeekerSurveyServerApi.SaveSurveyAnswersResponse.notFound(notFound())
+                SeekerSurveyServerApi.SaveSurveyAnswersResponse.notFound(errorNotFound())
             } catch (_: SurveyAlreadyCompletedException) {
-                SeekerSurveyServerApi.SaveSurveyAnswersResponse.conflict(conflict("Опрос уже пройден"))
+                SeekerSurveyServerApi.SaveSurveyAnswersResponse.conflict(errorConflict(ErrorCode.SURVEY_ALREADY_COMPLETED))
             }
         }
 
@@ -112,12 +116,12 @@ class SeekerSurveyHandler(
                         nextSurveyId = result.nextSurveyId,
                     ).toApi(),
                 )
-            } catch (e: IllegalArgumentException) {
-                SeekerSurveyServerApi.CompleteSurveyResponse.badRequest(badRequest(e.message ?: "Некорректные данные"))
+            } catch (e: CodedException) {
+                SeekerSurveyServerApi.CompleteSurveyResponse.badRequest(errorBadRequest(e.errorCode, e.details))
             } catch (_: ResourceNotFoundException) {
-                SeekerSurveyServerApi.CompleteSurveyResponse.notFound(notFound())
+                SeekerSurveyServerApi.CompleteSurveyResponse.notFound(errorNotFound())
             } catch (_: SurveyAlreadyCompletedException) {
-                SeekerSurveyServerApi.CompleteSurveyResponse.conflict(conflict("Опрос уже пройден"))
+                SeekerSurveyServerApi.CompleteSurveyResponse.conflict(errorConflict(ErrorCode.SURVEY_ALREADY_COMPLETED))
             }
         }
 }
