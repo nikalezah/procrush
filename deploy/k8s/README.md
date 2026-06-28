@@ -12,20 +12,12 @@
 
 1. Из корня репозитория:
 
-   **Windows (PowerShell):**
-
-   ```powershell
-   .\deploy\k8s\scripts\kind-up.ps1
-   ```
-
-   Если кластер `procrush` был создан до смены `listenAddress`, пересоздайте его: `.\deploy\k8s\scripts\kind-down.ps1`, затем снова `.\deploy\k8s\scripts\kind-up.ps1`. Настройка `extraPortMappings` применяется только при создании контейнера ноды kind.
-
-   **Linux / macOS:**
-
    ```bash
    chmod +x deploy/k8s/scripts/*.sh
    ./deploy/k8s/scripts/kind-up.sh
    ```
+
+   Если кластер `procrush` был создан до смены `listenAddress`, пересоздайте его: `./deploy/k8s/scripts/kind-down.sh`, затем снова `./deploy/k8s/scripts/kind-up.sh`. Настройка `extraPortMappings` применяется только при создании контейнера ноды kind.
 
    Скрипт:
    - создаёт кластер `procrush` (если ещё нет);
@@ -83,8 +75,8 @@
 
 ## Пересборка после изменений кода
 
-```powershell
-.\deploy\k8s\scripts\build-images.ps1
+```bash
+./deploy/k8s/scripts/build-images.sh
 kubectl rollout restart deployment -n procrush api personality matching frontend
 ```
 
@@ -109,8 +101,8 @@ kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 
 ## Остановка кластера
 
-```powershell
-.\deploy\k8s\scripts\kind-down.ps1
+```bash
+./deploy/k8s/scripts/kind-down.sh
 ```
 
 ## Hot-reload без пересборки образов (опционально)
@@ -121,7 +113,7 @@ kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 
 | Симптом | Что проверить |
 |---------|----------------|
-| `ImagePullBackOff` | Пересоберите образы: `build-images.ps1`; в overlay задано `imagePullPolicy: Never` |
+| `ImagePullBackOff` | Пересоберите образы: `./deploy/k8s/scripts/build-images.sh`; в overlay задано `imagePullPolicy: Never` |
 | API не становится Ready | `kubectl logs -n procrush deploy/api`; часто matching или Kafka ещё стартуют |
 | Порт 80 занят на `127.10.0.10` | Другой сервис на том же IP:порт; смените `listenAddress` / `hostPort` в [kind-config.yaml](./kind-config.yaml) |
 | http://127.10.0.10 не открывается | `kubectl get ingress -n procrush`; пересоздайте кластер после смены `kind-config.yaml` |

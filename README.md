@@ -147,11 +147,10 @@ openapi/
 
 1. Из корня репозитория запустите kind (см. [deploy/k8s/README.md](./deploy/k8s/README.md)):
 
-   ```powershell
-   .\deploy\k8s\scripts\kind-up.ps1
+   ```bash
+   chmod +x deploy/k8s/scripts/*.sh
+   ./deploy/k8s/scripts/kind-up.sh
    ```
-
-   (bash: `./deploy/k8s/scripts/kind-up.sh`)
 
 2. Откройте http://127.10.0.10 — dev-вход (`AUTH_DEV_MODE=true`).
 
