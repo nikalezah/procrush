@@ -1,4 +1,4 @@
-package jobs.procrush.auth.service
+package jobs.procrush.auth
 
 import io.ktor.http.Cookie
 import io.ktor.server.application.ApplicationCall

@@ -5,8 +5,8 @@ import io.ktor.server.routing.route
 import io.ktor.server.sse.heartbeat
 import io.ktor.server.sse.sse
 import io.ktor.sse.ServerSentEvent
+import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.UserRole
-import jobs.procrush.auth.service.RoleGuard
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.personality.service.PersonalityProfileService
 import kotlinx.serialization.json.Json

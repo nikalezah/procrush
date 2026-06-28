@@ -6,11 +6,11 @@ import jobs.procrush.api.generated.auth_models_yaml.auth_models.DevLoginRequest
 import jobs.procrush.api.generated.auth_paths_yaml.auth_paths.AuthServerApi
 import jobs.procrush.api.mapper.toApi
 import jobs.procrush.api.mapper.toContract
-import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.auth.RoleGuard
+import jobs.procrush.auth.UserAuthService
+import jobs.procrush.auth.clearSessionCookie
 import jobs.procrush.auth.service.SessionService
-import jobs.procrush.auth.service.UserAuthService
-import jobs.procrush.auth.service.clearSessionCookie
-import jobs.procrush.auth.service.setSessionCookie
+import jobs.procrush.auth.setSessionCookie
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.shared.CodedException

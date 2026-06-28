@@ -11,7 +11,7 @@ import jobs.procrush.api.generated.seeker_models_yaml.seeker_models.UpdateSeeker
 import jobs.procrush.api.generated.seeker_paths_yaml.seeker_paths.SeekerProfileServerApi
 import jobs.procrush.api.mapper.toApi
 import jobs.procrush.api.mapper.toContract
-import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.auth.RoleGuard
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.seeker.service.SeekerProfileService
 import jobs.procrush.shared.CodedException

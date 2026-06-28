@@ -7,7 +7,7 @@ import jobs.procrush.api.generated.employer_models_yaml.employer_models.UpdateJo
 import jobs.procrush.api.generated.employer_paths_yaml.employer_paths.EmployerServerApi
 import jobs.procrush.api.mapper.toApi
 import jobs.procrush.api.mapper.toContract
-import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.auth.RoleGuard
 import jobs.procrush.employer.service.EmployerProfileService
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.shared.CodedException

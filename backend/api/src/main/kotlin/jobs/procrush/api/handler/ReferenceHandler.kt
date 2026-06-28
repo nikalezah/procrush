@@ -3,7 +3,7 @@ package jobs.procrush.api.handler
 import io.ktor.server.application.ApplicationCall
 import jobs.procrush.api.generated.reference_paths_yaml.reference_paths.ReferenceServerApi
 import jobs.procrush.api.mapper.toApi
-import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.auth.RoleGuard
 import jobs.procrush.shared.repository.ReferenceRepository
 
 class ReferenceHandler(

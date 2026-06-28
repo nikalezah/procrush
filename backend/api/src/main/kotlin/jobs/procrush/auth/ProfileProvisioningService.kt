@@ -1,6 +1,5 @@
-package jobs.procrush.auth.service
+package jobs.procrush.auth
 
-import jobs.procrush.auth.UserRole
 import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.seeker.repository.SeekerRepository
 import java.util.UUID

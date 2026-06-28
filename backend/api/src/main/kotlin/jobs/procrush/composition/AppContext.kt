@@ -7,9 +7,9 @@ import jobs.procrush.api.handler.ReferenceHandler
 import jobs.procrush.api.handler.SeekerPersonalityHandler
 import jobs.procrush.api.handler.SeekerProfileHandler
 import jobs.procrush.api.handler.SeekerSurveyHandler
-import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.auth.RoleGuard
+import jobs.procrush.auth.UserAuthService
 import jobs.procrush.auth.service.SessionService
-import jobs.procrush.auth.service.UserAuthService
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule

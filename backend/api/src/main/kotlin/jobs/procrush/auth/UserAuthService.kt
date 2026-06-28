@@ -1,9 +1,7 @@
-package jobs.procrush.auth.service
+package jobs.procrush.auth
 
-import jobs.procrush.auth.AuthUserDto
-import jobs.procrush.auth.CompleteRegistrationRequest
-import jobs.procrush.auth.UserRole
 import jobs.procrush.auth.repository.UserRepository
+import jobs.procrush.auth.service.EmailNormalizer
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.shared.RegistrationConflictException
 import jobs.procrush.shared.ResourceNotFoundException

@@ -2,9 +2,9 @@ package jobs.procrush.api.handler
 
 import io.ktor.server.application.ApplicationCall
 import jobs.procrush.api.generated.common_models_yaml.common_models.ErrorResponse
+import jobs.procrush.auth.AuthenticatedUser
+import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.UserRole
-import jobs.procrush.auth.service.AuthenticatedUser
-import jobs.procrush.auth.service.RoleGuard
 import jobs.procrush.i18n.ErrorCode
 
 fun apiError(code: ErrorCode, details: Map<String, String> = emptyMap()): ErrorResponse =

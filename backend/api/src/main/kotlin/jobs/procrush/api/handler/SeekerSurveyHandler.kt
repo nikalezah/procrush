@@ -5,7 +5,7 @@ import jobs.procrush.api.generated.survey_models_yaml.survey_models.SaveSurveyAn
 import jobs.procrush.api.generated.survey_paths_yaml.survey_paths.SeekerSurveyServerApi
 import jobs.procrush.api.mapper.toApi
 import jobs.procrush.api.mapper.toContract
-import jobs.procrush.auth.service.RoleGuard
+import jobs.procrush.auth.RoleGuard
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.personality.service.PersonalityProfileService
 import jobs.procrush.shared.CodedException

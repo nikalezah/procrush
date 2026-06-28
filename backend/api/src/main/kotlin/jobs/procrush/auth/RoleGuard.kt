@@ -1,9 +1,9 @@
-package jobs.procrush.auth.service
+package jobs.procrush.auth
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
-import jobs.procrush.auth.UserRole
+import jobs.procrush.auth.service.SessionService
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.shared.toResponseBody
