@@ -1,0 +1,2714 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API
+  version: 1.0.0
+  description: ProCrush REST API — surveys, profiles, matching, and personality generation.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Auth
+    description: Authentication and registration
+  - name: Reference
+    description: Shared reference data (occupations, skills)
+  - name: SeekerProfile
+    description: Seeker profile, experience, skills, and recommendations
+  - name: SeekerSurvey
+    description: Seeker survey flow
+  - name: SeekerPersonality
+    description: Personality profile preview and generation
+  - name: Employer
+    description: Employer profile and job profiles
+paths:
+  /api/auth/dev/login:
+    post:
+      tags:
+        - Auth
+      operationId: devLogin
+      summary: Dev login (AUTH_DEV_MODE only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevLoginRequest'
+      responses:
+        '200':
+          description: Authenticated user
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserDto'
+        '404':
+          description: Dev auth disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      operationId: getMe
+      summary: Current session user
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current user (null if not authenticated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      operationId: logout
+      summary: Invalidate session
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Logged out
+  /api/auth/complete-registration:
+    post:
+      tags:
+        - Auth
+      operationId: completeRegistration
+      summary: Complete user registration
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRegistrationRequest'
+      responses:
+        '200':
+          description: Registered user
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/account:
+    delete:
+      tags:
+        - Auth
+      operationId: deleteAccount
+      summary: Delete current user account
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Account deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/occupations:
+    get:
+      tags:
+        - Reference
+      operationId: listOccupations
+      summary: List occupations
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: leafOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Occupations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OccupationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/skills:
+    get:
+      tags:
+        - Reference
+      operationId: searchSkills
+      summary: Search skills
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/dashboard:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerDashboard
+      summary: Seeker dashboard
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerDashboardDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/me:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerProfile
+      summary: Get seeker profile
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Seeker profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerProfileDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - SeekerProfile
+      operationId: updateSeekerProfile
+      summary: Update seeker profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSeekerProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/experience:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: listSeekerExperience
+      summary: List work experience
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Experience entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SeekerExperienceDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - SeekerProfile
+      operationId: createSeekerExperience
+      summary: Create work experience
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSeekerExperienceRequest'
+      responses:
+        '201':
+          description: Created experience
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerExperienceDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/experience/{id}:
+    patch:
+      tags:
+        - SeekerProfile
+      operationId: updateSeekerExperience
+      summary: Update work experience
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSeekerExperienceRequest'
+      responses:
+        '200':
+          description: Updated experience
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerExperienceDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - SeekerProfile
+      operationId: deleteSeekerExperience
+      summary: Delete work experience
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/education:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: listSeekerEducation
+      summary: List education
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Education entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SeekerEducationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - SeekerProfile
+      operationId: createSeekerEducation
+      summary: Create education entry
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSeekerEducationRequest'
+      responses:
+        '201':
+          description: Created education
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerEducationDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/education/{id}:
+    patch:
+      tags:
+        - SeekerProfile
+      operationId: updateSeekerEducation
+      summary: Update education entry
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSeekerEducationRequest'
+      responses:
+        '200':
+          description: Updated education
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerEducationDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - SeekerProfile
+      operationId: deleteSeekerEducation
+      summary: Delete education entry
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/skills:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerSkills
+      summary: Get seeker skills
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Skills
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerSkillsResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - SeekerProfile
+      operationId: setSeekerSkills
+      summary: Replace seeker skills
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSeekerSkillsRequest'
+      responses:
+        '200':
+          description: Updated skills
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerSkillsResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/desired-positions:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerDesiredPositions
+      summary: Get desired positions
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Desired positions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerDesiredPositionsResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - SeekerProfile
+      operationId: setSeekerDesiredPositions
+      summary: Replace desired positions
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSeekerDesiredPositionsRequest'
+      responses:
+        '200':
+          description: Updated desired positions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerDesiredPositionsResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/positions-overview:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerPositionsOverview
+      summary: Positions overview with recommendations and interests
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Positions overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerPositionsOverviewDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/recommendations:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerRecommendations
+      summary: Job recommendations for seeker
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/recommendations/{jobProfileId}/respond:
+    post:
+      tags:
+        - SeekerProfile
+      operationId: seekerRespondToJob
+      summary: Respond to job recommendation
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: jobProfileId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: Response recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/interests:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerInterests
+      summary: Interests outside recommendations
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Interests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeekerInterestsResponseDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/match-interests/count:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerMatchInterestCount
+      summary: Actionable match interest count
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchInterestCountDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/personality/llm-context:
+    get:
+      tags:
+        - SeekerSurvey
+      operationId: getSurveyLlmContext
+      summary: Survey data for personality LLM context
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: LLM context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyLlmContextDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/surveys:
+    get:
+      tags:
+        - SeekerSurvey
+      operationId: listSurveys
+      summary: List survey groups
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Survey groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyGroupsResponseDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}:
+    get:
+      tags:
+        - SeekerSurvey
+      operationId: getSurvey
+      summary: Get survey detail
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Survey detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyDetailDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}/start:
+    post:
+      tags:
+        - SeekerSurvey
+      operationId: startSurvey
+      summary: Start survey
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Started survey
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyDetailDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}/answers:
+    put:
+      tags:
+        - SeekerSurvey
+      operationId: saveSurveyAnswers
+      summary: Save survey answers
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSurveyAnswersRequest'
+      responses:
+        '200':
+          description: Saved answers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SurveyDetailDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Survey already completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}/complete:
+    post:
+      tags:
+        - SeekerSurvey
+      operationId: completeSurvey
+      summary: Complete survey
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSurveyAnswersRequest'
+      responses:
+        '200':
+          description: Survey completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteSurveyResponseDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Survey already completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/personality-preview:
+    get:
+      tags:
+        - SeekerPersonality
+      operationId: getPersonalityPreview
+      summary: Get personality profile preview
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Personality preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalityPreviewDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/seeker/personality/generate:
+    post:
+      tags:
+        - SeekerPersonality
+      operationId: triggerPersonalityGeneration
+      summary: Trigger personality profile generation
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalityGenerationStatusResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Generation already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/dashboard:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerDashboard
+      summary: Employer dashboard
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerDashboardDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/me:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerProfile
+      summary: Get employer profile
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Employer profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerProfileDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Employer
+      operationId: updateEmployerProfile
+      summary: Update employer profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmployerProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles:
+    get:
+      tags:
+        - Employer
+      operationId: listJobProfiles
+      summary: List job profiles
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Job profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobProfileDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Employer
+      operationId: createJobProfile
+      summary: Create job profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJobProfileRequest'
+      responses:
+        '201':
+          description: Created job profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}:
+    patch:
+      tags:
+        - Employer
+      operationId: updateJobProfile
+      summary: Update job profile
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateJobProfileRequest'
+      responses:
+        '200':
+          description: Updated job profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Employer
+      operationId: deleteJobProfile
+      summary: Delete job profile
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/candidates:
+    get:
+      tags:
+        - Employer
+      operationId: getJobCandidates
+      summary: Candidate recommendations for job profile
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CandidateRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/candidates-overview:
+    get:
+      tags:
+        - Employer
+      operationId: getJobCandidatesOverview
+      summary: Candidates overview with interests
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Candidates overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerCandidatesOverviewDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/candidates/{seekerId}/respond:
+    post:
+      tags:
+        - Employer
+      operationId: employerRespondToCandidate
+      summary: Respond to candidate
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: seekerId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: Response recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/interests:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerInterests
+      summary: Interests outside recommendations
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Interests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerInterestsResponseDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/employer/match-interests/count:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerMatchInterestCount
+      summary: Actionable match interest count
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchInterestCountDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: procrush_session
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        error:
+          type: string
+    UserRole:
+      type: string
+      enum:
+        - SEEKER
+        - EMPLOYER
+    InterestStatus:
+      type: string
+      enum:
+        - NONE
+        - RESPONDED
+        - INCOMING
+        - MUTUAL
+    PersonalityProfileStatus:
+      type: string
+      enum:
+        - NOT_READY
+        - PROCESSING
+        - READY
+        - FAILED
+    SurveyStatus:
+      type: string
+      enum:
+        - NOT_STARTED
+        - IN_PROGRESS
+        - COMPLETED
+    AuthUserDto:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        profileName:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+          nullable: true
+    DevLoginRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+    CompleteRegistrationRequest:
+      type: object
+      required:
+        - role
+      properties:
+        email:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        middleName:
+          type: string
+          nullable: true
+        companyName:
+          type: string
+          nullable: true
+    MeResponse:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUserDto'
+          nullable: true
+    OccupationDto:
+      type: object
+      required:
+        - id
+        - name
+        - isLeaf
+      properties:
+        id:
+          type: integer
+          format: int64
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+        name:
+          type: string
+        isLeaf:
+          type: boolean
+    SkillDto:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    SuperpowerAndTalentDto:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        isPronounced:
+          type: boolean
+          nullable: true
+    EmployerContactDto:
+      type: object
+      required:
+        - companyName
+      properties:
+        companyName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        emailContact:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+    SeekerContactDto:
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+    JobRecommendationDto:
+      type: object
+      required:
+        - id
+        - companyName
+        - positionName
+        - description
+        - matchScore
+        - matchScoreDisplay
+        - interestStatus
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyName:
+          type: string
+        positionName:
+          type: string
+        description:
+          type: string
+        matchScore:
+          type: number
+          format: double
+        matchScoreDisplay:
+          type: integer
+        interestStatus:
+          $ref: '#/components/schemas/InterestStatus'
+        contactInfo:
+          $ref: '#/components/schemas/EmployerContactDto'
+          nullable: true
+    CandidateRecommendationDto:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+        - positionName
+        - skills
+        - matchScore
+        - matchScoreDisplay
+        - interestStatus
+      properties:
+        id:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        lastName:
+          type: string
+        positionName:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        matchScore:
+          type: number
+          format: double
+        matchScoreDisplay:
+          type: integer
+        interestStatus:
+          $ref: '#/components/schemas/InterestStatus'
+        contactInfo:
+          $ref: '#/components/schemas/SeekerContactDto'
+          nullable: true
+    SeekerInterestsResponseDto:
+      type: object
+      required:
+        - respondedOutside
+        - mutualOutside
+      properties:
+        respondedOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobRecommendationDto'
+        mutualOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobRecommendationDto'
+    EmployerInterestsResponseDto:
+      type: object
+      required:
+        - respondedOutside
+        - mutualOutside
+      properties:
+        respondedOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateRecommendationDto'
+        mutualOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateRecommendationDto'
+    EmployerCandidatesOverviewDto:
+      type: object
+      required:
+        - candidates
+        - interests
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateRecommendationDto'
+        interests:
+          $ref: '#/components/schemas/EmployerInterestsResponseDto'
+    MatchInterestCountDto:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
+    MatchInterestEventDto:
+      type: object
+      required:
+        - jobProfileId
+        - seekerId
+        - interestStatus
+      properties:
+        jobProfileId:
+          type: integer
+          format: int64
+        seekerId:
+          type: integer
+          format: int64
+        interestStatus:
+          $ref: '#/components/schemas/InterestStatus'
+        employerContact:
+          $ref: '#/components/schemas/EmployerContactDto'
+          nullable: true
+        seekerContact:
+          $ref: '#/components/schemas/SeekerContactDto'
+          nullable: true
+    SeekerProfileDto:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+      properties:
+        id:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        middleName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+    UpdateSeekerProfileRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+        middleName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+    SeekerExperienceDto:
+      type: object
+      required:
+        - id
+        - companyName
+        - position
+        - startDate
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyName:
+          type: string
+        position:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+    CreateSeekerExperienceRequest:
+      type: object
+      required:
+        - companyName
+        - position
+        - startDate
+      properties:
+        companyName:
+          type: string
+        position:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+    UpdateSeekerExperienceRequest:
+      type: object
+      required:
+        - companyName
+        - position
+        - startDate
+      properties:
+        companyName:
+          type: string
+        position:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+    SeekerEducationDto:
+      type: object
+      required:
+        - id
+        - institution
+        - specialization
+        - endYear
+      properties:
+        id:
+          type: integer
+          format: int64
+        institution:
+          type: string
+        degree:
+          type: string
+          nullable: true
+        specialization:
+          type: string
+        endYear:
+          type: integer
+    CreateSeekerEducationRequest:
+      type: object
+      required:
+        - institution
+        - specialization
+        - endYear
+      properties:
+        institution:
+          type: string
+        degree:
+          type: string
+          nullable: true
+        specialization:
+          type: string
+        endYear:
+          type: integer
+    UpdateSeekerEducationRequest:
+      type: object
+      required:
+        - institution
+        - specialization
+        - endYear
+      properties:
+        institution:
+          type: string
+        degree:
+          type: string
+          nullable: true
+        specialization:
+          type: string
+        endYear:
+          type: integer
+    SeekerSkillsResponse:
+      type: object
+      required:
+        - skillIds
+        - skills
+      properties:
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillDto'
+    UpdateSeekerSkillsRequest:
+      type: object
+      required:
+        - skillIds
+      properties:
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    SeekerDesiredPositionsResponse:
+      type: object
+      required:
+        - occupationIds
+        - occupations
+      properties:
+        occupationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        occupations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OccupationDto'
+    UpdateSeekerDesiredPositionsRequest:
+      type: object
+      required:
+        - occupationIds
+      properties:
+        occupationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    SeekerDashboardDto:
+      type: object
+      required:
+        - profileCompletionPercent
+        - desiredPositionsCount
+        - experienceCount
+        - recommendationsPreview
+        - testsComplete
+      properties:
+        profileCompletionPercent:
+          type: integer
+        desiredPositionsCount:
+          type: integer
+        experienceCount:
+          type: integer
+        recommendationsPreview:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobRecommendationDto'
+        testsComplete:
+          type: boolean
+    SeekerPositionsOverviewDto:
+      type: object
+      required:
+        - occupationIds
+        - occupations
+        - recommendations
+        - interests
+        - testsComplete
+      properties:
+        occupationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        occupations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OccupationDto'
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobRecommendationDto'
+        interests:
+          $ref: '#/components/schemas/SeekerInterestsResponseDto'
+        testsComplete:
+          type: boolean
+    SurveyListItemDto:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - description
+        - status
+        - sortOrder
+        - locked
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/SurveyStatus'
+        sortOrder:
+          type: integer
+        locked:
+          type: boolean
+    SurveyGroupDto:
+      type: object
+      required:
+        - code
+        - name
+        - surveys
+        - completedCount
+        - totalCount
+        - status
+        - locked
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        surveys:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyListItemDto'
+        completedCount:
+          type: integer
+        totalCount:
+          type: integer
+        status:
+          $ref: '#/components/schemas/SurveyStatus'
+        locked:
+          type: boolean
+        entrySurveyId:
+          type: integer
+          format: int64
+          nullable: true
+    SurveyGroupsResponseDto:
+      type: object
+      required:
+        - groups
+        - testsCompleted
+        - testsTotal
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyGroupDto'
+        testsCompleted:
+          type: integer
+        testsTotal:
+          type: integer
+    SurveyDetailDto:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - description
+        - groupCode
+        - questionsJson
+        - status
+        - locked
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        groupCode:
+          type: string
+        questionsJson:
+          type: string
+        status:
+          $ref: '#/components/schemas/SurveyStatus'
+        answersJson:
+          type: string
+          nullable: true
+        resultId:
+          type: integer
+          format: int64
+          nullable: true
+        locked:
+          type: boolean
+        stepNumber:
+          type: integer
+          nullable: true
+        stepTotal:
+          type: integer
+          nullable: true
+        prevSurveyId:
+          type: integer
+          format: int64
+          nullable: true
+        nextSurveyId:
+          type: integer
+          format: int64
+          nullable: true
+    SaveSurveyAnswersRequest:
+      type: object
+      required:
+        - answers
+      properties:
+        answers:
+          type: object
+    GlossaryTermDto:
+      type: object
+      required:
+        - id
+        - term
+        - definition
+        - description
+      properties:
+        id:
+          type: integer
+          format: int64
+        term:
+          type: string
+        definition:
+          type: string
+        description:
+          type: string
+    SurveyLlmContextItemDto:
+      type: object
+      required:
+        - surveyCode
+        - answersJson
+        - calculatedResultsJson
+      properties:
+        surveyCode:
+          type: string
+        answersJson:
+          type: string
+        calculatedResultsJson:
+          type: string
+    SurveyLlmContextDto:
+      type: object
+      required:
+        - surveys
+        - glossaryTerms
+      properties:
+        surveys:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyLlmContextItemDto'
+        glossaryTerms:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlossaryTermDto'
+    CompleteSurveyResponseDto:
+      type: object
+      required:
+        - resultId
+        - surveyId
+        - status
+      properties:
+        resultId:
+          type: integer
+          format: int64
+        surveyId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/SurveyStatus'
+        nextSurveyId:
+          type: integer
+          format: int64
+          nullable: true
+    PersonalityAxesDto:
+      type: object
+      required:
+        - axisDominance
+        - axisInfluence
+        - axisStability
+        - axisIntegrity
+        - axisAutonomy
+        - axisPace
+      properties:
+        axisDominance:
+          type: number
+          format: double
+        axisInfluence:
+          type: number
+          format: double
+        axisStability:
+          type: number
+          format: double
+        axisIntegrity:
+          type: number
+          format: double
+        axisAutonomy:
+          type: number
+          format: double
+        axisPace:
+          type: number
+          format: double
+    PersonalityItemDto:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+    PersonalitySectionDto:
+      type: object
+      required:
+        - title
+        - items
+      properties:
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalityItemDto'
+    SucceedThroughDto:
+      type: object
+      required:
+        - point0
+        - point1
+        - point2
+      properties:
+        point0:
+          type: string
+        point1:
+          type: string
+        point2:
+          type: string
+    PersonalityTraitDetailsDto:
+      type: object
+      required:
+        - description
+        - goodDay
+        - badDay
+        - succeedThrough
+      properties:
+        description:
+          type: string
+        goodDay:
+          type: string
+        badDay:
+          type: string
+        succeedThrough:
+          $ref: '#/components/schemas/SucceedThroughDto'
+    PersonalityTraitDto:
+      type: object
+      required:
+        - key
+        - label
+        - scalePosition
+        - leftPole
+        - rightPole
+        - details
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        scalePosition:
+          type: number
+          format: double
+        leftPole:
+          type: string
+        rightPole:
+          type: string
+        details:
+          $ref: '#/components/schemas/PersonalityTraitDetailsDto'
+        isTopStrength:
+          type: boolean
+    PersonalityCategoryDto:
+      type: object
+      required:
+        - key
+        - description
+        - topStrengthIndex
+        - traits
+      properties:
+        key:
+          type: string
+        description:
+          type: string
+        topStrengthIndex:
+          type: integer
+        traits:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalityTraitDto'
+    PersonalityPreviewDto:
+      type: object
+      required:
+        - status
+        - testsCompleted
+        - testsTotal
+      properties:
+        status:
+          $ref: '#/components/schemas/PersonalityProfileStatus'
+        generationError:
+          type: string
+          nullable: true
+        testsCompleted:
+          type: integer
+        testsTotal:
+          type: integer
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          nullable: true
+        autonomy:
+          type: string
+          nullable: true
+        thinkingStyle:
+          type: string
+          nullable: true
+        burnoutRisk:
+          type: string
+          nullable: true
+        axisDominance:
+          type: number
+          format: double
+          nullable: true
+        axisInfluence:
+          type: number
+          format: double
+          nullable: true
+        axisStability:
+          type: number
+          format: double
+          nullable: true
+        axisIntegrity:
+          type: number
+          format: double
+          nullable: true
+        axisAutonomy:
+          type: number
+          format: double
+          nullable: true
+        axisPace:
+          type: number
+          format: double
+          nullable: true
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalityCategoryDto'
+          nullable: true
+        energySources:
+          $ref: '#/components/schemas/PersonalitySectionDto'
+          nullable: true
+        stopFactors:
+          $ref: '#/components/schemas/PersonalitySectionDto'
+          nullable: true
+        superpowersAndTalents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuperpowerAndTalentDto'
+          nullable: true
+    PersonalityGenerationStatusResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/PersonalityProfileStatus'
+    EmployerProfileDto:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        emailContact:
+          type: string
+          nullable: true
+    UpdateEmployerProfileRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        emailContact:
+          type: string
+          nullable: true
+    JobProfileDto:
+      type: object
+      required:
+        - id
+        - occupationId
+        - occupationName
+        - isActive
+        - skillIds
+        - skills
+        - personalityAxes
+      properties:
+        id:
+          type: integer
+          format: int64
+        occupationId:
+          type: integer
+          format: int64
+        occupationName:
+          type: string
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillDto'
+        personalityAxes:
+          $ref: '#/components/schemas/PersonalityAxesDto'
+    CreateJobProfileRequest:
+      type: object
+      required:
+        - occupationId
+      properties:
+        occupationId:
+          type: integer
+          format: int64
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        personalityAxes:
+          $ref: '#/components/schemas/PersonalityAxesDto'
+          nullable: true
+    UpdateJobProfileRequest:
+      type: object
+      required:
+        - occupationId
+      properties:
+        occupationId:
+          type: integer
+          format: int64
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        personalityAxes:
+          $ref: '#/components/schemas/PersonalityAxesDto'
+          nullable: true
+    EmployerDashboardDto:
+      type: object
+      required:
+        - companyName
+        - jobProfilesCount
+        - activeJobProfilesCount
+        - totalMatchedCandidates
+      properties:
+        companyName:
+          type: string
+        jobProfilesCount:
+          type: integer
+        activeJobProfilesCount:
+          type: integer
+        totalMatchedCandidates:
+          type: integer

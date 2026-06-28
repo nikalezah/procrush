@@ -1,0 +1,114 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Auth Paths
+  version: 1.0.0
+paths:
+  /api/auth/dev/login:
+    post:
+      tags:
+        - Auth
+      operationId: devLogin
+      summary: Dev login (AUTH_DEV_MODE only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './auth_models.yaml#/components/schemas/DevLoginRequest'
+      responses:
+        '200':
+          description: Authenticated user
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: './auth_models.yaml#/components/schemas/AuthUserDto'
+        '404':
+          description: Dev auth disabled
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      operationId: getMe
+      summary: Current session user
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current user (null if not authenticated)
+          content:
+            application/json:
+              schema:
+                $ref: './auth_models.yaml#/components/schemas/MeResponse'
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      operationId: logout
+      summary: Invalidate session
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Logged out
+  /api/auth/complete-registration:
+    post:
+      tags:
+        - Auth
+      operationId: completeRegistration
+      summary: Complete user registration
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './auth_models.yaml#/components/schemas/CompleteRegistrationRequest'
+      responses:
+        '200':
+          description: Registered user
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: './auth_models.yaml#/components/schemas/AuthUserDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '409':
+          description: User already registered
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/auth/account:
+    delete:
+      tags:
+        - Auth
+      operationId: deleteAccount
+      summary: Delete current user account
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Account deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'

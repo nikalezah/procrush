@@ -66,7 +66,7 @@ export function SeekerTestTakePage() {
       detail = await startSurvey(id)
     }
     setSurvey(detail)
-    setAnswers(parseAnswersJson(detail.answersJson))
+    setAnswers(parseAnswersJson(detail.answersJson ?? null))
     setScalePage(0)
   }, [id, navigate])
 

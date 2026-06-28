@@ -1,0 +1,219 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API
+  version: 1.0.0
+  description: ProCrush REST API — surveys, profiles, matching, and personality generation.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Auth
+    description: Authentication and registration
+  - name: Reference
+    description: Shared reference data (occupations, skills)
+  - name: SeekerProfile
+    description: Seeker profile, experience, skills, and recommendations
+  - name: SeekerSurvey
+    description: Seeker survey flow
+  - name: SeekerPersonality
+    description: Personality profile preview and generation
+  - name: Employer
+    description: Employer profile and job profiles
+paths:
+  /api/auth/dev/login:
+    $ref: './specs/auth_paths.yaml#/paths/~1api~1auth~1dev~1login'
+  /api/auth/me:
+    $ref: './specs/auth_paths.yaml#/paths/~1api~1auth~1me'
+  /api/auth/logout:
+    $ref: './specs/auth_paths.yaml#/paths/~1api~1auth~1logout'
+  /api/auth/complete-registration:
+    $ref: './specs/auth_paths.yaml#/paths/~1api~1auth~1complete-registration'
+  /api/auth/account:
+    $ref: './specs/auth_paths.yaml#/paths/~1api~1auth~1account'
+  /api/occupations:
+    $ref: './specs/reference_paths.yaml#/paths/~1api~1occupations'
+  /api/skills:
+    $ref: './specs/reference_paths.yaml#/paths/~1api~1skills'
+  /api/seeker/dashboard:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1dashboard'
+  /api/seeker/me:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1me'
+  /api/seeker/experience:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1experience'
+  /api/seeker/experience/{id}:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1experience~1{id}'
+  /api/seeker/education:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1education'
+  /api/seeker/education/{id}:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1education~1{id}'
+  /api/seeker/skills:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1skills'
+  /api/seeker/desired-positions:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1desired-positions'
+  /api/seeker/positions-overview:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1positions-overview'
+  /api/seeker/recommendations:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1recommendations'
+  /api/seeker/recommendations/{jobProfileId}/respond:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1recommendations~1{jobProfileId}~1respond'
+  /api/seeker/interests:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1interests'
+  /api/seeker/match-interests/count:
+    $ref: './specs/seeker_paths.yaml#/paths/~1api~1seeker~1match-interests~1count'
+  /api/seeker/personality/llm-context:
+    $ref: './specs/survey_paths.yaml#/paths/~1api~1seeker~1personality~1llm-context'
+  /api/seeker/surveys:
+    $ref: './specs/survey_paths.yaml#/paths/~1api~1seeker~1surveys'
+  /api/seeker/surveys/{id}:
+    $ref: './specs/survey_paths.yaml#/paths/~1api~1seeker~1surveys~1{id}'
+  /api/seeker/surveys/{id}/start:
+    $ref: './specs/survey_paths.yaml#/paths/~1api~1seeker~1surveys~1{id}~1start'
+  /api/seeker/surveys/{id}/answers:
+    $ref: './specs/survey_paths.yaml#/paths/~1api~1seeker~1surveys~1{id}~1answers'
+  /api/seeker/surveys/{id}/complete:
+    $ref: './specs/survey_paths.yaml#/paths/~1api~1seeker~1surveys~1{id}~1complete'
+  /api/seeker/personality-preview:
+    $ref: './specs/personality_paths.yaml#/paths/~1api~1seeker~1personality-preview'
+  /api/seeker/personality/generate:
+    $ref: './specs/personality_paths.yaml#/paths/~1api~1seeker~1personality~1generate'
+  /api/employer/dashboard:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1dashboard'
+  /api/employer/me:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1me'
+  /api/employer/job-profiles:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1job-profiles'
+  /api/employer/job-profiles/{id}:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1job-profiles~1{id}'
+  /api/employer/job-profiles/{id}/candidates:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1job-profiles~1{id}~1candidates'
+  /api/employer/job-profiles/{id}/candidates-overview:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1job-profiles~1{id}~1candidates-overview'
+  /api/employer/job-profiles/{id}/candidates/{seekerId}/respond:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1job-profiles~1{id}~1candidates~1{seekerId}~1respond'
+  /api/employer/job-profiles/{id}/interests:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1job-profiles~1{id}~1interests'
+  /api/employer/match-interests/count:
+    $ref: './specs/employer_paths.yaml#/paths/~1api~1employer~1match-interests~1count'
+components:
+  securitySchemes:
+    cookieAuth:
+      $ref: './specs/common_models.yaml#/components/securitySchemes/cookieAuth'
+  schemas:
+    ErrorResponse:
+      $ref: './specs/common_models.yaml#/components/schemas/ErrorResponse'
+    UserRole:
+      $ref: './specs/common_models.yaml#/components/schemas/UserRole'
+    InterestStatus:
+      $ref: './specs/common_models.yaml#/components/schemas/InterestStatus'
+    PersonalityProfileStatus:
+      $ref: './specs/common_models.yaml#/components/schemas/PersonalityProfileStatus'
+    SurveyStatus:
+      $ref: './specs/common_models.yaml#/components/schemas/SurveyStatus'
+    AuthUserDto:
+      $ref: './specs/auth_models.yaml#/components/schemas/AuthUserDto'
+    DevLoginRequest:
+      $ref: './specs/auth_models.yaml#/components/schemas/DevLoginRequest'
+    CompleteRegistrationRequest:
+      $ref: './specs/auth_models.yaml#/components/schemas/CompleteRegistrationRequest'
+    MeResponse:
+      $ref: './specs/auth_models.yaml#/components/schemas/MeResponse'
+    OccupationDto:
+      $ref: './specs/reference_models.yaml#/components/schemas/OccupationDto'
+    SkillDto:
+      $ref: './specs/reference_models.yaml#/components/schemas/SkillDto'
+    SuperpowerAndTalentDto:
+      $ref: './specs/reference_models.yaml#/components/schemas/SuperpowerAndTalentDto'
+    EmployerContactDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/EmployerContactDto'
+    SeekerContactDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/SeekerContactDto'
+    JobRecommendationDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/JobRecommendationDto'
+    CandidateRecommendationDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/CandidateRecommendationDto'
+    SeekerInterestsResponseDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/SeekerInterestsResponseDto'
+    EmployerInterestsResponseDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/EmployerInterestsResponseDto'
+    EmployerCandidatesOverviewDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/EmployerCandidatesOverviewDto'
+    MatchInterestCountDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/MatchInterestCountDto'
+    MatchInterestEventDto:
+      $ref: './specs/matching_models.yaml#/components/schemas/MatchInterestEventDto'
+    SeekerProfileDto:
+      $ref: './specs/seeker_models.yaml#/components/schemas/SeekerProfileDto'
+    UpdateSeekerProfileRequest:
+      $ref: './specs/seeker_models.yaml#/components/schemas/UpdateSeekerProfileRequest'
+    SeekerExperienceDto:
+      $ref: './specs/seeker_models.yaml#/components/schemas/SeekerExperienceDto'
+    CreateSeekerExperienceRequest:
+      $ref: './specs/seeker_models.yaml#/components/schemas/CreateSeekerExperienceRequest'
+    UpdateSeekerExperienceRequest:
+      $ref: './specs/seeker_models.yaml#/components/schemas/UpdateSeekerExperienceRequest'
+    SeekerEducationDto:
+      $ref: './specs/seeker_models.yaml#/components/schemas/SeekerEducationDto'
+    CreateSeekerEducationRequest:
+      $ref: './specs/seeker_models.yaml#/components/schemas/CreateSeekerEducationRequest'
+    UpdateSeekerEducationRequest:
+      $ref: './specs/seeker_models.yaml#/components/schemas/UpdateSeekerEducationRequest'
+    SeekerSkillsResponse:
+      $ref: './specs/seeker_models.yaml#/components/schemas/SeekerSkillsResponse'
+    UpdateSeekerSkillsRequest:
+      $ref: './specs/seeker_models.yaml#/components/schemas/UpdateSeekerSkillsRequest'
+    SeekerDesiredPositionsResponse:
+      $ref: './specs/seeker_models.yaml#/components/schemas/SeekerDesiredPositionsResponse'
+    UpdateSeekerDesiredPositionsRequest:
+      $ref: './specs/seeker_models.yaml#/components/schemas/UpdateSeekerDesiredPositionsRequest'
+    SeekerDashboardDto:
+      $ref: './specs/seeker_models.yaml#/components/schemas/SeekerDashboardDto'
+    SeekerPositionsOverviewDto:
+      $ref: './specs/seeker_models.yaml#/components/schemas/SeekerPositionsOverviewDto'
+    SurveyListItemDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/SurveyListItemDto'
+    SurveyGroupDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/SurveyGroupDto'
+    SurveyGroupsResponseDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/SurveyGroupsResponseDto'
+    SurveyDetailDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/SurveyDetailDto'
+    SaveSurveyAnswersRequest:
+      $ref: './specs/survey_models.yaml#/components/schemas/SaveSurveyAnswersRequest'
+    GlossaryTermDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/GlossaryTermDto'
+    SurveyLlmContextItemDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/SurveyLlmContextItemDto'
+    SurveyLlmContextDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/SurveyLlmContextDto'
+    CompleteSurveyResponseDto:
+      $ref: './specs/survey_models.yaml#/components/schemas/CompleteSurveyResponseDto'
+    PersonalityAxesDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalityAxesDto'
+    PersonalityItemDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalityItemDto'
+    PersonalitySectionDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalitySectionDto'
+    SucceedThroughDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/SucceedThroughDto'
+    PersonalityTraitDetailsDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalityTraitDetailsDto'
+    PersonalityTraitDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalityTraitDto'
+    PersonalityCategoryDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalityCategoryDto'
+    PersonalityPreviewDto:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalityPreviewDto'
+    PersonalityGenerationStatusResponse:
+      $ref: './specs/personality_models.yaml#/components/schemas/PersonalityGenerationStatusResponse'
+    EmployerProfileDto:
+      $ref: './specs/employer_models.yaml#/components/schemas/EmployerProfileDto'
+    UpdateEmployerProfileRequest:
+      $ref: './specs/employer_models.yaml#/components/schemas/UpdateEmployerProfileRequest'
+    JobProfileDto:
+      $ref: './specs/employer_models.yaml#/components/schemas/JobProfileDto'
+    CreateJobProfileRequest:
+      $ref: './specs/employer_models.yaml#/components/schemas/CreateJobProfileRequest'
+    UpdateJobProfileRequest:
+      $ref: './specs/employer_models.yaml#/components/schemas/UpdateJobProfileRequest'
+    EmployerDashboardDto:
+      $ref: './specs/employer_models.yaml#/components/schemas/EmployerDashboardDto'

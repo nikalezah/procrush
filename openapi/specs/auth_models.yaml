@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Auth Models
+  version: 1.0.0
+components:
+  schemas:
+    AuthUserDto:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        profileName:
+          type: string
+          nullable: true
+        role:
+          $ref: './common_models.yaml#/components/schemas/UserRole'
+          nullable: true
+    DevLoginRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+    CompleteRegistrationRequest:
+      type: object
+      required:
+        - role
+      properties:
+        email:
+          type: string
+          nullable: true
+        role:
+          $ref: './common_models.yaml#/components/schemas/UserRole'
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        middleName:
+          type: string
+          nullable: true
+        companyName:
+          type: string
+          nullable: true
+    MeResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUserDto'
+          nullable: true

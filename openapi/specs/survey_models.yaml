@@ -1,0 +1,198 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Survey Models
+  version: 1.0.0
+components:
+  schemas:
+    SurveyListItemDto:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - description
+        - status
+        - sortOrder
+        - locked
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: './common_models.yaml#/components/schemas/SurveyStatus'
+        sortOrder:
+          type: integer
+        locked:
+          type: boolean
+    SurveyGroupDto:
+      type: object
+      required:
+        - code
+        - name
+        - surveys
+        - completedCount
+        - totalCount
+        - status
+        - locked
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        surveys:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyListItemDto'
+        completedCount:
+          type: integer
+        totalCount:
+          type: integer
+        status:
+          $ref: './common_models.yaml#/components/schemas/SurveyStatus'
+        locked:
+          type: boolean
+        entrySurveyId:
+          type: integer
+          format: int64
+          nullable: true
+    SurveyGroupsResponseDto:
+      type: object
+      required:
+        - groups
+        - testsCompleted
+        - testsTotal
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyGroupDto'
+        testsCompleted:
+          type: integer
+        testsTotal:
+          type: integer
+    SurveyDetailDto:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - description
+        - groupCode
+        - questionsJson
+        - status
+        - locked
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        groupCode:
+          type: string
+        questionsJson:
+          type: string
+        status:
+          $ref: './common_models.yaml#/components/schemas/SurveyStatus'
+        answersJson:
+          type: string
+          nullable: true
+        resultId:
+          type: integer
+          format: int64
+          nullable: true
+        locked:
+          type: boolean
+        stepNumber:
+          type: integer
+          nullable: true
+        stepTotal:
+          type: integer
+          nullable: true
+        prevSurveyId:
+          type: integer
+          format: int64
+          nullable: true
+        nextSurveyId:
+          type: integer
+          format: int64
+          nullable: true
+    SaveSurveyAnswersRequest:
+      type: object
+      required:
+        - answers
+      properties:
+        answers:
+          type: object
+    GlossaryTermDto:
+      type: object
+      required:
+        - id
+        - term
+        - definition
+        - description
+      properties:
+        id:
+          type: integer
+          format: int64
+        term:
+          type: string
+        definition:
+          type: string
+        description:
+          type: string
+    SurveyLlmContextItemDto:
+      type: object
+      required:
+        - surveyCode
+        - answersJson
+        - calculatedResultsJson
+      properties:
+        surveyCode:
+          type: string
+        answersJson:
+          type: string
+        calculatedResultsJson:
+          type: string
+    SurveyLlmContextDto:
+      type: object
+      required:
+        - surveys
+        - glossaryTerms
+      properties:
+        surveys:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyLlmContextItemDto'
+        glossaryTerms:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlossaryTermDto'
+    CompleteSurveyResponseDto:
+      type: object
+      required:
+        - resultId
+        - surveyId
+        - status
+      properties:
+        resultId:
+          type: integer
+          format: int64
+        surveyId:
+          type: integer
+          format: int64
+        status:
+          $ref: './common_models.yaml#/components/schemas/SurveyStatus'
+        nextSurveyId:
+          type: integer
+          format: int64
+          nullable: true

@@ -21,7 +21,6 @@ data:
   AUTH_DEV_MODE: "true"
   BACKEND_UPSTREAM: api:8080
   PORT: "8080"
-  LLM_USE_STUB: "false"
   LLM_BASE_URL: https://generativelanguage.googleapis.com/v1beta/openai
   LLM_MODEL: gemini-3.1-flash-lite
   LLM_REQUEST_TIMEOUT_SECONDS: "180"

@@ -1,144 +1,63 @@
-export type UserRole = 'SEEKER' | 'EMPLOYER'
+import type {components} from './generated/schema'
 
-export interface AuthUserDto {
-  id: string
-  email: string
-  profileName?: string | null
-  role?: UserRole | null
-}
+type Schemas = components['schemas']
 
-export interface DevLoginRequest {
-  email: string
-}
+// Re-export API DTO types from generated OpenAPI schema
+export type UserRole = Schemas['UserRole']
+export type InterestStatus = Schemas['InterestStatus']
+export type PersonalityProfileStatus = Schemas['PersonalityProfileStatus']
+export type SurveyStatus = Schemas['SurveyStatus']
 
-export interface CompleteRegistrationRequest {
-  email?: string | null
-  role: UserRole
-  firstName?: string | null
-  lastName?: string | null
-  middleName?: string | null
-  companyName?: string | null
-}
+export type AuthUserDto = Schemas['AuthUserDto']
+export type DevLoginRequest = Schemas['DevLoginRequest']
+export type CompleteRegistrationRequest = Schemas['CompleteRegistrationRequest']
+export type MeResponse = Schemas['MeResponse']
 
-export interface MeResponse {
-  user: AuthUserDto | null
-}
+export type OccupationDto = Schemas['OccupationDto']
+export type SkillDto = Schemas['SkillDto']
 
-export type AuthState =
-  | { kind: 'loading' }
-  | { kind: 'unauthenticated' }
-  | { kind: 'needsRegistration'; user: AuthUserDto }
-  | { kind: 'authenticated'; user: AuthUserDto }
+export type SeekerProfileDto = Schemas['SeekerProfileDto']
+export type UpdateSeekerProfileRequest = Schemas['UpdateSeekerProfileRequest']
+export type SeekerExperienceDto = Schemas['SeekerExperienceDto']
+export type CreateSeekerExperienceRequest = Schemas['CreateSeekerExperienceRequest']
+export type SeekerEducationDto = Schemas['SeekerEducationDto']
+export type CreateSeekerEducationRequest = Schemas['CreateSeekerEducationRequest']
+export type SeekerSkillsResponse = Schemas['SeekerSkillsResponse']
+export type SeekerDesiredPositionsResponse = Schemas['SeekerDesiredPositionsResponse']
+export type SeekerDashboardDto = Schemas['SeekerDashboardDto']
+export type SeekerPositionsOverviewDto = Schemas['SeekerPositionsOverviewDto']
+export type SeekerInterestsResponseDto = Schemas['SeekerInterestsResponseDto']
 
-export interface OccupationDto {
-  id: number
-  parentId: number | null
-  name: string
-  isLeaf: boolean
-}
+export type EmployerProfileDto = Schemas['EmployerProfileDto']
+export type UpdateEmployerProfileRequest = Schemas['UpdateEmployerProfileRequest']
+export type JobProfileDto = Schemas['JobProfileDto']
+export type CreateJobProfileRequest = Schemas['CreateJobProfileRequest']
+export type EmployerDashboardDto = Schemas['EmployerDashboardDto']
+export type EmployerInterestsResponseDto = Schemas['EmployerInterestsResponseDto']
+export type EmployerCandidatesOverviewDto = Schemas['EmployerCandidatesOverviewDto']
 
-export interface SkillDto {
-  id: number
-  name: string
-}
+export type PersonalityAxesDto = Schemas['PersonalityAxesDto']
+export type SucceedThroughDto = Schemas['SucceedThroughDto']
+export type PersonalityTraitDetailsDto = Schemas['PersonalityTraitDetailsDto']
+export type PersonalityTraitDto = Schemas['PersonalityTraitDto']
+export type PersonalityCategoryDto = Schemas['PersonalityCategoryDto']
+export type PersonalityItemDto = Schemas['PersonalityItemDto']
+export type PersonalitySectionDto = Schemas['PersonalitySectionDto']
+export type SuperpowerAndTalentDto = Schemas['SuperpowerAndTalentDto']
+export type PersonalityPreviewDto = Schemas['PersonalityPreviewDto']
 
-export interface SeekerProfileDto {
-  id: number
-  firstName: string
-  middleName: string | null
-  lastName: string
-  phone: string | null
-  telegram: string | null
-  linkedin: string | null
-}
+export type MatchInterestEventDto = Schemas['MatchInterestEventDto']
+export type MatchInterestCountDto = Schemas['MatchInterestCountDto']
+export type EmployerContactDto = Schemas['EmployerContactDto']
+export type SeekerContactDto = Schemas['SeekerContactDto']
+export type JobRecommendationDto = Schemas['JobRecommendationDto']
+export type CandidateRecommendationDto = Schemas['CandidateRecommendationDto']
 
-export interface UpdateSeekerProfileRequest {
-  firstName: string
-  middleName?: string | null
-  lastName: string
-  phone?: string | null
-  telegram?: string | null
-  linkedin?: string | null
-}
-
-export interface SeekerExperienceDto {
-  id: number
-  companyName: string
-  position: string
-  description: string | null
-  startDate: string
-  endDate: string | null
-}
-
-export interface CreateSeekerExperienceRequest {
-  companyName: string
-  position: string
-  description?: string | null
-  startDate: string
-  endDate?: string | null
-}
-
-export interface SeekerEducationDto {
-  id: number
-  institution: string
-  degree: string | null
-  specialization: string
-  endYear: number
-}
-
-export interface CreateSeekerEducationRequest {
-  institution: string
-  degree?: string | null
-  specialization: string
-  endYear: number
-}
-
-export interface SeekerSkillsResponse {
-  skillIds: number[]
-  skills: SkillDto[]
-}
-
-export interface SeekerDesiredPositionsResponse {
-  occupationIds: number[]
-  occupations: OccupationDto[]
-}
-
-export interface EmployerProfileDto {
-  id: number
-  name: string
-  description: string | null
-  website: string | null
-  phone: string | null
-  emailContact: string | null
-}
-
-export interface UpdateEmployerProfileRequest {
-  name: string
-  description?: string | null
-  website?: string | null
-  phone?: string | null
-  emailContact?: string | null
-}
-
-export interface JobProfileDto {
-  id: number
-  occupationId: number
-  occupationName: string
-  description: string | null
-  isActive: boolean
-  skillIds: number[]
-  skills: SkillDto[]
-  personalityAxes: PersonalityAxesDto
-}
-
-export interface PersonalityAxesDto {
-  axisDominance: number
-  axisInfluence: number
-  axisStability: number
-  axisIntegrity: number
-  axisAutonomy: number
-  axisPace: number
-}
+export type SurveyListItemDto = Schemas['SurveyListItemDto']
+export type SurveyGroupDto = Schemas['SurveyGroupDto']
+export type SurveyGroupsResponseDto = Schemas['SurveyGroupsResponseDto']
+export type SurveyDetailDto = Schemas['SurveyDetailDto']
+export type CompleteSurveyResponseDto = Schemas['CompleteSurveyResponseDto']
 
 export const DEFAULT_PERSONALITY_AXES: PersonalityAxesDto = {
   axisDominance: 0.5,
@@ -149,239 +68,12 @@ export const DEFAULT_PERSONALITY_AXES: PersonalityAxesDto = {
   axisPace: 0.5,
 }
 
-export interface CreateJobProfileRequest {
-  occupationId: number
-  description?: string | null
-  isActive?: boolean
-  skillIds?: number[]
-  personalityAxes?: PersonalityAxesDto | null
-}
-
-export interface SucceedThroughDto {
-  point0: string
-  point1: string
-  point2: string
-}
-
-export interface PersonalityTraitDetailsDto {
-  description: string
-  goodDay: string
-  badDay: string
-  succeedThrough: SucceedThroughDto
-}
-
-export interface PersonalityTraitDto {
-  key: string
-  label: string
-  scalePosition: number
-  leftPole: string
-  rightPole: string
-  details: PersonalityTraitDetailsDto
-  isTopStrength?: boolean
-}
-
-export interface PersonalityCategoryDto {
-  key: string
-  description: string
-  topStrengthIndex: number
-  traits: PersonalityTraitDto[]
-}
-
-export interface PersonalityItemDto {
-  title: string
-  description: string
-}
-
-export interface PersonalitySectionDto {
-  title: string
-  items: PersonalityItemDto[]
-}
-
-/** Ровно 3 источника энергии (см. серверные PersonalitySectionRules). */
-export interface EnergySourcesSectionDto {
-  title: 'Источники энергии'
-  items: [PersonalityItemDto, PersonalityItemDto, PersonalityItemDto]
-}
-
-/** Ровно 2 стоп-фактора (см. серверные PersonalitySectionRules). */
-export interface StopFactorsSectionDto {
-  title: 'Стоп-факторы'
-  items: [PersonalityItemDto, PersonalityItemDto]
-}
-
-export interface SuperpowerAndTalentDto {
-  id: number
-  name: string
-  isPronounced: boolean
-}
-
-export type PersonalityProfileStatus = 'NOT_READY' | 'PROCESSING' | 'READY' | 'FAILED'
-
-export interface PersonalityPreviewDto {
-  status: PersonalityProfileStatus
-  generationError?: string | null
-  testsCompleted: number
-  testsTotal: number
-  title?: string | null
-  description?: string | null
-  profile?: string | null
-  autonomy?: string | null
-  thinkingStyle?: string | null
-  burnoutRisk?: string | null
-  axisDominance?: number | null
-  axisInfluence?: number | null
-  axisStability?: number | null
-  axisIntegrity?: number | null
-  axisAutonomy?: number | null
-  axisPace?: number | null
-  categories?: PersonalityCategoryDto[] | null
-  energySources?: EnergySourcesSectionDto | null
-  stopFactors?: StopFactorsSectionDto | null
-  superpowersAndTalents?: SuperpowerAndTalentDto[] | null
-}
-
-export type InterestStatus = 'NONE' | 'RESPONDED' | 'INCOMING' | 'MUTUAL'
-
-export interface MatchInterestEventDto {
-  jobProfileId: number
-  seekerId: number
-  interestStatus: InterestStatus
-  employerContact?: EmployerContactDto | null
-  seekerContact?: SeekerContactDto | null
-}
-
-export interface MatchInterestCountDto {
-  count: number
-}
-
-export interface EmployerContactDto {
-  companyName: string
-  phone?: string | null
-  emailContact?: string | null
-  website?: string | null
-}
-
-export interface SeekerContactDto {
-  firstName: string
-  lastName: string
-  phone?: string | null
-  telegram?: string | null
-  linkedin?: string | null
-}
-
-export interface JobRecommendationDto {
-  id: number
-  companyName: string
-  positionName: string
-  description: string
-  matchScore: number
-  matchScoreDisplay: number
-  interestStatus?: InterestStatus
-  contactInfo?: EmployerContactDto | null
-}
-
-export interface CandidateRecommendationDto {
-  id: number
-  firstName: string
-  lastName: string
-  positionName: string
-  skills: string[]
-  matchScore: number
-  matchScoreDisplay: number
-  interestStatus?: InterestStatus
-  contactInfo?: SeekerContactDto | null
-}
-
-export interface SeekerInterestsResponseDto {
-  respondedOutside: JobRecommendationDto[]
-  mutualOutside: JobRecommendationDto[]
-}
-
-export interface EmployerInterestsResponseDto {
-  respondedOutside: CandidateRecommendationDto[]
-  mutualOutside: CandidateRecommendationDto[]
-}
-
-export interface SeekerPositionsOverviewDto {
-  occupationIds: number[]
-  occupations: OccupationDto[]
-  recommendations: JobRecommendationDto[]
-  interests: SeekerInterestsResponseDto
-  testsComplete: boolean
-}
-
-export interface EmployerCandidatesOverviewDto {
-  candidates: CandidateRecommendationDto[]
-  interests: EmployerInterestsResponseDto
-}
-
-export interface SeekerDashboardDto {
-  profileCompletionPercent: number
-  desiredPositionsCount: number
-  experienceCount: number
-  recommendationsPreview: JobRecommendationDto[]
-  testsComplete: boolean
-}
-
-export interface EmployerDashboardDto {
-  companyName: string
-  jobProfilesCount: number
-  activeJobProfilesCount: number
-  totalMatchedCandidates: number
-}
-
-export type SurveyStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
-
-export interface SurveyListItemDto {
-  id: number
-  code: string
-  name: string
-  description: string
-  status: SurveyStatus
-  sortOrder: number
-  locked: boolean
-}
-
-export interface SurveyGroupDto {
-  code: string
-  name: string
-  surveys: SurveyListItemDto[]
-  completedCount: number
-  totalCount: number
-  status: SurveyStatus
-  locked: boolean
-  entrySurveyId: number | null
-}
-
-export interface SurveyGroupsResponseDto {
-  groups: SurveyGroupDto[]
-  testsCompleted: number
-  testsTotal: number
-}
-
-export interface SurveyDetailDto {
-  id: number
-  code: string
-  name: string
-  description: string
-  groupCode: string
-  questionsJson: string
-  status: SurveyStatus
-  answersJson: string | null
-  resultId: number | null
-  locked: boolean
-  stepNumber?: number | null
-  stepTotal?: number | null
-  prevSurveyId?: number | null
-  nextSurveyId?: number | null
-}
-
-export interface CompleteSurveyResponseDto {
-  resultId: number
-  surveyId: number
-  status: SurveyStatus
-  nextSurveyId?: number | null
-}
+// UI-only types (not part of OpenAPI schema)
+export type AuthState =
+  | { kind: 'loading' }
+  | { kind: 'unauthenticated' }
+  | { kind: 'needsRegistration'; user: AuthUserDto }
+  | { kind: 'authenticated'; user: AuthUserDto }
 
 export interface SurveyOption {
   id: number

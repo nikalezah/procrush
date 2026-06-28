@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: procrush-config
-  namespace: procrush
-data:
-  LLM_USE_STUB: "true"

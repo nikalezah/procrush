@@ -1,0 +1,65 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Personality Paths
+  version: 1.0.0
+paths:
+  /api/seeker/personality-preview:
+    get:
+      tags:
+        - SeekerPersonality
+      operationId: getPersonalityPreview
+      summary: Get personality profile preview
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Personality preview
+          content:
+            application/json:
+              schema:
+                $ref: './personality_models.yaml#/components/schemas/PersonalityPreviewDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/personality/generate:
+    post:
+      tags:
+        - SeekerPersonality
+      operationId: triggerPersonalityGeneration
+      summary: Trigger personality profile generation
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                $ref: './personality_models.yaml#/components/schemas/PersonalityGenerationStatusResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '409':
+          description: Generation already in progress
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'

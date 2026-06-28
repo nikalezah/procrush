@@ -1,5 +1,12 @@
 package jobs.procrush.composition
 
+import jobs.procrush.api.handler.ApiHandlers
+import jobs.procrush.api.handler.AuthHandler
+import jobs.procrush.api.handler.EmployerHandler
+import jobs.procrush.api.handler.ReferenceHandler
+import jobs.procrush.api.handler.SeekerPersonalityHandler
+import jobs.procrush.api.handler.SeekerProfileHandler
+import jobs.procrush.api.handler.SeekerSurveyHandler
 import jobs.procrush.auth.service.RoleGuard
 import jobs.procrush.auth.service.SessionService
 import jobs.procrush.auth.service.UserAuthService
@@ -35,6 +42,7 @@ data class AppContext(
     val personalityProfileService: PersonalityProfileService,
     val matchInterestService: MatchInterestService,
     val referenceRepository: ReferenceRepository,
+    val handlers: ApiHandlers,
     private val personalityModule: PersonalityModule,
 ) {
     fun close() {
@@ -80,6 +88,16 @@ data class AppContext(
 
             auth.sessionRepository.purgeExpired()
 
+            val handlers =
+                ApiHandlers(
+                    auth = AuthHandler(config, auth.userAuthService, auth.sessionService, auth.roleGuard),
+                    reference = ReferenceHandler(auth.roleGuard, auth.referenceRepository),
+                    seekerProfile = SeekerProfileHandler(auth.roleGuard, seeker.seekerProfileService, matching.matchInterestService),
+                    seekerSurvey = SeekerSurveyHandler(auth.roleGuard, survey.surveyService, personality.personalityProfileService),
+                    seekerPersonality = SeekerPersonalityHandler(auth.roleGuard, personality.personalityProfileService),
+                    employer = EmployerHandler(auth.roleGuard, employer.employerProfileService, matching.matchInterestService),
+                )
+
             return AppContext(
                 config = config,
                 redisModule = redis,
@@ -97,6 +115,7 @@ data class AppContext(
                 matchingEventsRuntime = matchingEvents,
                 matchingModule = matching,
                 matchingClient = matching.matchingClient,
+                handlers = handlers,
             )
         }
     }

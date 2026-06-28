@@ -1,0 +1,255 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Survey Paths
+  version: 1.0.0
+paths:
+  /api/seeker/personality/llm-context:
+    get:
+      tags:
+        - SeekerSurvey
+      operationId: getSurveyLlmContext
+      summary: Survey data for personality LLM context
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: LLM context
+          content:
+            application/json:
+              schema:
+                $ref: './survey_models.yaml#/components/schemas/SurveyLlmContextDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/surveys:
+    get:
+      tags:
+        - SeekerSurvey
+      operationId: listSurveys
+      summary: List survey groups
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Survey groups
+          content:
+            application/json:
+              schema:
+                $ref: './survey_models.yaml#/components/schemas/SurveyGroupsResponseDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}:
+    get:
+      tags:
+        - SeekerSurvey
+      operationId: getSurvey
+      summary: Get survey detail
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Survey detail
+          content:
+            application/json:
+              schema:
+                $ref: './survey_models.yaml#/components/schemas/SurveyDetailDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}/start:
+    post:
+      tags:
+        - SeekerSurvey
+      operationId: startSurvey
+      summary: Start survey
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Started survey
+          content:
+            application/json:
+              schema:
+                $ref: './survey_models.yaml#/components/schemas/SurveyDetailDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}/answers:
+    put:
+      tags:
+        - SeekerSurvey
+      operationId: saveSurveyAnswers
+      summary: Save survey answers
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './survey_models.yaml#/components/schemas/SaveSurveyAnswersRequest'
+      responses:
+        '200':
+          description: Saved answers
+          content:
+            application/json:
+              schema:
+                $ref: './survey_models.yaml#/components/schemas/SurveyDetailDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '409':
+          description: Survey already completed
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/surveys/{id}/complete:
+    post:
+      tags:
+        - SeekerSurvey
+      operationId: completeSurvey
+      summary: Complete survey
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './survey_models.yaml#/components/schemas/SaveSurveyAnswersRequest'
+      responses:
+        '200':
+          description: Survey completed
+          content:
+            application/json:
+              schema:
+                $ref: './survey_models.yaml#/components/schemas/CompleteSurveyResponseDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '409':
+          description: Survey already completed
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'

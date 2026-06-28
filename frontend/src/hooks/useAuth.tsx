@@ -1,16 +1,9 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import {createContext, type ReactNode, useCallback, useContext, useEffect, useState,} from 'react'
 import * as authApi from '../api/authApi'
-import type { AuthState, AuthUserDto, CompleteRegistrationRequest } from '../api/types'
+import type {AuthState, AuthUserDto, CompleteRegistrationRequest} from '../api/types'
 
 function userToState(user: AuthUserDto | null): AuthState {
-  if (user == null) return { kind: 'unauthenticated' }
+  if (user == null || user.id === '' || user.email === '') return { kind: 'unauthenticated' }
   if (user.role == null) return { kind: 'needsRegistration', user }
   return { kind: 'authenticated', user }
 }

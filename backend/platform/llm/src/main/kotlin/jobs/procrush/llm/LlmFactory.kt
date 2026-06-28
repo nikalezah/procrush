@@ -13,7 +13,6 @@ object LlmFactory {
     fun createClient(config: LlmConfig): LlmClient {
         config.validateForGeneration()
         return when (config.provider) {
-            LlmProvider.STUB -> StubLlmClient()
             LlmProvider.OLLAMA -> OllamaLlmClient(config)
             LlmProvider.OPENAI_COMPAT -> OpenAiCompatibleLlmClient(config)
         }

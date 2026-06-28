@@ -1,0 +1,446 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Employer Paths
+  version: 1.0.0
+paths:
+  /api/employer/dashboard:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerDashboard
+      summary: Employer dashboard
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: './employer_models.yaml#/components/schemas/EmployerDashboardDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/me:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerProfile
+      summary: Get employer profile
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Employer profile
+          content:
+            application/json:
+              schema:
+                $ref: './employer_models.yaml#/components/schemas/EmployerProfileDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Employer
+      operationId: updateEmployerProfile
+      summary: Update employer profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './employer_models.yaml#/components/schemas/UpdateEmployerProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: './employer_models.yaml#/components/schemas/EmployerProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles:
+    get:
+      tags:
+        - Employer
+      operationId: listJobProfiles
+      summary: List job profiles
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Job profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './employer_models.yaml#/components/schemas/JobProfileDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Employer
+      operationId: createJobProfile
+      summary: Create job profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './employer_models.yaml#/components/schemas/CreateJobProfileRequest'
+      responses:
+        '201':
+          description: Created job profile
+          content:
+            application/json:
+              schema:
+                $ref: './employer_models.yaml#/components/schemas/JobProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}:
+    patch:
+      tags:
+        - Employer
+      operationId: updateJobProfile
+      summary: Update job profile
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './employer_models.yaml#/components/schemas/UpdateJobProfileRequest'
+      responses:
+        '200':
+          description: Updated job profile
+          content:
+            application/json:
+              schema:
+                $ref: './employer_models.yaml#/components/schemas/JobProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Employer
+      operationId: deleteJobProfile
+      summary: Delete job profile
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/candidates:
+    get:
+      tags:
+        - Employer
+      operationId: getJobCandidates
+      summary: Candidate recommendations for job profile
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './matching_models.yaml#/components/schemas/CandidateRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/candidates-overview:
+    get:
+      tags:
+        - Employer
+      operationId: getJobCandidatesOverview
+      summary: Candidates overview with interests
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Candidates overview
+          content:
+            application/json:
+              schema:
+                $ref: './matching_models.yaml#/components/schemas/EmployerCandidatesOverviewDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/candidates/{seekerId}/respond:
+    post:
+      tags:
+        - Employer
+      operationId: employerRespondToCandidate
+      summary: Respond to candidate
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: seekerId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: Response recorded
+          content:
+            application/json:
+              schema:
+                $ref: './matching_models.yaml#/components/schemas/CandidateRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/job-profiles/{id}/interests:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerInterests
+      summary: Interests outside recommendations
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Interests
+          content:
+            application/json:
+              schema:
+                $ref: './matching_models.yaml#/components/schemas/EmployerInterestsResponseDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/employer/match-interests/count:
+    get:
+      tags:
+        - Employer
+      operationId: getEmployerMatchInterestCount
+      summary: Actionable match interest count
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema:
+                $ref: './matching_models.yaml#/components/schemas/MatchInterestCountDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires EMPLOYER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'

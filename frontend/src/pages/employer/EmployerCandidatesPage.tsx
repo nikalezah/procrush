@@ -23,7 +23,7 @@ function patchEmployerCandidateFromEvent(
   return {
     ...candidate,
     interestStatus: event.interestStatus,
-    contactInfo: event.seekerContact ?? null,
+    contactInfo: event.seekerContact,
   }
 }
 

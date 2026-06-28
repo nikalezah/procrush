@@ -93,15 +93,48 @@ flowchart LR
 | Путь | Назначение                                     |
 |------|------------------------------------------------|
 | [`frontend/`](./frontend) | Основной веб-клиент (React)                    |
-| [`backend/contracts/`](./backend/contracts/src/main/kotlin) | DTO, события, порты и чистая доменная логика без инфраструктуры |
+| [`openapi/`](./openapi) | **Единый контракт REST API** (OpenAPI 3.1): `specs/` — исходники, `dist/openapi.yaml` — bundle для фронта |
+| [`backend/contracts/`](./backend/contracts/src/main/kotlin) | DTO для доменного слоя, события, порты и чистая доменная логика (синхронизируются с OpenAPI через `ApiMappers` в `backend/api`) |
 | [`backend/config/`](./backend/config/src/main/kotlin) | Чтение env и типизированные настройки приложений |
 | [`backend/platform/`](./backend/platform) | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`) |
 | [`backend/domain/`](./backend/domain) | Bounded contexts: auth, seeker, employer, survey, matching, personality (репозитории, сервисы, Exposed-таблицы) |
-| [`backend/api/`](./backend/api/src/main/kotlin) | Ktor HTTP API, composition root, orchestration-сервисы профилей |
+| [`backend/api/`](./backend/api/src/main/kotlin) | Ktor HTTP API, Spektor-generated routes/DTO в `build/`, handlers, composition root |
 | [`backend/personality/`](./backend/personality) | Gradle `:backend:personality` — deployable app: RabbitMQ consumer + health endpoint |
 | [`backend/domain/personality/`](./backend/domain/personality) | Gradle `:backend:domain:personality-lib` — библиотека домена (координатор, publisher, worker-логика) |
 | [`backend/matching/`](./backend/matching) | Kafka consumer + HTTP read API, отдельная БД матчинга |
 | [`deploy/`](./deploy) | Dockerfile для Railway, Kubernetes (kind) для локального стека |
+
+## Контракт API (OpenAPI)
+
+Публичный REST API фронт ↔ бэк описан в [`openapi/`](./openapi/). Это единственный источник истины для путей, тел запросов и ответов.
+
+```
+openapi/
+  specs/           # YAML-файлы (модели + paths), сканируются Spektor
+  bundle.yaml      # entry point для Redocly
+  dist/openapi.yaml  # bundled spec — коммитится, используется фронтом
+```
+
+| Слой | Генерация | Куда попадает |
+|------|-----------|---------------|
+| **Бэкенд** | Spektor (Gradle) | `backend/api/build/spektor-generated/` — routes, `*ServerApi`, DTO |
+| **Фронтенд** | `openapi-typescript` | `frontend/src/api/generated/schema.d.ts` |
+
+**Не входят в OpenAPI** (ручные Ktor routes): `GET /`, `GET /health`, три SSE-эндпоинта (`/match-interests/events`, `/personality-preview/events`). Internal API matching (`/internal/*`) — отдельно.
+
+### Workflow: новый или изменённый эндпоинт
+
+1. Правка YAML в `openapi/specs/` (модели и paths).
+2. Бэкенд: `./gradlew :backend:api:compileKotlin` — Spektor перегенерирует код в `build/`.
+3. Реализовать или обновить handler в `backend/api/.../api/handler/` (маппинг generated DTO ↔ домен через `api/mapper/ApiMappers.kt`).
+4. Фронтенд:
+   ```bash
+   cd frontend
+   npm run bundle:openapi && npm run generate:api
+   ```
+5. Закоммитить `openapi/dist/openapi.yaml` и `frontend/src/api/generated/schema.d.ts`.
+
+После `git clone` перед работой с handlers: один раз `./gradlew :backend:api:compileKotlin`, чтобы IDE увидела generated sources в `build/`. В IntelliJ: *Build and run using → Gradle*.
 
 ## Локальная разработка
 
@@ -254,7 +287,6 @@ git push -u origin master
    | `WEB_ORIGIN` | `https://${{Frontend.RAILWAY_PUBLIC_DOMAIN}}` (после появления домена у frontend) |
    | `FRONTEND_URL` | то же, что `WEB_ORIGIN` |
    | `AUTH_DEV_MODE` | `false` (prod) или `true` (staging) |
-   | `LLM_USE_STUB` | `true` (API не вызывает LLM; генерация в worker) |
 
 6. Деплой (автоматически при push или **Deploy** в dashboard).
 7. Публичный домен опционален (health: `GET /health`).
@@ -326,4 +358,4 @@ git push -u origin master
 - Railway выставляет `PORT` для обоих сервисов.
 - `DATABASE_URL` от Postgres — `postgresql://...`; сервер добавляет JDBC `sslmode=require`.
 
-Переменные LLM для **Personality** (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.) — см. комментарии в [`env.example`](./env.example). На Backend при раздельном personality можно задать `LLM_USE_STUB=true`.
+Переменные LLM для **Personality** (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и др.) — см. комментарии в [`env.example`](./env.example). В kind: `LLM_BASE_URL` / `LLM_MODEL` — в [`deploy/k8s/base/configmap.yaml`](./deploy/k8s/base/configmap.yaml), `LLM_API_KEY` — в [`deploy/k8s/base/secret.yaml`](./deploy/k8s/base/secret.yaml).

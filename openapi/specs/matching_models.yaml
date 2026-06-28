@@ -1,0 +1,174 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Matching Models
+  version: 1.0.0
+components:
+  schemas:
+    EmployerContactDto:
+      type: object
+      required:
+        - companyName
+      properties:
+        companyName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        emailContact:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+    SeekerContactDto:
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+    JobRecommendationDto:
+      type: object
+      required:
+        - id
+        - companyName
+        - positionName
+        - description
+        - matchScore
+        - matchScoreDisplay
+        - interestStatus
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyName:
+          type: string
+        positionName:
+          type: string
+        description:
+          type: string
+        matchScore:
+          type: number
+          format: double
+        matchScoreDisplay:
+          type: integer
+        interestStatus:
+          $ref: './common_models.yaml#/components/schemas/InterestStatus'
+        contactInfo:
+          $ref: '#/components/schemas/EmployerContactDto'
+          nullable: true
+    CandidateRecommendationDto:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+        - positionName
+        - skills
+        - matchScore
+        - matchScoreDisplay
+        - interestStatus
+      properties:
+        id:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        lastName:
+          type: string
+        positionName:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        matchScore:
+          type: number
+          format: double
+        matchScoreDisplay:
+          type: integer
+        interestStatus:
+          $ref: './common_models.yaml#/components/schemas/InterestStatus'
+        contactInfo:
+          $ref: '#/components/schemas/SeekerContactDto'
+          nullable: true
+    SeekerInterestsResponseDto:
+      type: object
+      required:
+        - respondedOutside
+        - mutualOutside
+      properties:
+        respondedOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobRecommendationDto'
+        mutualOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobRecommendationDto'
+    EmployerInterestsResponseDto:
+      type: object
+      required:
+        - respondedOutside
+        - mutualOutside
+      properties:
+        respondedOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateRecommendationDto'
+        mutualOutside:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateRecommendationDto'
+    EmployerCandidatesOverviewDto:
+      type: object
+      required:
+        - candidates
+        - interests
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateRecommendationDto'
+        interests:
+          $ref: '#/components/schemas/EmployerInterestsResponseDto'
+    MatchInterestCountDto:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
+    MatchInterestEventDto:
+      type: object
+      required:
+        - jobProfileId
+        - seekerId
+        - interestStatus
+      properties:
+        jobProfileId:
+          type: integer
+          format: int64
+        seekerId:
+          type: integer
+          format: int64
+        interestStatus:
+          $ref: './common_models.yaml#/components/schemas/InterestStatus'
+        employerContact:
+          $ref: '#/components/schemas/EmployerContactDto'
+          nullable: true
+        seekerContact:
+          $ref: '#/components/schemas/SeekerContactDto'
+          nullable: true

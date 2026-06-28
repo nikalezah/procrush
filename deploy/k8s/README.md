@@ -33,6 +33,8 @@
    - собирает 4 Docker-образа и загружает их в kind (`kind load docker-image`);
    - применяет манифесты: `kubectl apply -k deploy/k8s/overlays/kind`.
 
+   Перед `kind-up` укажите `LLM_API_KEY` в [`deploy/k8s/base/secret.yaml`](./base/secret.yaml) (файл в git с пустым значением — подставьте ключ локально, не коммитьте).
+
 2. Дождитесь готовности pod'ов:
 
    ```bash

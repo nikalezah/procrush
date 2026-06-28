@@ -1,0 +1,685 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Seeker Profile Paths
+  version: 1.0.0
+paths:
+  /api/seeker/dashboard:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerDashboard
+      summary: Seeker dashboard
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerDashboardDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/me:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerProfile
+      summary: Get seeker profile
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Seeker profile
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerProfileDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - SeekerProfile
+      operationId: updateSeekerProfile
+      summary: Update seeker profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './seeker_models.yaml#/components/schemas/UpdateSeekerProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerProfileDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/experience:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: listSeekerExperience
+      summary: List work experience
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Experience entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './seeker_models.yaml#/components/schemas/SeekerExperienceDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - SeekerProfile
+      operationId: createSeekerExperience
+      summary: Create work experience
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './seeker_models.yaml#/components/schemas/CreateSeekerExperienceRequest'
+      responses:
+        '201':
+          description: Created experience
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerExperienceDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/experience/{id}:
+    patch:
+      tags:
+        - SeekerProfile
+      operationId: updateSeekerExperience
+      summary: Update work experience
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './seeker_models.yaml#/components/schemas/UpdateSeekerExperienceRequest'
+      responses:
+        '200':
+          description: Updated experience
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerExperienceDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - SeekerProfile
+      operationId: deleteSeekerExperience
+      summary: Delete work experience
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/education:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: listSeekerEducation
+      summary: List education
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Education entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './seeker_models.yaml#/components/schemas/SeekerEducationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - SeekerProfile
+      operationId: createSeekerEducation
+      summary: Create education entry
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './seeker_models.yaml#/components/schemas/CreateSeekerEducationRequest'
+      responses:
+        '201':
+          description: Created education
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerEducationDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/education/{id}:
+    patch:
+      tags:
+        - SeekerProfile
+      operationId: updateSeekerEducation
+      summary: Update education entry
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './seeker_models.yaml#/components/schemas/UpdateSeekerEducationRequest'
+      responses:
+        '200':
+          description: Updated education
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerEducationDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - SeekerProfile
+      operationId: deleteSeekerEducation
+      summary: Delete education entry
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/skills:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerSkills
+      summary: Get seeker skills
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Skills
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerSkillsResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - SeekerProfile
+      operationId: setSeekerSkills
+      summary: Replace seeker skills
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './seeker_models.yaml#/components/schemas/UpdateSeekerSkillsRequest'
+      responses:
+        '200':
+          description: Updated skills
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerSkillsResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/desired-positions:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerDesiredPositions
+      summary: Get desired positions
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Desired positions
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerDesiredPositionsResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - SeekerProfile
+      operationId: setSeekerDesiredPositions
+      summary: Replace desired positions
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './seeker_models.yaml#/components/schemas/UpdateSeekerDesiredPositionsRequest'
+      responses:
+        '200':
+          description: Updated desired positions
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerDesiredPositionsResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/positions-overview:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerPositionsOverview
+      summary: Positions overview with recommendations and interests
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Positions overview
+          content:
+            application/json:
+              schema:
+                $ref: './seeker_models.yaml#/components/schemas/SeekerPositionsOverviewDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/recommendations:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerRecommendations
+      summary: Job recommendations for seeker
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './matching_models.yaml#/components/schemas/JobRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/recommendations/{jobProfileId}/respond:
+    post:
+      tags:
+        - SeekerProfile
+      operationId: seekerRespondToJob
+      summary: Respond to job recommendation
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: jobProfileId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: Response recorded
+          content:
+            application/json:
+              schema:
+                $ref: './matching_models.yaml#/components/schemas/JobRecommendationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/interests:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerInterests
+      summary: Interests outside recommendations
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Interests
+          content:
+            application/json:
+              schema:
+                $ref: './matching_models.yaml#/components/schemas/SeekerInterestsResponseDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/seeker/match-interests/count:
+    get:
+      tags:
+        - SeekerProfile
+      operationId: getSeekerMatchInterestCount
+      summary: Actionable match interest count
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema:
+                $ref: './matching_models.yaml#/components/schemas/MatchInterestCountDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requires SEEKER role
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'

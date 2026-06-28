@@ -1,5 +1,8 @@
 package jobs.procrush.seeker.dto
 
+// Internal domain transport types. Public HTTP contract: openapi/specs/.
+// API handlers map Spektor-generated DTOs ↔ these types via api/mapper/ApiMappers.kt.
+
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
 import jobs.procrush.shared.dto.OccupationDto

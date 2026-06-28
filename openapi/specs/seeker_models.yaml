@@ -1,0 +1,264 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Seeker Models
+  version: 1.0.0
+components:
+  schemas:
+    SeekerProfileDto:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+      properties:
+        id:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        middleName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+    UpdateSeekerProfileRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+        middleName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+    SeekerExperienceDto:
+      type: object
+      required:
+        - id
+        - companyName
+        - position
+        - startDate
+      properties:
+        id:
+          type: integer
+          format: int64
+        companyName:
+          type: string
+        position:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+    CreateSeekerExperienceRequest:
+      type: object
+      required:
+        - companyName
+        - position
+        - startDate
+      properties:
+        companyName:
+          type: string
+        position:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+    UpdateSeekerExperienceRequest:
+      type: object
+      required:
+        - companyName
+        - position
+        - startDate
+      properties:
+        companyName:
+          type: string
+        position:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+    SeekerEducationDto:
+      type: object
+      required:
+        - id
+        - institution
+        - specialization
+        - endYear
+      properties:
+        id:
+          type: integer
+          format: int64
+        institution:
+          type: string
+        degree:
+          type: string
+          nullable: true
+        specialization:
+          type: string
+        endYear:
+          type: integer
+    CreateSeekerEducationRequest:
+      type: object
+      required:
+        - institution
+        - specialization
+        - endYear
+      properties:
+        institution:
+          type: string
+        degree:
+          type: string
+          nullable: true
+        specialization:
+          type: string
+        endYear:
+          type: integer
+    UpdateSeekerEducationRequest:
+      type: object
+      required:
+        - institution
+        - specialization
+        - endYear
+      properties:
+        institution:
+          type: string
+        degree:
+          type: string
+          nullable: true
+        specialization:
+          type: string
+        endYear:
+          type: integer
+    SeekerSkillsResponse:
+      type: object
+      required:
+        - skillIds
+        - skills
+      properties:
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        skills:
+          type: array
+          items:
+            $ref: './reference_models.yaml#/components/schemas/SkillDto'
+    UpdateSeekerSkillsRequest:
+      type: object
+      required:
+        - skillIds
+      properties:
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    SeekerDesiredPositionsResponse:
+      type: object
+      required:
+        - occupationIds
+        - occupations
+      properties:
+        occupationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        occupations:
+          type: array
+          items:
+            $ref: './reference_models.yaml#/components/schemas/OccupationDto'
+    UpdateSeekerDesiredPositionsRequest:
+      type: object
+      required:
+        - occupationIds
+      properties:
+        occupationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    SeekerDashboardDto:
+      type: object
+      required:
+        - profileCompletionPercent
+        - desiredPositionsCount
+        - experienceCount
+        - recommendationsPreview
+        - testsComplete
+      properties:
+        profileCompletionPercent:
+          type: integer
+        desiredPositionsCount:
+          type: integer
+        experienceCount:
+          type: integer
+        recommendationsPreview:
+          type: array
+          items:
+            $ref: './matching_models.yaml#/components/schemas/JobRecommendationDto'
+        testsComplete:
+          type: boolean
+    SeekerPositionsOverviewDto:
+      type: object
+      required:
+        - occupationIds
+        - occupations
+        - recommendations
+        - interests
+        - testsComplete
+      properties:
+        occupationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        occupations:
+          type: array
+          items:
+            $ref: './reference_models.yaml#/components/schemas/OccupationDto'
+        recommendations:
+          type: array
+          items:
+            $ref: './matching_models.yaml#/components/schemas/JobRecommendationDto'
+        interests:
+          $ref: './matching_models.yaml#/components/schemas/SeekerInterestsResponseDto'
+        testsComplete:
+          type: boolean

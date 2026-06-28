@@ -10,7 +10,8 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
-import jobs.procrush.auth.route.authRoutes
+import jobs.procrush.api.route.generatedApiRoutes
+import jobs.procrush.api.route.sseRoutes
 import jobs.procrush.bootstrap.DatabaseFactory
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.plugins.configureCallLogging
@@ -19,11 +20,6 @@ import jobs.procrush.bootstrap.plugins.configureSerialization
 import jobs.procrush.bootstrap.plugins.configureStatusPages
 import jobs.procrush.composition.AppContext
 import jobs.procrush.composition.checkMatchingServiceHealthBlocking
-import jobs.procrush.employer.route.employerRoutes
-import jobs.procrush.personality.route.personalityProfileRoutes
-import jobs.procrush.seeker.route.seekerProfileRoutes
-import jobs.procrush.shared.route.referenceRoutes
-import jobs.procrush.survey.route.seekerSurveyRoutes
 
 fun main() {
     val config = AppConfig.fromEnvironment()
@@ -86,11 +82,7 @@ fun Application.module() {
                 )
             }
         }
-        authRoutes(app.config, app.userAuthService, app.sessionService, app.roleGuard)
-        referenceRoutes(app.roleGuard, app.referenceRepository)
-        seekerProfileRoutes(app.roleGuard, app.seekerProfileService, app.matchInterestService)
-        personalityProfileRoutes(app.roleGuard, app.personalityProfileService)
-        seekerSurveyRoutes(app.roleGuard, app.surveyService, app.personalityProfileService)
-        employerRoutes(app.roleGuard, app.employerProfileService, app.matchInterestService)
+        generatedApiRoutes(app.handlers)
+        sseRoutes(app.roleGuard, app.matchInterestService, app.personalityProfileService)
     }
 }

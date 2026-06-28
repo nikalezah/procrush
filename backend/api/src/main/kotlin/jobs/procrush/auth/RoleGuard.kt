@@ -45,4 +45,41 @@ class RoleGuard(
         }
         return authUser
     }
+
+    suspend fun peekAuth(call: ApplicationCall): AuthenticatedUser? {
+        val token = call.request.cookies[config.sessionCookieName] ?: return null
+        val user = sessionService.resolveUser(token) ?: return null
+        val role = user.role ?: return null
+        return AuthenticatedUser(
+            id = UUID.fromString(user.id),
+            email = user.email,
+            role = role,
+        )
+    }
+
+    suspend fun peekRole(call: ApplicationCall, requiredRole: UserRole): AuthenticatedUser? {
+        val authUser = peekAuth(call) ?: return null
+        if (authUser.role != requiredRole) return null
+        return authUser
+    }
+
+    suspend fun authProblem(call: ApplicationCall, requiredRole: UserRole? = null): AuthProblem {
+        val token = call.request.cookies[config.sessionCookieName]
+        if (token == null || sessionService.resolveUser(token) == null) {
+            return AuthProblem(unauthorized = true, message = "Не авторизован")
+        }
+        val user = sessionService.resolveUser(token)!!
+        if (user.role == null) {
+            return AuthProblem(unauthorized = false, message = "Роль не выбрана")
+        }
+        if (requiredRole != null && user.role != requiredRole) {
+            return AuthProblem(unauthorized = false, message = "Доступ запрещён")
+        }
+        return AuthProblem(unauthorized = false, message = "Доступ запрещён")
+    }
 }
+
+data class AuthProblem(
+    val unauthorized: Boolean,
+    val message: String,
+)

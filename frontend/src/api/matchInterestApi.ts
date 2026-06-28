@@ -1,3 +1,4 @@
+import {apiFetch} from './client'
 import type {MatchInterestCountDto, MatchInterestEventDto} from './types'
 
 function parseMatchInterestEvent(data: string): MatchInterestEventDto | null {
@@ -29,12 +30,7 @@ function subscribeMatchInterestEvents(
 }
 
 export function fetchSeekerMatchInterestCount(): Promise<MatchInterestCountDto> {
-  return fetch('/api/seeker/match-interests/count').then((response) => {
-    if (!response.ok) {
-      throw new Error('Не удалось загрузить счётчик откликов')
-    }
-    return response.json() as Promise<MatchInterestCountDto>
-  })
+  return apiFetch('/api/seeker/match-interests/count')
 }
 
 export function subscribeSeekerMatchInterestEvents(
@@ -45,12 +41,7 @@ export function subscribeSeekerMatchInterestEvents(
 }
 
 export function fetchEmployerMatchInterestCount(): Promise<MatchInterestCountDto> {
-  return fetch('/api/employer/match-interests/count').then((response) => {
-    if (!response.ok) {
-      throw new Error('Не удалось загрузить счётчик откликов')
-    }
-    return response.json() as Promise<MatchInterestCountDto>
-  })
+  return apiFetch('/api/employer/match-interests/count')
 }
 
 export function subscribeEmployerMatchInterestEvents(

@@ -1,0 +1,141 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Employer Models
+  version: 1.0.0
+components:
+  schemas:
+    EmployerProfileDto:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        emailContact:
+          type: string
+          nullable: true
+    UpdateEmployerProfileRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        emailContact:
+          type: string
+          nullable: true
+    JobProfileDto:
+      type: object
+      required:
+        - id
+        - occupationId
+        - occupationName
+        - isActive
+        - skillIds
+        - skills
+        - personalityAxes
+      properties:
+        id:
+          type: integer
+          format: int64
+        occupationId:
+          type: integer
+          format: int64
+        occupationName:
+          type: string
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        skills:
+          type: array
+          items:
+            $ref: './reference_models.yaml#/components/schemas/SkillDto'
+        personalityAxes:
+          $ref: './personality_models.yaml#/components/schemas/PersonalityAxesDto'
+    CreateJobProfileRequest:
+      type: object
+      required:
+        - occupationId
+      properties:
+        occupationId:
+          type: integer
+          format: int64
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        personalityAxes:
+          $ref: './personality_models.yaml#/components/schemas/PersonalityAxesDto'
+          nullable: true
+    UpdateJobProfileRequest:
+      type: object
+      required:
+        - occupationId
+      properties:
+        occupationId:
+          type: integer
+          format: int64
+        description:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        skillIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        personalityAxes:
+          $ref: './personality_models.yaml#/components/schemas/PersonalityAxesDto'
+          nullable: true
+    EmployerDashboardDto:
+      type: object
+      required:
+        - companyName
+        - jobProfilesCount
+        - activeJobProfilesCount
+        - totalMatchedCandidates
+      properties:
+        companyName:
+          type: string
+        jobProfilesCount:
+          type: integer
+        activeJobProfilesCount:
+          type: integer
+        totalMatchedCandidates:
+          type: integer

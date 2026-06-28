@@ -1,8 +1,10 @@
 # ProCrush web client — build context is the repository root (same as backend).
 FROM node:22-alpine AS build
-WORKDIR /app
+WORKDIR /build
 
-COPY frontend/package.json frontend/package-lock.json ./
+COPY openapi openapi
+COPY frontend/package.json frontend/package-lock.json frontend/
+WORKDIR /build/frontend
 RUN npm ci
 
 COPY frontend/ .
@@ -15,7 +17,7 @@ COPY frontend/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY frontend/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /build/frontend/dist /usr/share/nginx/html
 
 ENV PORT=8080
 EXPOSE 8080

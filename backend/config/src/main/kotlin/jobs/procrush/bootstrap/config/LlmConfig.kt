@@ -1,7 +1,6 @@
 package jobs.procrush.bootstrap.config
 
 enum class LlmProvider {
-    STUB,
     OPENAI_COMPAT,
     OLLAMA,
 }
@@ -15,9 +14,6 @@ data class LlmConfig(
     val appTitle: String?,
     val requestTimeoutSeconds: Long,
 ) {
-    val stubMode: Boolean
-        get() = provider == LlmProvider.STUB
-
     /** API root, e.g. `https://openrouter.ai/api/v1` or `http://localhost:11434`. */
     val apiRoot: String
         get() = LlmUrl.normalizeBaseUrl(baseUrl)
@@ -27,33 +23,25 @@ data class LlmConfig(
         get() = "$apiRoot/chat/completions"
 
     fun validateForGeneration() {
-        if (stubMode) return
         when (provider) {
             LlmProvider.OLLAMA ->
                 require(!model.isNullOrBlank()) { "LLM не настроен: укажите LLM_MODEL для Ollama" }
             LlmProvider.OPENAI_COMPAT -> {
                 require(!apiKey.isNullOrBlank()) {
-                    "LLM не настроен: укажите LLM_API_KEY или включите LLM_USE_STUB=true для локальной разработки"
+                    "LLM не настроен: укажите LLM_API_KEY"
                 }
                 require(!model.isNullOrBlank()) {
                     "LLM не настроен: укажите LLM_MODEL (например google/gemini-2.0-flash-001 на OpenRouter)"
                 }
             }
-            LlmProvider.STUB -> Unit
         }
     }
 
     companion object {
         fun fromEnvironment(dotEnv: Map<String, String>, frontendUrl: String): LlmConfig {
-            val stubMode = Env.env("LLM_USE_STUB", "false", dotEnv).equals("true", ignoreCase = true)
             val baseUrl = LlmUrl.normalizeBaseUrl(Env.env("LLM_BASE_URL", "https://openrouter.ai/api/v1", dotEnv))
-            val provider =
-                when {
-                    stubMode -> LlmProvider.STUB
-                    else -> resolveProvider(Env.resolve("LLM_PROVIDER", dotEnv), baseUrl)
-                }
             return LlmConfig(
-                provider = provider,
+                provider = resolveProvider(Env.resolve("LLM_PROVIDER", dotEnv), baseUrl),
                 apiKey = Env.resolve("LLM_API_KEY", dotEnv),
                 model = Env.resolve("LLM_MODEL", dotEnv),
                 baseUrl = baseUrl,
@@ -67,10 +55,9 @@ data class LlmConfig(
         private fun resolveProvider(explicit: String?, baseUrl: String): LlmProvider {
             explicit?.trim()?.lowercase()?.let { raw ->
                 return when (raw) {
-                    "stub" -> LlmProvider.STUB
                     "ollama" -> LlmProvider.OLLAMA
                     "openai", "openai_compat", "openrouter" -> LlmProvider.OPENAI_COMPAT
-                    else -> error("Неизвестный LLM_PROVIDER: $raw (ожидается stub, ollama, openai)")
+                    else -> error("Неизвестный LLM_PROVIDER: $raw (ожидается ollama, openai)")
                 }
             }
             return if (baseUrl.contains("11434") || baseUrl.endsWith("/ollama", ignoreCase = true)) {

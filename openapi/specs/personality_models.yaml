@@ -1,0 +1,209 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Personality Models
+  version: 1.0.0
+components:
+  schemas:
+    PersonalityAxesDto:
+      type: object
+      required:
+        - axisDominance
+        - axisInfluence
+        - axisStability
+        - axisIntegrity
+        - axisAutonomy
+        - axisPace
+      properties:
+        axisDominance:
+          type: number
+          format: double
+        axisInfluence:
+          type: number
+          format: double
+        axisStability:
+          type: number
+          format: double
+        axisIntegrity:
+          type: number
+          format: double
+        axisAutonomy:
+          type: number
+          format: double
+        axisPace:
+          type: number
+          format: double
+    PersonalityItemDto:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+    PersonalitySectionDto:
+      type: object
+      required:
+        - title
+        - items
+      properties:
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalityItemDto'
+    SucceedThroughDto:
+      type: object
+      required:
+        - point0
+        - point1
+        - point2
+      properties:
+        point0:
+          type: string
+        point1:
+          type: string
+        point2:
+          type: string
+    PersonalityTraitDetailsDto:
+      type: object
+      required:
+        - description
+        - goodDay
+        - badDay
+        - succeedThrough
+      properties:
+        description:
+          type: string
+        goodDay:
+          type: string
+        badDay:
+          type: string
+        succeedThrough:
+          $ref: '#/components/schemas/SucceedThroughDto'
+    PersonalityTraitDto:
+      type: object
+      required:
+        - key
+        - label
+        - scalePosition
+        - leftPole
+        - rightPole
+        - details
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        scalePosition:
+          type: number
+          format: double
+        leftPole:
+          type: string
+        rightPole:
+          type: string
+        details:
+          $ref: '#/components/schemas/PersonalityTraitDetailsDto'
+        isTopStrength:
+          type: boolean
+    PersonalityCategoryDto:
+      type: object
+      required:
+        - key
+        - description
+        - topStrengthIndex
+        - traits
+      properties:
+        key:
+          type: string
+        description:
+          type: string
+        topStrengthIndex:
+          type: integer
+        traits:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalityTraitDto'
+    PersonalityPreviewDto:
+      type: object
+      required:
+        - status
+        - testsCompleted
+        - testsTotal
+      properties:
+        status:
+          $ref: './common_models.yaml#/components/schemas/PersonalityProfileStatus'
+        generationError:
+          type: string
+          nullable: true
+        testsCompleted:
+          type: integer
+        testsTotal:
+          type: integer
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        profile:
+          type: string
+          nullable: true
+        autonomy:
+          type: string
+          nullable: true
+        thinkingStyle:
+          type: string
+          nullable: true
+        burnoutRisk:
+          type: string
+          nullable: true
+        axisDominance:
+          type: number
+          format: double
+          nullable: true
+        axisInfluence:
+          type: number
+          format: double
+          nullable: true
+        axisStability:
+          type: number
+          format: double
+          nullable: true
+        axisIntegrity:
+          type: number
+          format: double
+          nullable: true
+        axisAutonomy:
+          type: number
+          format: double
+          nullable: true
+        axisPace:
+          type: number
+          format: double
+          nullable: true
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonalityCategoryDto'
+          nullable: true
+        energySources:
+          $ref: '#/components/schemas/PersonalitySectionDto'
+          nullable: true
+        stopFactors:
+          $ref: '#/components/schemas/PersonalitySectionDto'
+          nullable: true
+        superpowersAndTalents:
+          type: array
+          items:
+            $ref: './reference_models.yaml#/components/schemas/SuperpowerAndTalentDto'
+          nullable: true
+    PersonalityGenerationStatusResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: './common_models.yaml#/components/schemas/PersonalityProfileStatus'

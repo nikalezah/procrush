@@ -6,4 +6,3 @@ resources:
 
 patches:
   - path: patches/images-local.yaml
-  - path: patches/personality-llm-stub.yaml

@@ -1,0 +1,64 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Reference Paths
+  version: 1.0.0
+paths:
+  /api/occupations:
+    get:
+      tags:
+        - Reference
+      operationId: listOccupations
+      summary: List occupations
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: leafOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Occupations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './reference_models.yaml#/components/schemas/OccupationDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'
+  /api/skills:
+    get:
+      tags:
+        - Reference
+      operationId: searchSkills
+      summary: Search skills
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './reference_models.yaml#/components/schemas/SkillDto'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: './common_models.yaml#/components/schemas/ErrorResponse'

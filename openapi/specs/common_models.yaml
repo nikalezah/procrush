@@ -1,0 +1,45 @@
+openapi: 3.1.0
+info:
+  title: ProCrush API — Common Models
+  version: 1.0.0
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: procrush_session
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        error:
+          type: string
+    UserRole:
+      type: string
+      enum:
+        - SEEKER
+        - EMPLOYER
+    InterestStatus:
+      type: string
+      enum:
+        - NONE
+        - RESPONDED
+        - INCOMING
+        - MUTUAL
+    PersonalityProfileStatus:
+      type: string
+      enum:
+        - NOT_READY
+        - PROCESSING
+        - READY
+        - FAILED
+    SurveyStatus:
+      type: string
+      enum:
+        - NOT_STARTED
+        - IN_PROGRESS
+        - COMPLETED
