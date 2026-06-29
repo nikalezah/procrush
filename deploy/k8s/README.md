@@ -1,12 +1,15 @@
 # ProCrush on Kubernetes (kind)
 
-Локальный полный стек ProCrush в **kind** (Kubernetes IN Docker): инфраструктура, три backend-сервиса и React-frontend. Снаружи — **http://127.10.0.10** (без записей в hosts).
+Локальный полный стек ProCrush в **kind** (Kubernetes IN Docker): инфраструктура, три backend-сервиса и React-frontend. Снаружи — **http://127.10.0.10**.
+
+Рекомендуемый способ локальной разработки. Облачный деплой — в [deploy/README.md](../README.md).
 
 ## Требования
 
 - [Docker](https://docs.docker.com/get-docker/) — выделите **≥ 8 GB RAM** в настройках Docker Desktop
 - [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- **Hot-reload (опционально):** JDK 17+, Node.js 20+ для `./gradlew run` / `npm run dev`
 
 ## Быстрый старт
 
@@ -55,8 +58,51 @@
 | Matching PostgreSQL | `127.10.0.12:5432` |
 | Redis | `127.10.0.13:6379` |
 | RabbitMQ AMQP | `127.10.0.14:5672` |
-| RabbitMQ UI | http://127.10.0.14:15672 |
+| RabbitMQ UI | http://127.10.0.14:15672 (`procrush` / `procrush`) |
 | Kafka | `127.10.0.15:9092` |
+
+Проверка API (через Ingress): `GET http://127.10.0.10/api/...` или health напрямую:
+
+```bash
+kubectl port-forward -n procrush svc/api 8080:8080
+# GET http://localhost:8080/health
+```
+
+Проверка matching:
+
+```bash
+kubectl port-forward -n procrush svc/matching 8092:8092
+# GET http://localhost:8092/health
+```
+
+## Аутентификация
+
+В kind-стеке включён dev-вход (`AUTH_DEV_MODE=true`). Используются **httpOnly session cookies**.
+
+| Endpoint | Описание |
+|----------|----------|
+| `POST /api/auth/dev/login` | Dev-вход (требует `AUTH_DEV_MODE=true`) |
+| `GET /api/auth/me` | Текущий пользователь |
+| `POST /api/auth/logout` | Выход |
+| `POST /api/auth/complete-registration` | Выбор роли (неизменяемо) |
+
+## Инфраструктура в кластере
+
+### Redis
+
+**Redis** — in-memory хранилище для кэша рекомендаций, distributed lock при LLM-генерации, кэша сессий и pub/sub для SSE. С хоста: `127.10.0.13:6379`.
+
+### RabbitMQ
+
+**RabbitMQ** — брокер сообщений для очереди `personality.generation`. UI: http://127.10.0.14:15672. При ошибках после 3 попыток сообщение попадает в DLQ `personality.generation.dlq`.
+
+### Kafka + matching
+
+**Kafka** — event log для пересчёта матчинга. Сервисы `kafka`, `matching-postgres`, `matching` в namespace `procrush`. API читает рекомендации из matching по HTTP (`MATCHING_SERVICE_URL` в [configmap.yaml](./base/configmap.yaml)).
+
+## Схема БД
+
+Миграции и seed — в `backend/platform/persistence/` (основная БД) и `backend/matching/` (БД матчинга). При сбросе namespace данные пересоздаются из Flyway и seed-скриптов.
 
 ## Архитектура
 
@@ -107,7 +153,16 @@ kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 
 ## Hot-reload без пересборки образов (опционально)
 
-Инфраструктура доступна с хоста по loopback-IP сразу после `kind-up`; для hot-reload задайте переменные окружения по [`configmap.yaml`](./base/configmap.yaml) и локальному `secret.yaml` (из [`secret.yaml.example`](./base/secret.yaml.example)). Разные проекты могут одновременно использовать стандартные порты на своих `127.x.x.x` адресах.
+Инфраструктура доступна с хоста по loopback-IP сразу после `kind-up`. Задайте переменные окружения по [`configmap.yaml`](./base/configmap.yaml) и локальному `secret.yaml` (из [`secret.yaml.example`](./base/secret.yaml.example)). Разные проекты могут одновременно использовать стандартные порты на своих `127.x.x.x` адресах.
+
+| Приложение | Команда | URL |
+|------------|---------|-----|
+| React | `cd frontend && npm run dev` | http://localhost:8081 |
+| API | `./gradlew :backend:api:run` | :8080 |
+| Personality | `./gradlew :backend:personality:run` | :8091 |
+| Matching | `./gradlew :backend:matching:run` | :8092 |
+
+Подробнее о бэкенд-модулях — [backend/README.md](../../backend/README.md).
 
 ## Устранение неполадок
 
@@ -120,3 +175,9 @@ kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 | API/personality `Init:0/1` долго | RabbitMQ readiness — в манифесте `tcpSocket` + `publishNotReadyAddresses`; перезапустите: `kubectl apply -k deploy/k8s/overlays/kind` |
 | personality `Unhealthy` / 406 | HTTP probe на `/health` без JSON — используется `tcpSocket:8091` |
 | `error: no matching resources found` при ingress | Перезапустите `kind-up` — скрипт ждёт admission jobs и rollout deployment |
+
+## Связанная документация
+
+- [deploy/README.md](../README.md) — деплой на Railway
+- [backend/README.md](../../backend/README.md) — бэкенд и инфраструктурные зависимости
+- [frontend/README.md](../../frontend/README.md) — веб-клиент

@@ -1,24 +1,29 @@
 # ProCrush i18n
 
-Source of truth for API error codes and user-facing translations. Lives outside `frontend/` and `backend/`.
+Единый источник кодов ошибок API и пользовательских переводов. Живёт в корне репозитория — по той же идее, что и OpenAPI: не внутри `frontend/` или `backend/`.
 
-## Layout
+## Структура каталога
 
 ```
 i18n/
-  error-codes.yaml       # codes + English technical messages + HTTP status
-  locales/
-    ru/errors.json       # user-facing error messages (Russian)
-    ru/ui.json           # UI strings (Russian)
-    en/errors.json
-    en/ui.json
-  generated/             # codegen output (committed)
-  scripts/
-    generate.mjs
-    validate.mjs
+  error-codes.yaml       # коды ошибок + HTTP status + англ. техническое message
+  locales/ru|en/         # errors.json (по кодам) и ui.json (весь интерфейс)
+  generated/             # ErrorCode.kt (бэкенд) и errorCodes.ts (фронт)
+  scripts/generate.mjs   # codegen + валидация
 ```
 
-## Workflow
+## Как это работает
+
+| Слой | Что отдаёт / показывает |
+|------|-------------------------|
+| **Backend** | `{ "code": "SURVEY_ALREADY_COMPLETED", "message": "Survey already completed", "details": {} }` — `message` только для логов и отладки |
+| **Frontend** | `t('seeker.dashboard.title')` для UI; `resolveApiError(err)` переводит `code` по выбранной локали |
+
+Локаль: авто по браузеру → fallback `ru`; переключатель **ru / en** в «Аккаунт» (`localStorage`: `procrush.locale`).
+
+**Не переводится в v1:** тексты опросов из БД, LLM-профиль, названия профессий и навыков.
+
+## Команды
 
 ```bash
 cd i18n
@@ -27,11 +32,15 @@ npm run generate   # validate + write generated/kotlin and generated/typescript
 npm run validate   # check locales match error-codes.yaml
 ```
 
-After editing `error-codes.yaml`:
+Фронтенд перед `dev`/`build` сам вызывает `validate:i18n` (`npm run prebuild` в `frontend/`).
 
-1. Add matching keys to `locales/ru/errors.json` and `locales/en/errors.json`
-2. Run `npm run generate`
-3. Backend uses `jobs.procrush.i18n.ErrorCode`; frontend imports `generated/typescript/errorCodes.ts`
+## Workflow: новый код ошибки или строка UI
+
+1. Добавить код в `error-codes.yaml` и переводы в `locales/ru/errors.json` и `locales/en/errors.json`.
+2. Для UI — ключи в `locales/ru/ui.json` и `locales/en/ui.json`.
+3. Регенерация: `npm run generate`
+4. Backend: `./gradlew :backend:api:compileKotlin` — модуль `contracts` подключает `i18n/generated/kotlin`.
+5. Закоммитить `generated/` вместе с yaml/json.
 
 ## API contract
 
@@ -50,3 +59,8 @@ Backend returns:
 - `details` — optional interpolation values for translated messages
 
 Frontend maps `code` + `details` to the locale in `locales/*/errors.json`.
+
+## Связанная документация
+
+- [frontend/README.md](../frontend/README.md) — веб-клиент
+- [backend/README.md](../backend/README.md) — бэкенд
