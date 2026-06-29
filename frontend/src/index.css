@@ -14,9 +14,15 @@
   --color-brand-800: #9f1239;
   --color-brand-900: #881337;
 
+  --color-accent-50: #faf5ff;
+  --color-accent-100: #f3e8ff;
+  --color-accent-200: #e9d5ff;
   --color-accent-400: #c084fc;
   --color-accent-500: #a855f7;
   --color-accent-600: #9333ea;
+  --color-accent-700: #7e22ce;
+  --color-accent-800: #6b21a8;
+  --color-accent-900: #581c87;
 
   --color-surface: #ffffff;
   --color-surface-muted: #faf5f7;
@@ -65,8 +71,8 @@ body {
 }
 
 @keyframes pulse-match {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(244 63 94 / 0.4); }
-  50% { box-shadow: 0 0 0 8px rgb(244 63 94 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgb(168 85 247 / 0.35); }
+  50% { box-shadow: 0 0 0 8px rgb(168 85 247 / 0); }
 }
 
 .animate-pulse-match {

@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {fetchEmployerDashboard} from '../../api/employerApi'
 import type {EmployerDashboardDto} from '../../api/types'
+import {Alert} from '../../components/ui/Alert'
 import {Button} from '../../components/ui/Button'
 import {StatCard} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
@@ -20,7 +21,7 @@ export function EmployerDashboardPage() {
       .catch((err) => setError(resolveError(err)))
   }, [])
 
-  if (error != null) return <p className="text-sm text-red-600">{error}</p>
+  if (error != null) return <Alert variant="error">{error}</Alert>
   if (data == null) {
     return (
       <div className="flex justify-center py-16">

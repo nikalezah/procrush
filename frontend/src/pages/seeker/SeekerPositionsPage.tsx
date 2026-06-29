@@ -48,7 +48,10 @@ function JobRecommendationCard({
   const isMutual = job.interestStatus === 'MUTUAL'
 
   return (
-    <Card highlighted={highlighted} className={isMutual ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/50' : ''}>
+    <Card
+      highlighted={highlighted}
+      className={isMutual ? 'border-accent-200 bg-gradient-to-br from-white to-accent-50/60' : ''}
+    >
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-4">
           <Avatar name={job.companyName} size="lg" />
@@ -150,7 +153,11 @@ export function SeekerPositionsPage() {
       setRecommendations((prev) => prev.map((job) => (job.id === jobProfileId ? updated : job)))
       const outside = await fetchSeekerInterests()
       setInterests(outside)
-      setMessage(t('seeker.positions.respondSent'))
+      setMessage(
+        updated.interestStatus === 'MUTUAL'
+          ? t('seeker.positions.mutualUnlocked')
+          : t('seeker.positions.respondSent'),
+      )
     } catch (err) {
       setError(resolveError(err) || t('common.respondError'))
     } finally {

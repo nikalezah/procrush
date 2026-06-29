@@ -25,7 +25,7 @@ export function SeekerDashboardPage() {
   }, [])
 
   if (error != null) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return <Alert variant="error">{error}</Alert>
   }
   if (data == null) {
     return (

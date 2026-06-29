@@ -6,13 +6,13 @@ interface MatchScoreBadgeProps {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 75) return 'text-emerald-600'
+  if (score >= 75) return 'text-accent-700'
   if (score >= 50) return 'text-brand-600'
   return 'text-amber-600'
 }
 
 function scoreGradient(score: number): string {
-  if (score >= 75) return 'from-emerald-400 to-emerald-600'
+  if (score >= 75) return 'from-accent-400 to-accent-600'
   if (score >= 50) return 'from-brand-400 to-brand-600'
   return 'from-amber-400 to-amber-500'
 }

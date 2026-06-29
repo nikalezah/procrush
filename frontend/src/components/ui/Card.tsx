@@ -19,7 +19,7 @@ export function Card({children, className = '', highlighted = false, padding = '
       className={[
         'rounded-[var(--radius-card)] border border-brand-100/60 bg-white card-shadow',
         paddingClasses[padding],
-        highlighted ? 'ring-2 ring-brand-400 animate-pulse-match' : '',
+        highlighted ? 'ring-2 ring-accent-300 animate-pulse-match' : '',
         className,
       ]
         .filter(Boolean)

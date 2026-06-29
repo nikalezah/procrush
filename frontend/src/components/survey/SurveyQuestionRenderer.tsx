@@ -1,5 +1,6 @@
 import {useTranslation} from 'react-i18next'
 import type {SurveyQuestionsDefinition} from '../../api/types'
+import {Alert} from '../ui/Alert'
 
 type Answers = Record<string, unknown>
 
@@ -227,7 +228,7 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
             <fieldset key={q.id} className="rounded-lg border border-brand-200 p-3">
               <legend className="px-1 text-sm font-medium">{q.text}</legend>
               <p
-                className={`mt-1 text-xs ${sum === total ? 'font-medium text-green-700' : 'text-stone-500'}`}
+                className={`mt-1 text-xs ${sum === total ? 'font-medium text-emerald-700' : 'text-stone-500'}`}
               >
                 {sum === total
                   ? t('components.survey.pointsComplete', {total})
@@ -257,7 +258,7 @@ export function SurveyQuestionRenderer({ definition, answers, onChange, pageInde
     )
   }
 
-  return <p className="text-sm text-red-600">{t('components.survey.unsupportedType', {type})}</p>
+  return <Alert variant="error">{t('components.survey.unsupportedType', {type})}</Alert>
 }
 
 export function isSurveyComplete(definition: SurveyQuestionsDefinition, answers: Answers): boolean {

@@ -7,6 +7,15 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   trailing?: ReactNode
 }
 
+const fieldBaseClasses = [
+  'w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-base text-stone-900',
+  'outline-none transition placeholder:text-stone-400',
+  'focus:border-brand-300 focus:ring-2 focus:ring-brand-200',
+  'disabled:cursor-not-allowed disabled:bg-stone-50 disabled:opacity-60',
+]
+
+const fieldErrorClasses = 'border-red-300 focus:border-red-400 focus:ring-red-100'
+
 export function Input({label, hint, error, trailing, className = '', id, ...props}: InputProps) {
   const inputId = id ?? label.toLowerCase().replace(/\s+/g, '-')
 
@@ -17,12 +26,9 @@ export function Input({label, hint, error, trailing, className = '', id, ...prop
         <input
           id={inputId}
           className={[
-            'w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-base text-stone-900',
-            'outline-none transition placeholder:text-stone-400',
-            'focus:border-brand-300 focus:ring-2 focus:ring-brand-200',
-            'disabled:cursor-not-allowed disabled:bg-stone-50 disabled:opacity-60',
+            ...fieldBaseClasses,
             trailing ? 'pr-10' : '',
-            error ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : '',
+            error ? fieldErrorClasses : '',
             className,
           ]
             .filter(Boolean)

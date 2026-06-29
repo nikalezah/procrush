@@ -299,7 +299,7 @@ export function SettingsPage() {
             {t('settings.deleteSection.deleteButton')}
           </Button>
         ) : (
-          <Alert variant="error" title={t('settings.deleteSection.confirmTitle')}>
+          <Alert variant="danger" title={t('settings.deleteSection.confirmTitle')}>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
                 variant="danger"

@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {fetchSurveyGroups} from '../../api/seekerApi'
 import type {SurveyGroupsResponseDto, SurveyStatus} from '../../api/types'
+import {Alert} from '../../components/ui/Alert'
 import {Button} from '../../components/ui/Button'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
@@ -41,7 +42,7 @@ export function SeekerTestsListPage() {
       .catch((err) => setError(resolveError(err)))
   }, [])
 
-  if (error != null) return <p className="text-sm text-red-600">{error}</p>
+  if (error != null) return <Alert variant="error">{error}</Alert>
   if (data == null) {
     return (
       <div className="flex justify-center py-16">

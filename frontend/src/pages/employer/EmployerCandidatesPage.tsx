@@ -46,7 +46,7 @@ function CandidateRecommendationCard({
   return (
     <Card
       highlighted={highlighted}
-      className={isMutual ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/50' : ''}
+      className={isMutual ? 'border-accent-200 bg-gradient-to-br from-white to-accent-50/60' : ''}
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-4">
@@ -143,7 +143,11 @@ export function EmployerCandidatesPage() {
       )
       const outside = await fetchEmployerInterests(profileId)
       setInterests(outside)
-      setMessage(t('employer.candidates.respondSent'))
+      setMessage(
+        updated.interestStatus === 'MUTUAL'
+          ? t('employer.candidates.mutualUnlocked')
+          : t('employer.candidates.respondSent'),
+      )
     } catch (err) {
       setError(resolveError(err) || t('common.respondError'))
     } finally {

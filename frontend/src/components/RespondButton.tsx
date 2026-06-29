@@ -10,6 +10,8 @@ interface RespondButtonProps {
 export function RespondButton({status, loading = false, onRespond}: RespondButtonProps) {
   const {t} = useTranslation()
   const resolved = status ?? 'NONE'
+  if (resolved === 'MUTUAL') return null
+
   const canRespond = resolved === 'NONE' || resolved === 'INCOMING'
   const disabled = !canRespond || loading
 
@@ -18,8 +20,6 @@ export function RespondButton({status, loading = false, onRespond}: RespondButto
     label = t('components.respondButton.sending')
   } else if (resolved === 'RESPONDED') {
     label = t('components.respondButton.waiting')
-  } else if (resolved === 'MUTUAL') {
-    label = t('components.respondButton.mutual')
   }
 
   return (

@@ -11,6 +11,7 @@ import {PersonalityAxesEditor} from '../../components/PersonalityAxesEditor'
 import {AXIS_KEYS, axisLabel} from '../../components/personality/personalityLabels'
 import {SkillPicker} from '../../components/SkillPicker'
 import {Spinner} from '../../components/Spinner'
+import {Alert} from '../../components/ui/Alert'
 import {Button} from '../../components/ui/Button'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
@@ -80,7 +81,7 @@ export function EmployerProfilesPage() {
           </Button>
         }
       />
-      {error != null && <p className="text-sm text-red-600">{error}</p>}
+      {error != null && <Alert variant="error">{error}</Alert>}
 
       {showForm && editingProfile == null && (
         <JobProfileForm occupations={occupations} onSubmit={(body) => void handleCreate(body)} />

@@ -160,6 +160,7 @@
       "subtitle": "Jobs that fit your skills and personality",
       "desiredPositionsSaved": "Desired roles saved",
       "respondSent": "Response sent! Waiting for the employer",
+      "mutualUnlocked": "Mutual interest: employer contacts are now open",
       "whatLookingFor": {
         "title": "What are you looking for?",
         "description": "Choose roles — we'll show the best matches"
@@ -173,8 +174,8 @@
         "emptyNoJobs": "No suitable active jobs yet — check back later"
       },
       "respondedOutside": {
-        "title": "Your responses",
-        "description": "Jobs outside current recommendations"
+        "title": "Interest outside recommendations",
+        "description": "Responses and incoming interest for jobs outside the current list"
       },
       "mutualOutside": {
         "title": "Mutual matches",
@@ -308,11 +309,12 @@
       "subtitle": "People with matching personality and skills",
       "backLabel": "Back to jobs",
       "respondSent": "Response sent! Waiting for the candidate",
+      "mutualUnlocked": "Mutual interest: candidate contacts are now open",
       "emptyTitle": "No one here yet",
       "emptyDescription": "No seekers have completed tests and listed this role",
       "respondedOutside": {
-        "title": "Your responses",
-        "description": "Candidates outside current recommendations"
+        "title": "Interest outside recommendations",
+        "description": "Responses and incoming interest for candidates outside the current list"
       },
       "mutualOutside": {
         "title": "Mutual matches",
@@ -336,15 +338,14 @@
     "respondButton": {
       "respond": "❤️ Respond",
       "sending": "Sending…",
-      "waiting": "⏳ Waiting for reply",
-      "mutual": "💕 Mutual interest!"
+      "waiting": "⏳ Waiting for reply"
     },
     "matchScore": {
       "label": "match"
     },
     "contactInfo": {
-      "seekerTitle": "💕 Employer contacts",
-      "employerTitle": "💕 Candidate contacts"
+      "seekerTitle": "Employer contacts are open",
+      "employerTitle": "Candidate contacts are open"
     },
     "skillPicker": {
       "searchPlaceholder": "Search skills…",

@@ -3,6 +3,7 @@ import {useTranslation} from 'react-i18next'
 import type {AuthUserDto, CompleteRegistrationRequest, UserRole} from '../api/types'
 import {AdaptiveLayout} from '../components/AdaptiveLayout'
 import {RoleToggle} from '../components/RoleToggle'
+import {Alert} from '../components/ui/Alert'
 import {Button} from '../components/ui/Button'
 import {Input} from '../components/ui/Input'
 
@@ -102,7 +103,7 @@ export function RoleSelectionPage({
           />
         )}
 
-        {errorMessage != null && <p className="text-sm text-red-600">{errorMessage}</p>}
+        {errorMessage != null && <Alert variant="error">{errorMessage}</Alert>}
 
         <Button type="submit" fullWidth size="lg" disabled={isBusy}>
           {isBusy ? t('auth.roleSelection.creating') : t('auth.roleSelection.submit')}

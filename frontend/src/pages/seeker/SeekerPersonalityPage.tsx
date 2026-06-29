@@ -66,7 +66,7 @@ export function SeekerPersonalityPage() {
   }
 
   if (error != null && data == null) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return <Alert variant="error">{error}</Alert>
   }
   if (data == null) {
     return (
@@ -143,7 +143,7 @@ export function SeekerPersonalityPage() {
             </Button>
           </div>
         </Alert>
-        {error != null && <p className="text-sm text-red-600">{error}</p>}
+        {error != null && <Alert variant="error">{error}</Alert>}
       </div>
     )
   }

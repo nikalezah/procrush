@@ -16,7 +16,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary:
     'border border-brand-200 bg-white text-brand-700 hover:bg-brand-50 active:scale-[0.98]',
   ghost: 'text-stone-600 hover:bg-stone-100/80 active:scale-[0.98]',
-  danger: 'bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98]',
+  danger: 'border border-red-200 bg-white text-red-700 hover:bg-red-50 active:scale-[0.98]',
   like: 'gradient-brand text-white shadow-lg shadow-brand-500/30 hover:brightness-110 active:scale-95 animate-heart-beat',
 }
 
