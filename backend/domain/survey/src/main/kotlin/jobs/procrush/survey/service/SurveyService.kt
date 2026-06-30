@@ -30,12 +30,6 @@ class SurveyService(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val groupNames =
-        mapOf(
-            SurveyFlowRules.CORE_GROUP to "Тест 1",
-            SurveyFlowRules.GROUP_64QN to "Тест 2",
-        )
-
     private val groupOrder = listOf(SurveyFlowRules.CORE_GROUP, SurveyFlowRules.GROUP_64QN)
 
     private data class SurveyContext(
@@ -77,7 +71,7 @@ class SurveyService(
                 val groupLocked = SurveyFlowRules.isGroupLocked(groupCode, context.coreSurveys, context.statusBySurvey)
                 SurveyGroupDto(
                     code = groupCode,
-                    name = groupNames[groupCode] ?: groupCode,
+                    name = groupCode,
                     surveys = items,
                     completedCount = completed,
                     totalCount = items.size,

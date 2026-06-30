@@ -2,6 +2,7 @@ package jobs.procrush.matching.kafka
 
 import jobs.procrush.employer.dto.JobProfileDto
 import jobs.procrush.employer.repository.EmployerRepository
+import jobs.procrush.matching.dto.apiCompanyName
 import jobs.procrush.matching.events.JobProfileChangedPayload
 import jobs.procrush.matching.events.MatchingEventJson
 import jobs.procrush.matching.events.MatchingEventTypes
@@ -61,7 +62,7 @@ class MatchingEventPayloadFactory(
         deleted: Boolean = false,
     ) {
         val employer = employerRepository.findById(employerId)
-        val companyName = employer?.name?.ifBlank { "Компания не указана" } ?: "—"
+        val companyName = apiCompanyName(employer?.name)
         val payload =
             JobProfileChangedPayload(
                 jobProfileId = jobProfile.id,

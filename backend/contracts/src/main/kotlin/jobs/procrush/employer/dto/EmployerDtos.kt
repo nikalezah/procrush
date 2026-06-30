@@ -55,7 +55,7 @@ data class UpdateJobProfileRequest(
 
 @Serializable
 data class EmployerDashboardDto(
-    val companyName: String,
+    val companyName: String? = null,
     val jobProfilesCount: Int,
     val activeJobProfilesCount: Int,
     val totalMatchedCandidates: Int,

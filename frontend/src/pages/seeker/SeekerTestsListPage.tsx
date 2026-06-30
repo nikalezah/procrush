@@ -69,7 +69,9 @@ export function SeekerTestsListPage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-stone-900">{group.name}</h2>
+                    <h2 className="text-lg font-semibold text-stone-900">
+                      {t(`seeker.testTake.titles.${group.code}` as const)}
+                    </h2>
                     {group.locked ? <LockedBadge /> : <StatusBadge status={group.status} />}
                   </div>
                   <p className="mt-1 text-sm text-stone-500">

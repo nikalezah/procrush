@@ -69,7 +69,7 @@ class MatchingProjectionRepository(
                 it[skillIdsJson] = encodeLongList(payload.skillIds)
                 it[personalityAxesJson] = PersonalityAxesDto.toJson(payload.personalityAxes)
                 it[isActive] = payload.isActive
-                it[companyName] = payload.companyName
+                it[companyName] = payload.companyName.orEmpty()
                 it[occupationName] = payload.occupationName
                 it[description] = payload.description
                 it[updatedAt] = OffsetDateTime.now()

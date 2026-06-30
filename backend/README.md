@@ -1,25 +1,25 @@
 # ProCrush Backend
 
-Kotlin-бэкенд: Ktor HTTP API, фоновые worker'ы и доменная логика. Три deployable-приложения (API, personality, matching) и библиотечные модули.
+Kotlin backend: Ktor HTTP API, background workers, and domain logic. Three deployable applications (API, personality, matching) and library modules.
 
-## Структура модулей
+## Module structure
 
-| Путь | Gradle-модуль | Назначение |
-|------|---------------|------------|
-| [`contracts/`](./contracts/src/main/kotlin) | `:backend:contracts` | DTO доменного слоя, события, порты и чистая доменная логика (синхронизируются с OpenAPI через `ApiMappers` в `api`) |
-| [`config/`](./config/src/main/kotlin) | `:backend:config` | Чтение env и типизированные настройки приложений |
+| Path | Gradle module | Purpose |
+|------|---------------|---------|
+| [`contracts/`](./contracts/src/main/kotlin) | `:backend:contracts` | Domain DTOs, events, ports, and pure domain logic (synced with OpenAPI via `ApiMappers` in `api`) |
+| [`config/`](./config/src/main/kotlin) | `:backend:config` | Env reading and typed application settings |
 | [`platform/`](./platform) | `:backend:platform:*` | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`) |
 | [`domain/`](./domain) | `:backend:domain:*` | Bounded contexts: auth, seeker, employer, survey, matching, personality |
-| [`api/`](./api/src/main/kotlin) | `:backend:api` | Ktor HTTP API, Spektor-generated routes/DTO в `build/`, handlers, composition root |
+| [`api/`](./api/src/main/kotlin) | `:backend:api` | Ktor HTTP API, Spektor-generated routes/DTOs in `build/`, handlers, composition root |
 | [`personality/`](./personality) | `:backend:personality` | Deployable app: RabbitMQ consumer + health endpoint |
-| [`domain/personality/`](./domain/personality) | `:backend:domain:personality-lib` | Библиотека домена (координатор, publisher, worker-логика) |
-| [`matching/`](./matching) | `:backend:matching` | Kafka consumer + HTTP read API, отдельная БД матчинга |
+| [`domain/personality/`](./domain/personality) | `:backend:domain:personality-lib` | Domain library (coordinator, publisher, worker logic) |
+| [`matching/`](./matching) | `:backend:matching` | Kafka consumer + HTTP read API, separate matching DB |
 
-## Deployable-приложения
+## Deployable applications
 
 ### API (`:backend:api`)
 
-Главный HTTP-сервис: аутентификация, опросы, профили, проксирование рекомендаций из matching, SSE-уведомления.
+Main HTTP service: authentication, surveys, profiles, proxying recommendations from matching, SSE notifications.
 
 ```bash
 ./gradlew :backend:api:run
@@ -29,75 +29,75 @@ Health: `GET /health` → `{"status":"ok","redis":"ok","rabbitmq":"ok"}`.
 
 ### Personality worker (`:backend:personality`)
 
-Потребляет очередь `personality.generation`, вызывает LLM, сохраняет личностный профиль.
+Consumes the `personality.generation` queue, calls the LLM, saves the personality profile.
 
 ```bash
 ./gradlew :backend:personality:run
 ```
 
-| Критерий | Реализация |
-|----------|------------|
-| Publisher в API | `PersonalityGenerationCoordinator` → `PersonalityJobPublisher` |
-| Consumer только в worker | `AppContext` не стартует consumer; `WorkerContext` — да |
-| Retry + DLQ | до 3 попыток, затем `personality.generation.dlq` |
-| Distributed lock + dedup | Redis lock и `PersonalityMessageDedup` |
-| SSE / pub-sub | `RedisPersonalityStatusNotifier` + SSE в API |
+| Criterion | Implementation |
+|-----------|------------------|
+| Publisher in API | `PersonalityGenerationCoordinator` → `PersonalityJobPublisher` |
+| Consumer only in worker | `AppContext` does not start the consumer; `WorkerContext` does |
+| Retry + DLQ | up to 3 attempts, then `personality.generation.dlq` |
+| Distributed lock + dedup | Redis lock and `PersonalityMessageDedup` |
+| SSE / pub-sub | `RedisPersonalityStatusNotifier` + SSE in API |
 
-**Известный пробел:** нет end-to-end теста «publish → consume → READY».
+**Known gap:** no end-to-end test for "publish → consume → READY".
 
 ### Matching service (`:backend:matching`)
 
-Потребляет доменные события из Kafka, пересчитывает рекомендации, пишет в отдельную PostgreSQL (`procrush_matching`). API читает рекомендации по HTTP (`MATCHING_SERVICE_URL` обязателен).
+Consumes domain events from Kafka, recalculates recommendations, writes to a separate PostgreSQL (`procrush_matching`). The API reads recommendations over HTTP (`MATCHING_SERVICE_URL` is required).
 
 ```bash
 ./gradlew :backend:matching:run
 ```
 
-Health: `GET /health` (порт по умолчанию `8092`).
+Health: `GET /health` (default port `8092`).
 
-## Инфраструктурные зависимости
+## Infrastructure dependencies
 
-### PostgreSQL (обязателен)
+### PostgreSQL (required)
 
-Основная БД (`procrush`). Схема и справочные данные — в Flyway-миграциях (`platform/persistence/src/main/kotlin/db/migration/`) и seed (`platform/persistence/src/main/resources/db/seed/init_inserts.sql`).
+Main DB (`procrush`). Schema and reference data — in Flyway migrations (`platform/persistence/src/main/kotlin/db/migration/`) and seed (`platform/persistence/src/main/resources/db/seed/init_inserts.sql`).
 
-Отдельная БД matching: `backend/matching/src/main/kotlin/db/migration/`.
+Separate matching DB: `backend/matching/src/main/kotlin/db/migration/`.
 
-### Redis (обязателен)
+### Redis (required)
 
-**Redis** — in-memory хранилище; используется для:
+**Redis** — in-memory store used for:
 
-- кэша рекомендаций (cache-aside, TTL 10 мин);
-- distributed lock при LLM-генерации личностного профиля (держит worker);
-- кэша сессий (PostgreSQL остаётся source of truth);
-- pub/sub для SSE-уведомлений о новых откликах и статусе генерации профиля (работает при нескольких инстансах API).
+- recommendation cache (cache-aside, TTL 10 min);
+- distributed lock during LLM personality profile generation (held by the worker);
+- session cache (PostgreSQL remains source of truth);
+- pub/sub for SSE notifications about new responses and profile generation status (works with multiple API instances).
 
-### RabbitMQ (обязателен)
+### RabbitMQ (required)
 
-**RabbitMQ** — брокер сообщений: API кладёт задачу «сгенерировать личностный профиль» в очередь `personality.generation`; worker забирает задачу и вызывает LLM. При ошибках после 3 попыток сообщение попадает в DLQ `personality.generation.dlq`.
+**RabbitMQ** — message broker: the API enqueues a "generate personality profile" job on `personality.generation`; the worker picks it up and calls the LLM. After 3 failed attempts the message goes to DLQ `personality.generation.dlq`.
 
-### Kafka (обязателен для matching)
+### Kafka (required for matching)
 
-**Kafka** — event log для пересчёта матчинга. API и personality публикуют доменные события; matching потребляет их и обновляет проекции в своей БД.
+**Kafka** — event log for matching recalculation. The API and personality publish domain events; matching consumes them and updates projections in its DB.
 
-## Аутентификация
+## Authentication
 
-Используются **httpOnly session cookies**.
+**httpOnly session cookies** are used.
 
-| Endpoint | Описание |
-|----------|----------|
-| `POST /api/auth/dev/login` | Dev-вход (требует `AUTH_DEV_MODE=true`) |
-| `GET /api/auth/me` | Текущий пользователь |
-| `POST /api/auth/logout` | Выход |
-| `POST /api/auth/complete-registration` | Выбор роли (неизменяемо) |
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/auth/dev/login` | Dev login (requires `AUTH_DEV_MODE=true`) |
+| `GET /api/auth/me` | Current user |
+| `POST /api/auth/logout` | Sign out |
+| `POST /api/auth/complete-registration` | Role selection (immutable) |
 
-Полный список REST-эндпоинтов — в [openapi/README.md](../openapi/README.md).
+Full REST endpoint list — in [openapi/README.md](../openapi/README.md).
 
-## Локальная разработка (hot-reload)
+## Local development (hot-reload)
 
-**Требования:** JDK 17+, инфраструктура из kind (см. [deploy/k8s/README.md](../deploy/k8s/README.md)).
+**Requirements:** JDK 17+, infrastructure from kind (see [deploy/k8s/README.md](../deploy/k8s/README.md)).
 
-Переменные окружения — в [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/base/configmap.yaml) и локальном `secret.yaml` (шаблон: [`secret.yaml.example`](../deploy/k8s/base/secret.yaml.example)).
+Environment variables — in [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/base/configmap.yaml) and local `secret.yaml` (template: [`secret.yaml.example`](../deploy/k8s/base/secret.yaml.example)).
 
 ```bash
 ./gradlew :backend:api:run
@@ -105,13 +105,13 @@ Health: `GET /health` (порт по умолчанию `8092`).
 ./gradlew :backend:matching:run
 ```
 
-После `git clone` перед работой с handlers: один раз `./gradlew :backend:api:compileKotlin`, чтобы IDE увидела generated sources в `build/`. В IntelliJ: *Build and run using → Gradle*.
+After `git clone`, before working with handlers: run `./gradlew :backend:api:compileKotlin` once so the IDE sees generated sources in `build/`. In IntelliJ: *Build and run using → Gradle*.
 
-Переменные LLM для personality: `LLM_BASE_URL`, `LLM_MODEL` — в configmap; `LLM_API_KEY` — в `secret.yaml`.
+LLM variables for personality: `LLM_BASE_URL`, `LLM_MODEL` — in configmap; `LLM_API_KEY` — in `secret.yaml`.
 
-## Связанная документация
+## Related documentation
 
-- [openapi/README.md](../openapi/README.md) — контракт REST API
-- [i18n/README.md](../i18n/README.md) — коды ошибок
-- [deploy/k8s/README.md](../deploy/k8s/README.md) — локальный стек в Kubernetes
-- [deploy/README.md](../deploy/README.md) — деплой на Railway
+- [openapi/README.md](../openapi/README.md) — REST API contract
+- [i18n/README.md](../i18n/README.md) — error codes
+- [deploy/k8s/README.md](../deploy/k8s/README.md) — local Kubernetes stack
+- [deploy/README.md](../deploy/README.md) — Railway deployment

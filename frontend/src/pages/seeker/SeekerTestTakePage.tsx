@@ -4,10 +4,10 @@ import {useTranslation} from 'react-i18next'
 import {completeSurvey, fetchSurvey, saveSurveyAnswers, startSurvey} from '../../api/seekerApi'
 import type {SurveyDetailDto} from '../../api/types'
 import {
-    isSurveyComplete,
-    parseAnswersJson,
-    parseSurveyDefinition,
-    SurveyQuestionRenderer,
+  isSurveyComplete,
+  parseAnswersJson,
+  parseSurveyDefinition,
+  SurveyQuestionRenderer,
 } from '../../components/survey/SurveyQuestionRenderer'
 import {Alert} from '../../components/ui/Alert'
 import {Button} from '../../components/ui/Button'
@@ -163,7 +163,7 @@ export function SeekerTestTakePage() {
 
   const complete = isSurveyComplete(definition, answers)
   const testTitleKey = `seeker.testTake.titles.${survey.groupCode}` as const
-  const testTitle = t(testTitleKey, {defaultValue: survey.name})
+  const testTitle = t(testTitleKey)
 
   const hasCoreSteps =
     isCoreTest && survey.stepNumber != null && survey.stepTotal != null

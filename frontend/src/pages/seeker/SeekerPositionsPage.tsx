@@ -2,10 +2,10 @@ import {useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions} from '../../api/seekerApi'
 import type {
-    JobRecommendationDto,
-    MatchInterestEventDto,
-    OccupationDto,
-    SeekerInterestsResponseDto,
+  JobRecommendationDto,
+  MatchInterestEventDto,
+  OccupationDto,
+  SeekerInterestsResponseDto,
 } from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
@@ -16,6 +16,7 @@ import {OccupationPicker} from '../../components/OccupationPicker'
 import {RespondButton} from '../../components/RespondButton'
 import {Spinner} from '../../components/Spinner'
 import {Alert} from '../../components/ui/Alert'
+import {CompanyName, companyNameLabel} from '../../components/CompanyName'
 import {Avatar} from '../../components/ui/Avatar'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
@@ -45,6 +46,7 @@ function JobRecommendationCard({
   highlighted?: boolean
   onRespond: (jobProfileId: number) => void
 }) {
+  const {t} = useTranslation()
   const isMutual = job.interestStatus === 'MUTUAL'
 
   return (
@@ -54,10 +56,10 @@ function JobRecommendationCard({
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-4">
-          <Avatar name={job.companyName} size="lg" />
+          <Avatar name={companyNameLabel(job.companyName, t)} size="lg" />
           <div className="min-w-0 flex-1">
             <h3 className="text-lg font-semibold text-stone-900">{job.positionName}</h3>
-            <p className="text-sm text-stone-500">{job.companyName}</p>
+            <CompanyName name={job.companyName} className="text-sm text-stone-500" />
             {job.description != null && job.description !== '' && (
               <p className="mt-2 text-sm leading-relaxed text-stone-600">{job.description}</p>
             )}

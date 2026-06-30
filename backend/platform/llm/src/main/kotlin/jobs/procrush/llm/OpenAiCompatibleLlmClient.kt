@@ -55,7 +55,7 @@ class OpenAiCompatibleLlmClient(
         val text =
             message?.content?.takeIf { it.isNotBlank() }
                 ?: message?.reasoning?.takeIf { it.isNotBlank() }
-        return text ?: error("Пустой ответ от LLM: ${rawBody.take(500)}")
+        return text ?: error("Empty LLM response: ${rawBody.take(500)}")
     }
 
     private fun extractErrorMessage(rawBody: String): String {

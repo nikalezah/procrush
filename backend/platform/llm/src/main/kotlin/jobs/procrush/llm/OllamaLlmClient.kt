@@ -39,7 +39,7 @@ class OllamaLlmClient(
         }
         val response = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
             .decodeFromString<OllamaChatResponse>(rawBody)
-        return response.message?.content ?: error("Пустой ответ от Ollama")
+        return response.message?.content ?: error("Empty Ollama response")
     }
 }
 

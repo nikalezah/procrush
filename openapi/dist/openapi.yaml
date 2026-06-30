@@ -1763,11 +1763,10 @@ components:
           nullable: true
     EmployerContactDto:
       type: object
-      required:
-        - companyName
       properties:
         companyName:
           type: string
+          nullable: true
         phone:
           type: string
           nullable: true
@@ -1800,7 +1799,6 @@ components:
       type: object
       required:
         - id
-        - companyName
         - positionName
         - description
         - matchScore
@@ -1812,6 +1810,7 @@ components:
           format: int64
         companyName:
           type: string
+          nullable: true
         positionName:
           type: string
         description:
@@ -2704,13 +2703,13 @@ components:
     EmployerDashboardDto:
       type: object
       required:
-        - companyName
         - jobProfilesCount
         - activeJobProfilesCount
         - totalMatchedCandidates
       properties:
         companyName:
           type: string
+          nullable: true
         jobProfilesCount:
           type: integer
         activeJobProfilesCount:

@@ -8,9 +8,9 @@ CLUSTER_NAME="${KIND_CLUSTER_NAME:-procrush}"
 cd "$ROOT"
 
 images=(
-#  "procrush-api:local|deploy/Dockerfile.api"
-#  "procrush-personality:local|deploy/Dockerfile.personality"
-#  "procrush-matching:local|deploy/Dockerfile.matching"
+  "procrush-api:local|deploy/Dockerfile.api"
+  "procrush-personality:local|deploy/Dockerfile.personality"
+  "procrush-matching:local|deploy/Dockerfile.matching"
   "procrush-frontend:local|deploy/Dockerfile.frontend"
 )
 

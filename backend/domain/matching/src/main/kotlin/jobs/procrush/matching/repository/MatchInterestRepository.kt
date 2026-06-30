@@ -4,6 +4,7 @@ import jobs.procrush.employer.tables.EmployerJobProfilesTable
 import jobs.procrush.employer.tables.EmployersTable
 import jobs.procrush.matching.dto.EmployerContactDto
 import jobs.procrush.matching.dto.SeekerContactDto
+import jobs.procrush.matching.dto.apiCompanyName
 import jobs.procrush.matching.model.MatchInterestRecord
 import jobs.procrush.matching.tables.JobMatchInterestsTable
 import jobs.procrush.seeker.tables.SeekersTable
@@ -171,7 +172,7 @@ class MatchInterestRepository {
                 .firstOrNull()
                 ?.let { row ->
                     EmployerContactDto(
-                        companyName = row[EmployersTable.name].ifBlank { "Компания не указана" },
+                        companyName = apiCompanyName(row[EmployersTable.name]),
                         phone = row[EmployersTable.phone],
                         emailContact = row[EmployersTable.emailContact],
                         website = row[EmployersTable.website],

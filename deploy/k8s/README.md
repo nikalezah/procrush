@@ -1,58 +1,58 @@
 # ProCrush on Kubernetes (kind)
 
-Локальный полный стек ProCrush в **kind** (Kubernetes IN Docker): инфраструктура, три backend-сервиса и React-frontend. Снаружи — **http://127.10.0.10**.
+Local full ProCrush stack in **kind** (Kubernetes IN Docker): infrastructure, three backend services, and React frontend. External access — **http://127.10.0.10**.
 
-Рекомендуемый способ локальной разработки. Облачный деплой — в [deploy/README.md](../README.md).
+Recommended local development setup. Cloud deployment — in [deploy/README.md](../README.md).
 
-## Требования
+## Requirements
 
-- [Docker](https://docs.docker.com/get-docker/) — выделите **≥ 8 GB RAM** в настройках Docker Desktop
+- [Docker](https://docs.docker.com/get-docker/) — allocate **≥ 8 GB RAM** in Docker Desktop settings
 - [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- **Hot-reload (опционально):** JDK 17+, Node.js 20+ для `./gradlew run` / `npm run dev`
+- **Hot-reload (optional):** JDK 17+, Node.js 20+ for `./gradlew run` / `npm run dev`
 
-## Быстрый старт
+## Quick start
 
-1. Из корня репозитория:
+1. From the repository root:
 
    ```bash
    chmod +x deploy/k8s/scripts/*.sh
    ./deploy/k8s/scripts/kind-up.sh
    ```
 
-   Если кластер `procrush` был создан до смены `listenAddress`, пересоздайте его: `./deploy/k8s/scripts/kind-down.sh`, затем снова `./deploy/k8s/scripts/kind-up.sh`. Настройка `extraPortMappings` применяется только при создании контейнера ноды kind.
+   If cluster `procrush` was created before changing `listenAddress`, recreate it: `./deploy/k8s/scripts/kind-down.sh`, then `./deploy/k8s/scripts/kind-up.sh` again. `extraPortMappings` applies only when the kind node container is created.
 
-   Скрипт:
-   - создаёт кластер `procrush` (если ещё нет);
-   - устанавливает ingress-nginx;
-   - собирает 4 Docker-образа и загружает их в kind (`kind load docker-image`);
-   - применяет манифесты: `kubectl apply -k deploy/k8s/overlays/kind`.
+   The script:
+   - creates cluster `procrush` (if missing);
+   - installs ingress-nginx;
+   - builds 4 Docker images and loads them into kind (`kind load docker-image`);
+   - applies manifests: `kubectl apply -k deploy/k8s/overlays/kind`.
 
-   Перед `kind-up` скопируйте [`deploy/k8s/base/secret.yaml.example`](./base/secret.yaml.example) в `secret.yaml` и укажите `LLM_API_KEY` (файл в `.gitignore`, не коммитьте).
+   Before `kind-up`, copy [`deploy/k8s/base/secret.yaml.example`](./base/secret.yaml.example) to `secret.yaml` and set `LLM_API_KEY` (file is in `.gitignore`, do not commit).
 
-2. Дождитесь готовности pod'ов:
+2. Wait for pods to become ready:
 
    ```bash
    kubectl get pods -n procrush -w
    ```
 
-3. Откройте http://127.10.0.10 — dev-вход (`AUTH_DEV_MODE=true`).
+3. Open http://127.10.0.10 — dev login (`AUTH_DEV_MODE=true`).
 
-## Проверка
+## Verification
 
-| Проверка | Команда / URL |
-|----------|----------------|
-| Статус pod'ов | `kubectl get pods -n procrush` |
-| Логи API | `kubectl logs -n procrush deploy/api -f` |
-| Сессия (без cookie → 401) | `curl -s -o /dev/null -w "%{http_code}" http://127.10.0.10/api/auth/me` |
-| Dev-login | через UI на http://127.10.0.10 |
+| Check | Command / URL |
+|-------|---------------|
+| Pod status | `kubectl get pods -n procrush` |
+| API logs | `kubectl logs -n procrush deploy/api -f` |
+| Session (no cookie → 401) | `curl -s -o /dev/null -w "%{http_code}" http://127.10.0.10/api/auth/me` |
+| Dev login | via UI at http://127.10.0.10 |
 
-## Локальные endpoint'ы
+## Local endpoints
 
-После `kind-up` сервисы доступны с хоста по выделенным loopback-IP (см. [kind-config.yaml](./kind-config.yaml)):
+After `kind-up`, services are reachable from the host on dedicated loopback IPs (see [kind-config.yaml](./kind-config.yaml)):
 
-| Сервис | Endpoint |
-|--------|----------|
+| Service | Endpoint |
+|---------|----------|
 | Web (Ingress) | http://127.10.0.10 |
 | PostgreSQL | `127.10.0.11:5432` |
 | Matching PostgreSQL | `127.10.0.12:5432` |
@@ -61,83 +61,83 @@
 | RabbitMQ UI | http://127.10.0.14:15672 (`procrush` / `procrush`) |
 | Kafka | `127.10.0.15:9092` |
 
-Проверка API (через Ingress): `GET http://127.10.0.10/api/...` или health напрямую:
+API check (via Ingress): `GET http://127.10.0.10/api/...` or health directly:
 
 ```bash
 kubectl port-forward -n procrush svc/api 8080:8080
 # GET http://localhost:8080/health
 ```
 
-Проверка matching:
+Matching check:
 
 ```bash
 kubectl port-forward -n procrush svc/matching 8092:8092
 # GET http://localhost:8092/health
 ```
 
-## Аутентификация
+## Authentication
 
-В kind-стеке включён dev-вход (`AUTH_DEV_MODE=true`). Используются **httpOnly session cookies**.
+Dev login is enabled in the kind stack (`AUTH_DEV_MODE=true`). **httpOnly session cookies** are used.
 
-| Endpoint | Описание |
-|----------|----------|
-| `POST /api/auth/dev/login` | Dev-вход (требует `AUTH_DEV_MODE=true`) |
-| `GET /api/auth/me` | Текущий пользователь |
-| `POST /api/auth/logout` | Выход |
-| `POST /api/auth/complete-registration` | Выбор роли (неизменяемо) |
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/auth/dev/login` | Dev login (requires `AUTH_DEV_MODE=true`) |
+| `GET /api/auth/me` | Current user |
+| `POST /api/auth/logout` | Sign out |
+| `POST /api/auth/complete-registration` | Role selection (immutable) |
 
-## Инфраструктура в кластере
+## In-cluster infrastructure
 
 ### Redis
 
-**Redis** — in-memory хранилище для кэша рекомендаций, distributed lock при LLM-генерации, кэша сессий и pub/sub для SSE. С хоста: `127.10.0.13:6379`.
+**Redis** — in-memory store for recommendation cache, distributed lock during LLM generation, session cache, and pub/sub for SSE. From host: `127.10.0.13:6379`.
 
 ### RabbitMQ
 
-**RabbitMQ** — брокер сообщений для очереди `personality.generation`. UI: http://127.10.0.14:15672. При ошибках после 3 попыток сообщение попадает в DLQ `personality.generation.dlq`.
+**RabbitMQ** — message broker for the `personality.generation` queue. UI: http://127.10.0.14:15672. After 3 failed attempts messages go to DLQ `personality.generation.dlq`.
 
 ### Kafka + matching
 
-**Kafka** — event log для пересчёта матчинга. Сервисы `kafka`, `matching-postgres`, `matching` в namespace `procrush`. API читает рекомендации из matching по HTTP (`MATCHING_SERVICE_URL` в [configmap.yaml](./base/configmap.yaml)).
+**Kafka** — event log for matching recalculation. Services `kafka`, `matching-postgres`, `matching` in namespace `procrush`. The API reads recommendations from matching over HTTP (`MATCHING_SERVICE_URL` in [configmap.yaml](./base/configmap.yaml)).
 
-## Схема БД
+## Database schema
 
-Миграции и seed — в `backend/platform/persistence/` (основная БД) и `backend/matching/` (БД матчинга). При сбросе namespace данные пересоздаются из Flyway и seed-скриптов.
+Migrations and seed — in `backend/platform/persistence/` (main DB) and `backend/matching/` (matching DB). Resetting the namespace recreates data from Flyway and seed scripts.
 
-## Архитектура
+## Architecture
 
 ```text
-Браузер → 127.10.0.10:80
+Browser → 127.10.0.10:80
     → Ingress (nginx)
         /api/*  → Service api:8080
         /*      → Service frontend:8080
 
-Внутри кластера (in-cluster DNS):
+Inside cluster (in-cluster DNS):
   postgres, matching-postgres, redis, rabbitmq, kafka
   api, personality, matching
 ```
 
-Манифесты: [base/](./base/) + overlay [overlays/kind/](./overlays/kind/) (Kustomize).
+Manifests: [base/](./base/) + overlay [overlays/kind/](./overlays/kind/) (Kustomize).
 
-## Пересборка после изменений кода
+## Rebuild after code changes
 
 ```bash
 ./deploy/k8s/scripts/build-images.sh
 kubectl rollout restart deployment -n procrush api personality matching frontend
 ```
 
-## RabbitMQ UI (опционально)
+## RabbitMQ UI (optional)
 
-Откройте http://127.10.0.14:15672 — логин `procrush` / `procrush`.
+Open http://127.10.0.14:15672 — login `procrush` / `procrush`.
 
-## Сброс данных
+## Reset data
 
 ```bash
 kubectl delete namespace procrush
 kubectl apply -k deploy/k8s/overlays/kind
 ```
 
-Или удалить только PVC:
+Or delete PVCs only:
 
 ```bash
 kubectl delete pvc -n procrush --all
@@ -145,39 +145,39 @@ kubectl rollout restart statefulset -n procrush postgres matching-postgres
 kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 ```
 
-## Остановка кластера
+## Stop cluster
 
 ```bash
 ./deploy/k8s/scripts/kind-down.sh
 ```
 
-## Hot-reload без пересборки образов (опционально)
+## Hot-reload without rebuilding images (optional)
 
-Инфраструктура доступна с хоста по loopback-IP сразу после `kind-up`. Задайте переменные окружения по [`configmap.yaml`](./base/configmap.yaml) и локальному `secret.yaml` (из [`secret.yaml.example`](./base/secret.yaml.example)). Разные проекты могут одновременно использовать стандартные порты на своих `127.x.x.x` адресах.
+Infrastructure is reachable from the host on loopback IPs immediately after `kind-up`. Set environment variables per [`configmap.yaml`](./base/configmap.yaml) and local `secret.yaml` (from [`secret.yaml.example`](./base/secret.yaml.example)). Different projects can use standard ports on their own `127.x.x.x` addresses simultaneously.
 
-| Приложение | Команда | URL |
-|------------|---------|-----|
+| Application | Command | URL |
+|-------------|---------|-----|
 | React | `cd frontend && npm run dev` | http://localhost:8081 |
 | API | `./gradlew :backend:api:run` | :8080 |
 | Personality | `./gradlew :backend:personality:run` | :8091 |
 | Matching | `./gradlew :backend:matching:run` | :8092 |
 
-Подробнее о бэкенд-модулях — [backend/README.md](../../backend/README.md).
+More on backend modules — [backend/README.md](../../backend/README.md).
 
-## Устранение неполадок
+## Troubleshooting
 
-| Симптом | Что проверить |
-|---------|----------------|
-| `ImagePullBackOff` | Пересоберите образы: `./deploy/k8s/scripts/build-images.sh`; в overlay задано `imagePullPolicy: Never` |
-| API не становится Ready | `kubectl logs -n procrush deploy/api`; часто matching или Kafka ещё стартуют |
-| Порт 80 занят на `127.10.0.10` | Другой сервис на том же IP:порт; смените `listenAddress` / `hostPort` в [kind-config.yaml](./kind-config.yaml) |
-| http://127.10.0.10 не открывается | `kubectl get ingress -n procrush`; пересоздайте кластер после смены `kind-config.yaml` |
-| API/personality `Init:0/1` долго | RabbitMQ readiness — в манифесте `tcpSocket` + `publishNotReadyAddresses`; перезапустите: `kubectl apply -k deploy/k8s/overlays/kind` |
-| personality `Unhealthy` / 406 | HTTP probe на `/health` без JSON — используется `tcpSocket:8091` |
-| `error: no matching resources found` при ingress | Перезапустите `kind-up` — скрипт ждёт admission jobs и rollout deployment |
+| Symptom | What to check |
+|---------|---------------|
+| `ImagePullBackOff` | Rebuild images: `./deploy/k8s/scripts/build-images.sh`; overlay sets `imagePullPolicy: Never` |
+| API not becoming Ready | `kubectl logs -n procrush deploy/api`; often matching or Kafka still starting |
+| Port 80 busy on `127.10.0.10` | Another service on same IP:port; change `listenAddress` / `hostPort` in [kind-config.yaml](./kind-config.yaml) |
+| http://127.10.0.10 not opening | `kubectl get ingress -n procrush`; recreate cluster after changing `kind-config.yaml` |
+| API/personality `Init:0/1` for long | RabbitMQ readiness — manifest uses `tcpSocket` + `publishNotReadyAddresses`; restart: `kubectl apply -k deploy/k8s/overlays/kind` |
+| personality `Unhealthy` / 406 | HTTP probe on `/health` without JSON — uses `tcpSocket:8091` |
+| `error: no matching resources found` for ingress | Re-run `kind-up` — script waits for admission jobs and deployment rollout |
 
-## Связанная документация
+## Related documentation
 
-- [deploy/README.md](../README.md) — деплой на Railway
-- [backend/README.md](../../backend/README.md) — бэкенд и инфраструктурные зависимости
-- [frontend/README.md](../../frontend/README.md) — веб-клиент
+- [deploy/README.md](../README.md) — Railway deployment
+- [backend/README.md](../../backend/README.md) — backend and infrastructure dependencies
+- [frontend/README.md](../../frontend/README.md) — web client

@@ -1,4 +1,5 @@
 import {useTranslation} from 'react-i18next'
+import {CompanyName} from './CompanyName'
 import type {EmployerContactDto, SeekerContactDto} from '../api/types'
 
 interface ContactInfoPanelProps {
@@ -25,7 +26,9 @@ export function ContactInfoPanel({contactInfo, perspective}: ContactInfoPanelPro
       <ul className="mt-2 flex flex-col gap-1.5 text-accent-800">
         {isEmployerContact(contactInfo) ? (
           <>
-            <li className="font-medium">{contactInfo.companyName}</li>
+            <li className="font-medium">
+              <CompanyName name={contactInfo.companyName} />
+            </li>
             {contactInfo.phone != null && contactInfo.phone !== '' && (
               <li>
                 <a href={`tel:${contactInfo.phone}`} className="underline hover:text-accent-900">

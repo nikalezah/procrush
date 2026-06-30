@@ -52,7 +52,7 @@ data class JobProfileChangedPayload(
     val skillIds: List<Long>,
     val personalityAxes: PersonalityAxesDto,
     val isActive: Boolean,
-    val companyName: String,
+    val companyName: String? = null,
     val occupationName: String,
     val description: String? = null,
     val deleted: Boolean = false,

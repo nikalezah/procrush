@@ -1,4 +1,7 @@
 {
+  "app": {
+    "documentTitle": "ProCrush — find your dream job"
+  },
   "nav": {
     "seeker": {
       "home": "Home",
@@ -32,6 +35,7 @@
     "present": "present",
     "saveError": "Failed to save",
     "respondError": "Failed to send response",
+    "companyNotSpecified": "Company not specified",
     "fields": {
       "firstName": "First name",
       "lastName": "Last name",

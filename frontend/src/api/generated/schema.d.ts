@@ -704,7 +704,7 @@ export interface components {
             isPronounced?: boolean | null;
         };
         EmployerContactDto: {
-            companyName: string;
+            companyName?: string | null;
             phone?: string | null;
             emailContact?: string | null;
             website?: string | null;
@@ -719,7 +719,7 @@ export interface components {
         JobRecommendationDto: {
             /** Format: int64 */
             id: number;
-            companyName: string;
+            companyName?: string | null;
             positionName: string;
             description: string;
             /** Format: double */
@@ -1053,7 +1053,7 @@ export interface components {
             personalityAxes?: components["schemas"]["PersonalityAxesDto"];
         };
         EmployerDashboardDto: {
-            companyName: string;
+            companyName?: string | null;
             jobProfilesCount: number;
             activeJobProfilesCount: number;
             totalMatchedCandidates: number;

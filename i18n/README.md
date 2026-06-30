@@ -1,29 +1,29 @@
 # ProCrush i18n
 
-Единый источник кодов ошибок API и пользовательских переводов. Живёт в корне репозитория — по той же идее, что и OpenAPI: не внутри `frontend/` или `backend/`.
+Single source for API error codes and user-facing translations. Lives at the repository root — same idea as OpenAPI: not inside `frontend/` or `backend/`.
 
-## Структура каталога
+## Directory structure
 
 ```
 i18n/
-  error-codes.yaml       # коды ошибок + HTTP status + англ. техническое message
-  locales/ru|en/         # errors.json (по кодам) и ui.json (весь интерфейс)
-  generated/             # ErrorCode.kt (бэкенд) и errorCodes.ts (фронт)
-  scripts/generate.mjs   # codegen + валидация
+  error-codes.yaml       # error codes + HTTP status + English technical message
+  locales/ru|en/         # errors.json (by code) and ui.json (full UI)
+  generated/             # ErrorCode.kt (backend) and errorCodes.ts (frontend)
+  scripts/generate.mjs   # codegen + validation
 ```
 
-## Как это работает
+## How it works
 
-| Слой | Что отдаёт / показывает |
-|------|-------------------------|
-| **Backend** | `{ "code": "SURVEY_ALREADY_COMPLETED", "message": "Survey already completed", "details": {} }` — `message` только для логов и отладки |
-| **Frontend** | `t('seeker.dashboard.title')` для UI; `resolveApiError(err)` переводит `code` по выбранной локали |
+| Layer | Returns / displays |
+|-------|-------------------|
+| **Backend** | `{ "code": "SURVEY_ALREADY_COMPLETED", "message": "Survey already completed", "details": {} }` — `message` is for logs and debugging only |
+| **Frontend** | `t('seeker.dashboard.title')` for UI; `resolveApiError(err)` translates `code` for the selected locale |
 
-Локаль: авто по браузеру → fallback `ru`; переключатель **ru / en** в «Аккаунт» (`localStorage`: `procrush.locale`).
+Locale: auto from browser → fallback `ru`; **ru / en** switcher in Account (`localStorage`: `procrush.locale`).
 
-**Не переводится в v1:** тексты опросов из БД, LLM-профиль, названия профессий и навыков.
+**Not translated in v1:** survey texts from DB, LLM profile, occupation and skill names.
 
-## Команды
+## Commands
 
 ```bash
 cd i18n
@@ -32,15 +32,15 @@ npm run generate   # validate + write generated/kotlin and generated/typescript
 npm run validate   # check locales match error-codes.yaml
 ```
 
-Фронтенд перед `dev`/`build` сам вызывает `validate:i18n` (`npm run prebuild` в `frontend/`).
+The frontend runs `validate:i18n` before `dev`/`build` (`npm run prebuild` in `frontend/`).
 
-## Workflow: новый код ошибки или строка UI
+## Workflow: new error code or UI string
 
-1. Добавить код в `error-codes.yaml` и переводы в `locales/ru/errors.json` и `locales/en/errors.json`.
-2. Для UI — ключи в `locales/ru/ui.json` и `locales/en/ui.json`.
-3. Регенерация: `npm run generate`
-4. Backend: `./gradlew :backend:api:compileKotlin` — модуль `contracts` подключает `i18n/generated/kotlin`.
-5. Закоммитить `generated/` вместе с yaml/json.
+1. Add code to `error-codes.yaml` and translations in `locales/ru/errors.json` and `locales/en/errors.json`.
+2. For UI — keys in `locales/ru/ui.json` and `locales/en/ui.json`.
+3. Regenerate: `npm run generate`
+4. Backend: `./gradlew :backend:api:compileKotlin` — the `contracts` module includes `i18n/generated/kotlin`.
+5. Commit `generated/` together with yaml/json.
 
 ## API contract
 
@@ -60,7 +60,7 @@ Backend returns:
 
 Frontend maps `code` + `details` to the locale in `locales/*/errors.json`.
 
-## Связанная документация
+## Related documentation
 
-- [frontend/README.md](../frontend/README.md) — веб-клиент
-- [backend/README.md](../backend/README.md) — бэкенд
+- [frontend/README.md](../frontend/README.md) — web client
+- [backend/README.md](../backend/README.md) — backend

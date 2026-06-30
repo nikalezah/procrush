@@ -163,7 +163,7 @@ JOIN seekers s ON s.user_id = (SELECT id FROM users WHERE email = v.email)
 JOIN occupations o ON o.name = v.occupation_name AND o.is_leaf = true;
 
 -- =============================================================================
--- Survey results (seekers 1–8: все core-опросы + тест 2/64qn, seeker 9: первые 3 core)
+-- Survey results (seekers 1–8: all core surveys + test 2/64qn; seeker 9: first 3 core)
 -- =============================================================================
 
 INSERT INTO survey_results (seeker_id, survey_id, answers, calculated_results, started_at, completed_at, updated_at)
@@ -238,7 +238,7 @@ JOIN users u ON u.id = s.user_id
 JOIN surveys sv ON sv.code IN ('2501-10-5KEY', '2520-10-ETYA', '2521-10-NEYA')
 WHERE u.email = 'seeker9@procrush.test';
 
--- Тест 2 (group 64qn): личностный опросник 64QN
+-- Test 2 (group 64qn): 64QN personality questionnaire
 INSERT INTO survey_results (seeker_id, survey_id, answers, calculated_results, started_at, completed_at, updated_at)
 SELECT
     s.id,
@@ -254,7 +254,7 @@ JOIN surveys sv ON sv.code = '2540-10-64QN'
 WHERE u.email BETWEEN 'seeker1@procrush.test' AND 'seeker8@procrush.test';
 
 -- =============================================================================
--- Employer job profiles (для мэтчинга)
+-- Employer job profiles (for matching)
 -- =============================================================================
 
 INSERT INTO employer_job_profiles (employer_id, occupation_id, description, required_personality, is_active, created_at, updated_at)

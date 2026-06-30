@@ -89,7 +89,7 @@ class EmployerProfileService(
                 countsByOccupation[profile.occupationId] ?: 0
             }
         return EmployerDashboardDto(
-            companyName = employer.name.ifBlank { "Компания не указана" },
+            companyName = employer.name.takeIf { it.isNotBlank() },
             jobProfilesCount = profiles.size,
             activeJobProfilesCount = activeProfiles.size,
             totalMatchedCandidates = totalMatchedCandidates,

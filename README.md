@@ -1,90 +1,90 @@
 # ProCrush
 
-Платформа подбора кандидатов: соискатель проходит личностные опросы, получает интерпретированный профиль; работодатель создаёт профили вакансий и просматривает кандидатов.
+Candidate matching platform: seekers take personality surveys and receive an interpreted profile; employers create job profiles and browse candidates.
 
-## Логика работы сервиса
+## Service logic
 
-### Роли
+### Roles
 
-После входа пользователь один раз выбирает роль (`SEEKER` или `EMPLOYER`) через `POST /api/auth/complete-registration`. Сменить роль нельзя.
+After sign-in, the user chooses a role once (`SEEKER` or `EMPLOYER`) via `POST /api/auth/complete-registration`. The role cannot be changed.
 
-| Роль | Возможности |
-|------|-------------|
-| **Соискатель (SEEKER)** | Проходит группы личностных тестов, получает интерпретированный профиль, указывает желаемые профессии, просматривает рекомендации вакансий и откликается на них |
-| **Работодатель (EMPLOYER)** | Ведёт профиль компании и профили вакансий, просматривает рекомендованных кандидатов с оценкой совпадения и откликается на них |
+| Role | Capabilities |
+|------|--------------|
+| **Seeker (SEEKER)** | Takes personality test groups, receives an interpreted profile, specifies desired occupations, views job recommendations, and responds to them |
+| **Employer (EMPLOYER)** | Manages company and job profiles, views recommended candidates with match scores, and responds to them |
 
-### Группы тестов
+### Test groups
 
-Опросы делятся на две группы:
+Surveys are split into two groups:
 
-1. **Тест 1 (`core`)** — восемь последовательных методик (открытые вопросы, выбор качеств, DISC, дилеммы, Белбин и др.). Шаги можно пересматривать, пока вся группа не завершена.
-2. **Тест 2 (`64qn`)** — личностный опросник на 64 вопроса (шкала 0–4). Открывается только после полного завершения группы `core`.
+1. **Test 1 (`core`)** — eight sequential assessments (open questions, quality selection, DISC, dilemmas, Belbin, etc.). Steps can be revisited until the entire group is completed.
+2. **Test 2 (`64qn`)** — 64-question personality questionnaire (0–4 scale). Unlocks only after the `core` group is fully completed.
 
-Правила блокировки и навигации между шагами реализованы на бэкенде — см. [backend/README.md](./backend/README.md).
+Locking and navigation rules between steps are implemented on the backend — see [backend/README.md](./backend/README.md).
 
-### Цепочка «тесты → расчёты → интерпретация»
+### Pipeline: tests → scoring → interpretation
 
 ```mermaid
 flowchart LR
-    A[Ответы пользователя] --> B[Валидация]
-    B --> C[Расчёт по ключам]
-    C --> D[calculated_results в БД]
-    D --> E[Контекст для LLM]
-    E --> F[Интерпретация]
-    F --> G[Личностный профиль]
+    A[User answers] --> B[Validation]
+    B --> C[Scoring by keys]
+    C --> D[calculated_results in DB]
+    D --> E[LLM context]
+    E --> F[Interpretation]
+    F --> G[Personality profile]
 ```
 
-**1. Тесты.** Соискатель отвечает на вопросы в веб-клиенте. Ответы сохраняются по мере заполнения; при завершении опроса сервер проверяет полноту и корректность.
+**1. Tests.** The seeker answers questions in the web client. Answers are saved as they go; on survey completion the server checks completeness and correctness.
 
-**2. Расчёты.** Для каждого опроса в БД хранятся ключи подсчёта. Сервер применяет нужную логику (`open_text`, `matrix`, `direct_sum`, `formula`) и записывает структурированный JSON в `survey_results.calculated_results`. Примеры: суммы по осям DISC, роли Белбина, нормализованные баллы шкалы 0–4.
+**2. Scoring.** Each survey stores scoring keys in the DB. The server applies the appropriate logic (`open_text`, `matrix`, `direct_sum`, `formula`) and writes structured JSON to `survey_results.calculated_results`. Examples: DISC axis sums, Belbin roles, normalized 0–4 scale scores.
 
-**3. Интерпретация.** Когда завершены обе группы тестов, API ставит задачу в очередь; отдельный процесс **personality** забирает задачу и вызывает LLM:
+**3. Interpretation.** When both test groups are completed, the API enqueues a job; the separate **personality** process picks it up and calls the LLM:
 
-- собирается контекст: ответы, результаты расчётов и глоссарий терминов;
-- LLM получает системный промпт с требуемой JSON-схемой;
-- ответ валидируется и сохраняется как личностный профиль.
+- context is assembled: answers, scoring results, and a glossary of terms;
+- the LLM receives a system prompt with the required JSON schema;
+- the response is validated and saved as the personality profile.
 
-Статусы профиля: `NOT_READY` → `PROCESSING` → `READY` или `FAILED` (с возможностью повтора). Готовность профиля уведомляется клиенту в реальном времени (SSE).
+Profile statuses: `NOT_READY` → `PROCESSING` → `READY` or `FAILED` (with retry). Profile readiness is pushed to the client in real time (SSE).
 
-### Матчинг и отклики
+### Matching and responses
 
-После завершения обеих групп тестов соискатель указывает желаемые профессии. Работодатель создаёт профили вакансий с привязкой к профессии, навыкам и ожидаемым личностным осям.
+After both test groups are completed, the seeker specifies desired occupations. The employer creates job profiles linked to an occupation, skills, and expected personality axes.
 
-**Рекомендации.** Отдельный сервис **matching** — единственный источник рекомендаций: API читает их по HTTP. Пары «соискатель ↔ вакансия» подбираются в рамках совпадающей профессии; оценка совпадения — доля пересечения навыков (Jaccard) и, если у соискателя готов личностный профиль, сходство по осям личности (50/50). Списки сортируются по убыванию score.
+**Recommendations.** The separate **matching** service is the sole source of recommendations: the API reads them over HTTP. Seeker ↔ job pairs are matched within the same occupation; the match score combines skill overlap (Jaccard) and, when the seeker's personality profile is ready, personality axis similarity (50/50). Lists are sorted by score descending.
 
-| Сторона | Список рекомендаций |
-|---------|---------------------|
-| Соискатель | `GET /api/seeker/recommendations` — вакансии по желаемым профессиям |
-| Работодатель | `GET /api/employer/job-profiles/{id}/candidates` — кандидаты для вакансии |
+| Side | Recommendation list |
+|------|---------------------|
+| Seeker | `GET /api/seeker/recommendations` — jobs for desired occupations |
+| Employer | `GET /api/employer/job-profiles/{id}/candidates` — candidates for a job |
 
-**Отклики.** Любая сторона может первой выразить интерес; отклик необратим. Статус хранится в `job_match_interests` и вычисляется для каждой стороны отдельно:
+**Responses.** Either side can express interest first; a response is irreversible. Status is stored in `job_match_interests` and computed separately for each side:
 
-| Статус | Для инициатора | Для получателя |
-|--------|----------------|----------------|
-| `NONE` | Отклика не было | — |
-| `RESPONDED` | Свой отклик отправлен | — |
-| `INCOMING` | — | Противоположная сторона откликнулась |
-| `MUTUAL` | Взаимный интерес | Взаимный интерес |
+| Status | For initiator | For recipient |
+|--------|---------------|---------------|
+| `NONE` | No response yet | — |
+| `RESPONDED` | Own response sent | — |
+| `INCOMING` | — | The other side responded |
+| `MUTUAL` | Mutual interest | Mutual interest |
 
-При `MUTUAL` раскрываются контактные данные противоположной стороны. Отклики вне текущего списка рекомендаций доступны отдельно (`GET /api/seeker/interests`, `GET /api/employer/job-profiles/{id}/interests`).
+On `MUTUAL`, the other party's contact details are revealed. Responses outside the current recommendation list are available separately (`GET /api/seeker/interests`, `GET /api/employer/job-profiles/{id}/interests`).
 
-Новые входящие отклики доставляются в реальном времени через SSE; счётчик непросмотренных — `GET .../match-interests/count`.
+New incoming responses are delivered in real time via SSE; unread count — `GET .../match-interests/count`.
 
 ```mermaid
 flowchart LR
-    A[Рекомендации] --> B{Отклик одной стороны}
+    A[Recommendations] --> B{One side responds}
     B --> C[RESPONDED / INCOMING]
-    C --> D{Отклик второй стороны}
-    D --> E[MUTUAL + контакты]
+    C --> D{Second side responds}
+    D --> E[MUTUAL + contacts]
 ```
 
-## Документация по модулям
+## Module documentation
 
-| Модуль | Описание |
-|--------|----------|
-| [backend/](./backend/README.md) | Kotlin-бэкенд: модули, инфраструктура (Redis, RabbitMQ, Kafka), аутентификация, локальный запуск |
-| [frontend/](./frontend/README.md) | React-веб-клиент: разработка и сборка |
-| [openapi/](./openapi/README.md) | Контракт REST API (OpenAPI 3.1), codegen для бэка и фронта |
-| [i18n/](./i18n/README.md) | Коды ошибок API и переводы UI (ru/en) |
-| [deploy/](./deploy/README.md) | Деплой: Railway (облако) и ссылка на локальный Kubernetes |
-| [deploy/k8s/](./deploy/k8s/README.md) | Локальный полный стек в kind (Kubernetes) |
+| Module | Description |
+|--------|-------------|
+| [backend/](./backend/README.md) | Kotlin backend: modules, infrastructure (Redis, RabbitMQ, Kafka), auth, local run |
+| [frontend/](./frontend/README.md) | React web client: development and build |
+| [openapi/](./openapi/README.md) | REST API contract (OpenAPI 3.1), codegen for backend and frontend |
+| [i18n/](./i18n/README.md) | API error codes and UI translations (ru/en) |
+| [deploy/](./deploy/README.md) | Deployment: Railway (cloud) and link to local Kubernetes |
+| [deploy/k8s/](./deploy/k8s/README.md) | Local full stack in kind (Kubernetes) |

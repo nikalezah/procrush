@@ -3,6 +3,7 @@ package jobs.procrush.matching.repository
 import jobs.procrush.employer.tables.EmployerJobProfilesTable
 import jobs.procrush.employer.tables.EmployersTable
 import jobs.procrush.employer.tables.JobProfileSkillsTable
+import jobs.procrush.matching.dto.apiCompanyName
 import jobs.procrush.matching.model.JobMatchCandidate
 import jobs.procrush.matching.model.SeekerMatchingContext
 import jobs.procrush.personality.dto.PersonalityAxesDto
@@ -180,13 +181,13 @@ class MatchingRepository(
         val occupationId = this[EmployerJobProfilesTable.occupationId].value
         val employerId = this[EmployerJobProfilesTable.employerId].value
         val companyName =
-            EmployersTable
-                .selectAll()
-                .where { EmployersTable.id eq employerId }
-                .firstOrNull()
-                ?.get(EmployersTable.name)
-                ?.ifBlank { "Компания не указана" }
-                ?: "—"
+            apiCompanyName(
+                EmployersTable
+                    .selectAll()
+                    .where { EmployersTable.id eq employerId }
+                    .firstOrNull()
+                    ?.get(EmployersTable.name),
+            ).orEmpty()
         val occupationName = resolveOccupationName(occupationId)
 
         return JobMatchCandidate(

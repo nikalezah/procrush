@@ -1,4 +1,7 @@
 {
+  "app": {
+    "documentTitle": "ProCrush — найди свою работу"
+  },
   "nav": {
     "seeker": {
       "home": "Главная",
@@ -32,6 +35,7 @@
     "present": "настоящее время",
     "saveError": "Ошибка сохранения",
     "respondError": "Не удалось отправить отклик",
+    "companyNotSpecified": "Компания не указана",
     "fields": {
       "firstName": "Имя",
       "lastName": "Фамилия",

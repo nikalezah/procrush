@@ -8,6 +8,7 @@ import {Button} from '../../components/ui/Button'
 import {StatCard} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {Spinner} from '../../components/Spinner'
+import {companyNameLabel} from '../../components/CompanyName'
 import {resolveError} from '../../i18n/resolveApiError'
 
 export function EmployerDashboardPage() {
@@ -32,7 +33,7 @@ export function EmployerDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={`${data.companyName} 🏢`} subtitle={t('employer.dashboard.subtitle')} />
+      <PageHeader title={`${companyNameLabel(data.companyName, t)} 🏢`} subtitle={t('employer.dashboard.subtitle')} />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label={t('employer.dashboard.stats.profiles')} value={data.jobProfilesCount} icon="💼" />

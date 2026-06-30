@@ -4,6 +4,7 @@ import type {NavItem} from './components/AppShell'
 import {AppShell} from './components/AppShell'
 import {LoadingSpinner} from './components/LoadingSpinner'
 import {ProtectedRoute} from './components/ProtectedRoute'
+import {useDocumentTitle} from './hooks/useDocumentTitle'
 import {AuthProvider, useAuth} from './hooks/useAuth'
 import {EmployerCandidatesPage} from './pages/employer/EmployerCandidatesPage'
 import {EmployerDashboardPage} from './pages/employer/EmployerDashboardPage'
@@ -183,6 +184,7 @@ function AppRoutes() {
 }
 
 export default function App() {
+  useDocumentTitle()
   return (
     <BrowserRouter>
       <AuthProvider>

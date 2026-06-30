@@ -1,45 +1,45 @@
 # ProCrush OpenAPI
 
-Публичный REST API фронт ↔ бэк описан здесь. Это единственный источник истины для путей, тел запросов и ответов.
+The public frontend ↔ backend REST API is defined here. This is the single source of truth for paths, request bodies, and responses.
 
-## Структура каталога
+## Directory structure
 
 ```
 openapi/
-  specs/              # YAML-файлы (модели + paths), сканируются Spektor
-  bundle.yaml         # entry point для Redocly
-  dist/openapi.yaml   # bundled spec — коммитится, используется фронтом
+  specs/              # YAML files (models + paths), scanned by Spektor
+  bundle.yaml         # entry point for Redocly
+  dist/openapi.yaml   # bundled spec — committed, used by the frontend
 ```
 
-## Генерация кода
+## Code generation
 
-| Слой | Инструмент | Куда попадает |
-|------|------------|---------------|
-| **Бэкенд** | Spektor (Gradle) | `backend/api/build/spektor-generated/` — routes, `*ServerApi`, DTO |
-| **Фронтенд** | `openapi-typescript` | `frontend/src/api/generated/schema.d.ts` |
+| Layer | Tool | Output |
+|-------|------|--------|
+| **Backend** | Spektor (Gradle) | `backend/api/build/spektor-generated/` — routes, `*ServerApi`, DTOs |
+| **Frontend** | `openapi-typescript` | `frontend/src/api/generated/schema.d.ts` |
 
-## Что не входит в OpenAPI
+## Not in OpenAPI
 
-Ручные Ktor routes (не генерируются из spec):
+Manual Ktor routes (not generated from spec):
 
 - `GET /`, `GET /health`
-- SSE-эндпоинты: `/api/seeker/match-interests/events`, `/api/employer/match-interests/events`, `/api/seeker/personality-preview/events`
+- SSE endpoints: `/api/seeker/match-interests/events`, `/api/employer/match-interests/events`, `/api/seeker/personality-preview/events`
 
-Internal API matching (`/internal/*`) описан отдельно и не используется фронтом.
+Matching internal API (`/internal/*`) is described separately and not used by the frontend.
 
-## Workflow: новый или изменённый эндпоинт
+## Workflow: new or changed endpoint
 
-1. Правка YAML в `specs/` (модели и paths).
-2. Бэкенд: `./gradlew :backend:api:compileKotlin` — Spektor перегенерирует код в `build/`.
-3. Реализовать или обновить handler в `backend/api/.../api/handler/` (маппинг generated DTO ↔ домен через `api/mapper/ApiMappers.kt`).
-4. Фронтенд:
+1. Edit YAML in `specs/` (models and paths).
+2. Backend: `./gradlew :backend:api:compileKotlin` — Spektor regenerates code in `build/`.
+3. Implement or update handler in `backend/api/.../api/handler/` (map generated DTO ↔ domain via `api/mapper/ApiMappers.kt`).
+4. Frontend:
    ```bash
    cd frontend
    npm run bundle:openapi && npm run generate:api
    ```
-5. Закоммитить `dist/openapi.yaml` и `frontend/src/api/generated/schema.d.ts`.
+5. Commit `dist/openapi.yaml` and `frontend/src/api/generated/schema.d.ts`.
 
-## Связанная документация
+## Related documentation
 
-- [backend/README.md](../backend/README.md) — структура бэкенда и handlers
-- [frontend/README.md](../frontend/README.md) — веб-клиент и dev-сервер
+- [backend/README.md](../backend/README.md) — backend structure and handlers
+- [frontend/README.md](../frontend/README.md) — web client and dev server

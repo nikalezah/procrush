@@ -8,6 +8,7 @@ import io.ktor.server.routing.route
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.JobRecommendationDto
+import jobs.procrush.matching.dto.apiCompanyName
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
 import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
 import jobs.procrush.shared.toResponseBody
@@ -28,7 +29,7 @@ fun Route.matchingReadRoutes(
                 results.map { row ->
                     JobRecommendationDto(
                         id = row.jobProfileId,
-                        companyName = row.companyName,
+                        companyName = apiCompanyName(row.companyName),
                         positionName = row.positionName,
                         description = row.jobDescription,
                         matchScore = row.matchScore,
@@ -65,7 +66,7 @@ fun Route.matchingReadRoutes(
             call.respond(
                 JobRecommendationDto(
                     id = row.jobProfileId,
-                    companyName = row.companyName,
+                    companyName = apiCompanyName(row.companyName),
                     positionName = row.positionName,
                     description = row.jobDescription,
                     matchScore = row.matchScore,
@@ -110,7 +111,7 @@ fun Route.matchingReadRoutes(
             call.respond(
                 JobRecommendationDto(
                     id = job.jobProfileId,
-                    companyName = job.companyName,
+                    companyName = apiCompanyName(job.companyName),
                     positionName = job.occupationName,
                     description = job.description.orEmpty(),
                     matchScore = 0.0,

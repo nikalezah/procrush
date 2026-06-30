@@ -10,6 +10,7 @@ import {MatchScoreBadge} from '../../components/MatchScoreBadge'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {Spinner} from '../../components/Spinner'
 import {EmptyState} from '../../components/EmptyState'
+import {CompanyName, companyNameLabel} from '../../components/CompanyName'
 import {Avatar} from '../../components/ui/Avatar'
 import {resolveError} from '../../i18n/resolveApiError'
 
@@ -118,10 +119,10 @@ export function SeekerDashboardPage() {
             {data.recommendationsPreview.map((job) => (
               <Card key={job.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
-                  <Avatar name={job.companyName} size="md" />
+                  <Avatar name={companyNameLabel(job.companyName, t)} size="md" />
                   <div>
                     <h3 className="font-semibold text-stone-900">{job.positionName}</h3>
-                    <p className="text-sm text-stone-500">{job.companyName}</p>
+                    <CompanyName name={job.companyName} className="text-sm text-stone-500" />
                     {job.description != null && job.description !== '' && (
                       <p className="mt-2 line-clamp-2 text-sm text-stone-600">{job.description}</p>
                     )}

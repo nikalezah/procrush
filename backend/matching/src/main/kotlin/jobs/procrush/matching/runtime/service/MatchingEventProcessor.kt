@@ -140,7 +140,7 @@ class MatchingEventProcessor(
         JobMatchCandidate(
             jobProfileId = jobProfileId,
             employerId = 0,
-            companyName = companyName,
+            companyName = companyName.orEmpty(),
             occupationId = occupationId,
             occupationName = occupationName,
             description = description,

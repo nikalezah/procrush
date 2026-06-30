@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class EmployerContactDto(
-    val companyName: String,
+    val companyName: String? = null,
     val phone: String? = null,
     val emailContact: String? = null,
     val website: String? = null,
@@ -22,7 +22,7 @@ data class SeekerContactDto(
 @Serializable
 data class JobRecommendationDto(
     val id: Long,
-    val companyName: String,
+    val companyName: String? = null,
     val positionName: String,
     val description: String,
     val matchScore: Double,

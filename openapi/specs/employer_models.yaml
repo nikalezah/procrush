@@ -126,13 +126,13 @@ components:
     EmployerDashboardDto:
       type: object
       required:
-        - companyName
         - jobProfilesCount
         - activeJobProfilesCount
         - totalMatchedCandidates
       properties:
         companyName:
           type: string
+          nullable: true
         jobProfilesCount:
           type: integer
         activeJobProfilesCount:

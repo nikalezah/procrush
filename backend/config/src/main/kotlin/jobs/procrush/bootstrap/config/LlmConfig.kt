@@ -25,13 +25,13 @@ data class LlmConfig(
     fun validateForGeneration() {
         when (provider) {
             LlmProvider.OLLAMA ->
-                require(!model.isNullOrBlank()) { "LLM не настроен: укажите LLM_MODEL для Ollama" }
+                require(!model.isNullOrBlank()) { "LLM is not configured: set LLM_MODEL for Ollama" }
             LlmProvider.OPENAI_COMPAT -> {
                 require(!apiKey.isNullOrBlank()) {
-                    "LLM не настроен: укажите LLM_API_KEY"
+                    "LLM is not configured: set LLM_API_KEY"
                 }
                 require(!model.isNullOrBlank()) {
-                    "LLM не настроен: укажите LLM_MODEL (например google/gemini-2.0-flash-001 на OpenRouter)"
+                    "LLM is not configured: set LLM_MODEL (e.g. google/gemini-2.0-flash-001 on OpenRouter)"
                 }
             }
         }
@@ -57,7 +57,7 @@ data class LlmConfig(
                 return when (raw) {
                     "ollama" -> LlmProvider.OLLAMA
                     "openai", "openai_compat", "openrouter" -> LlmProvider.OPENAI_COMPAT
-                    else -> error("Неизвестный LLM_PROVIDER: $raw (ожидается ollama, openai)")
+                    else -> error("Unknown LLM_PROVIDER: $raw (expected ollama, openai)")
                 }
             }
             return if (baseUrl.contains("11434") || baseUrl.endsWith("/ollama", ignoreCase = true)) {

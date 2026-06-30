@@ -173,12 +173,12 @@ object SurveyScoringService {
                 scoreQualities(keys, answers, questions["answerKey"]?.jsonPrimitive?.content.orEmpty())
             surveyCode.endsWith("12F4") -> score12F4(keys, answers)
             surveyCode.endsWith("BLBN") -> scoreBlbn(keys, answers)
-            else -> error("Matrix scoring не настроен для $surveyCode")
+            else -> error("Matrix scoring not configured for $surveyCode")
         }
 
     private fun scoreQualities(keys: JsonObject, answers: JsonObject, answerKey: String): String {
-        val weights = keys["qualities_weights"]?.jsonObject ?: error("qualities_weights отсутствует")
-        val selected = answers[answerKey]?.jsonArray ?: error("Ответы не найдены")
+        val weights = keys["qualities_weights"]?.jsonObject ?: error("qualities_weights is missing")
+        val selected = answers[answerKey]?.jsonArray ?: error("Answers not found")
         val poles = listOf("A3", "A1", "B3", "B1", "C3", "C1", "D3", "D1")
         val totals = poles.associateWith { 0 }.toMutableMap()
         val items =
@@ -205,7 +205,7 @@ object SurveyScoringService {
     }
 
     private fun score12F4(keys: JsonObject, answers: JsonObject): String {
-        val mapping = keys["blocks_mapping"]?.jsonObject ?: error("blocks_mapping отсутствует")
+        val mapping = keys["blocks_mapping"]?.jsonObject ?: error("blocks_mapping is missing")
         val totals = mutableMapOf("Q" to 0, "W" to 0, "E" to 0, "R" to 0)
         val blocks =
             buildJsonArray {
@@ -234,7 +234,7 @@ object SurveyScoringService {
     }
 
     private fun scoreBlbn(keys: JsonObject, answers: JsonObject): String {
-        val roleMapping = keys["role_mapping"]?.jsonObject ?: error("role_mapping отсутствует")
+        val roleMapping = keys["role_mapping"]?.jsonObject ?: error("role_mapping is missing")
         val roles = keys["roles"]?.jsonArray?.map { it.jsonPrimitive.content } ?: BELBIN_DEFAULT_ROLES
         val roleTotals = roles.associateWith { 0 }.toMutableMap()
         val questionsArr =
@@ -270,7 +270,7 @@ object SurveyScoringService {
     }
 
     private fun scoreDirectSum(keys: JsonObject, answers: JsonObject): String {
-        val qMap = keys["questions_map"]?.jsonObject ?: error("questions_map отсутствует")
+        val qMap = keys["questions_map"]?.jsonObject ?: error("questions_map is missing")
         val items =
             buildJsonArray {
                 qMap.forEach { (id, meta) ->
@@ -295,11 +295,11 @@ object SurveyScoringService {
             surveyCode.endsWith("1IN2") -> score1In2(keys, answers)
             surveyCode.endsWith("GNFL") -> scoreGnfl(keys, answers)
             surveyCode.endsWith("RDFL") -> scoreRdfl(keys, answers)
-            else -> error("Formula scoring не настроен для $surveyCode")
+            else -> error("Formula scoring not configured for $surveyCode")
         }
 
     private fun score1In2(keys: JsonObject, answers: JsonObject): String {
-        val codeMap = keys["answers_code_map"]?.jsonObject ?: error("answers_code_map отсутствует")
+        val codeMap = keys["answers_code_map"]?.jsonObject ?: error("answers_code_map is missing")
         val dilemmas =
             buildJsonArray {
                 codeMap.forEach { (id, opts) ->
@@ -318,8 +318,8 @@ object SurveyScoringService {
     }
 
     private fun scoreGnfl(keys: JsonObject, answers: JsonObject): String {
-        val codes = keys["factor_codes"]?.jsonObject ?: error("factor_codes отсутствует")
-        val selected = answers["positive_factors"]?.jsonArray ?: error("positive_factors отсутствует")
+        val codes = keys["factor_codes"]?.jsonObject ?: error("factor_codes is missing")
+        val selected = answers["positive_factors"]?.jsonArray ?: error("positive_factors is missing")
         val factors =
             buildJsonArray {
                 selected.forEachIndexed { index, el ->
@@ -337,8 +337,8 @@ object SurveyScoringService {
     }
 
     private fun scoreRdfl(keys: JsonObject, answers: JsonObject): String {
-        val meta = keys["factor_meta"]?.jsonObject ?: error("factor_meta отсутствует")
-        val selected = answers["annoying_factors"]?.jsonArray ?: error("annoying_factors отсутствует")
+        val meta = keys["factor_meta"]?.jsonObject ?: error("factor_meta is missing")
+        val selected = answers["annoying_factors"]?.jsonArray ?: error("annoying_factors is missing")
         val factors =
             buildJsonArray {
                 selected.forEachIndexed { index, el ->
