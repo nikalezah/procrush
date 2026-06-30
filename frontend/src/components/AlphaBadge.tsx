@@ -6,7 +6,7 @@ export function AlphaBadge() {
 
   return (
     <span
-      className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-brand-700"
+      className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300"
       title={tooltip}
       aria-label={tooltip}
     >

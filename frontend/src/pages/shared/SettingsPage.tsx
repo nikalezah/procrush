@@ -5,6 +5,7 @@ import {fetchSeekerProfile, updateSeekerProfile} from '../../api/seekerApi'
 import type {EmployerProfileDto, SeekerProfileDto} from '../../api/types'
 import {FormSection} from '../../components/FormSection'
 import {LoadingSpinner} from '../../components/LoadingSpinner'
+import {ThemeToggle} from '../../components/ThemeToggle'
 import {Alert} from '../../components/ui/Alert'
 import {Avatar} from '../../components/ui/Avatar'
 import {Button} from '../../components/ui/Button'
@@ -118,9 +119,9 @@ export function SettingsPage() {
             <Avatar name={displayName} size="lg" />
             <div>
               {user.profileName != null && user.profileName !== '' && (
-                <p className="font-semibold text-stone-900">{user.profileName}</p>
+                <p className="font-semibold text-foreground">{user.profileName}</p>
               )}
-              <p className="text-sm text-stone-500">{user.email}</p>
+              <p className="text-sm text-muted">{user.email}</p>
               <p className="mt-0.5 text-xs font-medium text-brand-600">
                 {displayRoleLabel(user.role, t)}
               </p>
@@ -148,6 +149,13 @@ export function SettingsPage() {
             </Button>
           ))}
         </div>
+      </FormSection>
+
+      <FormSection
+        title={t('settings.appearance.title')}
+        description={t('settings.appearance.description')}
+      >
+        <ThemeToggle variant="full" />
       </FormSection>
 
       <FormSection
@@ -292,7 +300,7 @@ export function SettingsPage() {
         title={t('settings.deleteSection.title')}
         description={t('settings.deleteSection.description')}
       >
-        <p className="text-sm text-stone-600">{t('settings.deleteSection.warning')}</p>
+        <p className="text-sm text-muted">{t('settings.deleteSection.warning')}</p>
         {deleteError != null && <Alert variant="error">{deleteError}</Alert>}
         {!deleteConfirmOpen ? (
           <Button variant="danger" disabled={isBusy} onClick={() => setDeleteConfirmOpen(true)}>

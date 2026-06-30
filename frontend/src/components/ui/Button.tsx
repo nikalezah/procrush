@@ -14,9 +14,10 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     'gradient-brand text-white shadow-md shadow-brand-500/25 hover:brightness-110 active:scale-[0.98]',
   secondary:
-    'border border-brand-200 bg-white text-brand-700 hover:bg-brand-50 active:scale-[0.98]',
-  ghost: 'text-stone-600 hover:bg-stone-100/80 active:scale-[0.98]',
-  danger: 'border border-red-200 bg-white text-red-700 hover:bg-red-50 active:scale-[0.98]',
+    'border border-border-subtle bg-surface text-brand-700 hover:bg-surface-muted active:scale-[0.98]',
+  ghost: 'text-muted hover:bg-surface-muted/80 active:scale-[0.98]',
+  danger:
+    'border border-red-200 bg-surface text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40 active:scale-[0.98]',
   like: 'gradient-brand text-white shadow-lg shadow-brand-500/30 hover:brightness-110 active:scale-95 animate-heart-beat',
 }
 

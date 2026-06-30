@@ -45,7 +45,7 @@ export function SkillPicker({selectedIds, onChange, disabled}: SkillPickerProps)
         {selectedSkills.map((skill) => (
           <span
             key={skill.id}
-            className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-800"
+            className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-3 py-1 text-sm font-medium text-brand-800 dark:text-brand-300"
           >
             {skill.name}
             {!disabled && (
@@ -67,7 +67,7 @@ export function SkillPicker({selectedIds, onChange, disabled}: SkillPickerProps)
         onChange={(e) => setQuery(e.target.value)}
         disabled={disabled}
         placeholder={t('components.skillPicker.searchPlaceholder')}
-        className="w-full rounded-2xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 disabled:opacity-50"
+        className="w-full rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900 disabled:opacity-50"
       />
       <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
         {skills
@@ -79,7 +79,7 @@ export function SkillPicker({selectedIds, onChange, disabled}: SkillPickerProps)
               type="button"
               disabled={disabled}
               onClick={() => addSkill(skill)}
-              className="rounded-full border border-brand-200 px-3 py-1 text-sm text-stone-700 hover:border-brand-300 hover:bg-brand-50 disabled:opacity-50"
+              className="rounded-full border border-border-subtle px-3 py-1 text-sm text-foreground hover:border-brand-300 hover:bg-surface-muted disabled:opacity-50"
             >
               + {skill.name}
             </button>

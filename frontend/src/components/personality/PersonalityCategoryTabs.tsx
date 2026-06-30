@@ -30,9 +30,9 @@ export function PersonalityCategoryTabs({categories}: PersonalityCategoryTabsPro
   if (ordered.length === 0 || active == null) return null
 
   return (
-    <section className="rounded-[var(--radius-card)] border border-brand-100/60 bg-white p-5 card-shadow sm:p-6">
+    <section className="rounded-[var(--radius-card)] border border-border-subtle bg-surface p-5 card-shadow sm:p-6">
       <div
-        className="flex flex-wrap gap-1.5 border-b border-brand-100 pb-4"
+        className="flex flex-wrap gap-1.5 border-b border-border-subtle pb-4"
         role="tablist"
         aria-label={t('seeker.personality.categoryTabsAriaLabel')}
       >
@@ -49,7 +49,7 @@ export function PersonalityCategoryTabs({categories}: PersonalityCategoryTabsPro
               className={
                 isActive
                   ? 'gradient-brand rounded-full px-4 py-2 text-sm font-medium text-white shadow-sm shadow-brand-500/20'
-                  : 'rounded-full px-4 py-2 text-sm font-medium text-stone-600 hover:bg-brand-50 hover:text-brand-700'
+                  : 'rounded-full px-4 py-2 text-sm font-medium text-muted hover:bg-surface-muted hover:text-brand-700 dark:hover:text-brand-400'
               }
             >
               {label}
@@ -58,10 +58,10 @@ export function PersonalityCategoryTabs({categories}: PersonalityCategoryTabsPro
         })}
       </div>
       <div role="tabpanel" className="mt-5">
-        <h2 className="text-lg font-semibold text-stone-900">
+        <h2 className="text-lg font-semibold text-foreground">
           {categoryLabel(active.key, t)}
         </h2>
-        <p className="mt-2 text-sm text-stone-500">{active.description}</p>
+        <p className="mt-2 text-sm text-muted">{active.description}</p>
         <div className="mt-4 flex flex-col gap-3">
           {active.traits.map((trait) => (
             <PersonalityTraitAccordion

@@ -46,19 +46,19 @@ function CandidateRecommendationCard({
   return (
     <Card
       highlighted={highlighted}
-      className={isMutual ? 'border-accent-200 bg-gradient-to-br from-white to-accent-50/60' : ''}
+      className={isMutual ? 'border-accent-200 bg-surface-muted dark:border-accent-800 dark:bg-accent-950/30' : ''}
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-4">
           <Avatar name={fullName} size="lg" />
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold text-stone-900">{fullName}</h3>
-            <p className="text-sm text-stone-500">{candidate.positionName}</p>
+            <h3 className="text-lg font-semibold text-foreground">{fullName}</h3>
+            <p className="text-sm text-muted">{candidate.positionName}</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {candidate.skills.map((skill) => (
                 <span
                   key={skill}
-                  className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700"
+                  className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-300"
                 >
                   {skill}
                 </span>
@@ -68,7 +68,7 @@ function CandidateRecommendationCard({
           <MatchScoreBadge score={candidate.matchScoreDisplay} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-50 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-4">
           <InterestStatusBadge status={candidate.interestStatus} perspective="employer" />
           <RespondButton
             status={candidate.interestStatus}

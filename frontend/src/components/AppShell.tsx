@@ -2,6 +2,7 @@ import {NavLink, Outlet} from 'react-router-dom'
 import {useTranslation} from 'react-i18next'
 import type {AuthUserDto, UserRole} from '../api/types'
 import {displayRoleLabel} from '../lib/roleLabels'
+import {ThemeToggle} from './ThemeToggle'
 import {Avatar} from './ui/Avatar'
 import {BrandTitle} from './BrandTitle'
 import {NavBadge} from './NavBadge'
@@ -34,7 +35,7 @@ function NavLinkItem({item, compact = false}: {item: NavItem; compact?: boolean}
             : 'px-4 py-2.5 text-sm',
           isActive
             ? 'gradient-brand text-white shadow-md shadow-brand-500/20'
-            : 'text-stone-600 hover:bg-brand-50 hover:text-brand-700',
+            : 'text-muted hover:bg-surface-muted hover:text-brand-700 dark:hover:text-brand-400',
         ].join(' ')
       }
     >
@@ -57,10 +58,12 @@ export function AppShell({user, role, navItems, onLogout}: AppShellProps) {
     <div className="min-h-screen pb-[4.5rem] md:pb-0">
       <div className="mx-auto flex w-full max-w-7xl md:gap-8 md:px-6 lg:px-8">
         <aside className="sticky top-0 hidden h-screen w-56 shrink-0 py-6 md:flex md:flex-col">
-          <div className="flex h-full min-h-0 flex-col rounded-[var(--radius-card)] border border-brand-100/60 bg-white card-shadow">
-            <div className="shrink-0 border-b border-brand-100/60 px-5 py-5">
+          <div className="flex h-full min-h-0 flex-col rounded-[var(--radius-card)] border border-border-subtle bg-surface card-shadow">
+            <div className="shrink-0 border-b border-border-subtle px-5 py-5">
               <BrandTitle size="md" />
-              <p className="mt-2 text-xs font-medium text-brand-600">{displayRoleLabel(role, t)}</p>
+              <p className="mt-2 text-xs font-medium text-brand-600 dark:text-brand-400">
+                {displayRoleLabel(role, t)}
+              </p>
             </div>
 
             <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
@@ -69,23 +72,26 @@ export function AppShell({user, role, navItems, onLogout}: AppShellProps) {
               ))}
             </nav>
 
-            <div className="shrink-0 border-t border-brand-100/60 p-4">
+            <div className="shrink-0 border-t border-border-subtle p-4">
               <div className="flex items-center gap-3">
                 <Avatar name={displayName} size="sm" />
                 <div className="min-w-0 flex-1">
                   {user.profileName != null && user.profileName !== '' && (
-                    <p className="truncate text-sm font-medium text-stone-900">{user.profileName}</p>
+                    <p className="truncate text-sm font-medium text-foreground">{user.profileName}</p>
                   )}
-                  <p className="truncate text-xs text-stone-500">{user.email}</p>
+                  <p className="truncate text-xs text-muted">{user.email}</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onLogout}
-                className="mt-3 w-full rounded-full border border-stone-200 px-3 py-1.5 text-sm text-stone-600 transition hover:bg-stone-50"
-              >
-                {t('appShell.logout')}
-              </button>
+              <div className="mt-3 flex items-center gap-2">
+                <ThemeToggle variant="compact" />
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="min-w-0 flex-1 rounded-full border border-border px-3 py-1.5 text-sm text-muted transition hover:bg-surface-muted"
+                >
+                  {t('appShell.logout')}
+                </button>
+              </div>
             </div>
           </div>
         </aside>
@@ -97,10 +103,11 @@ export function AppShell({user, role, navItems, onLogout}: AppShellProps) {
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 flex justify-around border-t border-brand-100/60 bg-white/95 px-1 py-2 backdrop-blur-lg md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-around border-t border-border-subtle bg-surface/95 px-1 py-2 backdrop-blur-lg md:hidden">
         {navItems.map((item) => (
           <NavLinkItem key={item.to} item={item} compact />
         ))}
+        <ThemeToggle variant="compact" />
       </nav>
     </div>
   )

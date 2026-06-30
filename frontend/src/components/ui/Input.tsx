@@ -8,20 +8,20 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const fieldBaseClasses = [
-  'w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-base text-stone-900',
-  'outline-none transition placeholder:text-stone-400',
-  'focus:border-brand-300 focus:ring-2 focus:ring-brand-200',
-  'disabled:cursor-not-allowed disabled:bg-stone-50 disabled:opacity-60',
+  'w-full rounded-2xl border border-border bg-surface px-4 py-2.5 text-base text-foreground',
+  'outline-none transition placeholder:text-muted',
+  'focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900',
+  'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-60',
 ]
 
-const fieldErrorClasses = 'border-red-300 focus:border-red-400 focus:ring-red-100'
+const fieldErrorClasses = 'border-red-300 focus:border-red-400 focus:ring-red-100 dark:border-red-800 dark:focus:ring-red-950'
 
 export function Input({label, hint, error, trailing, className = '', id, ...props}: InputProps) {
   const inputId = id ?? label.toLowerCase().replace(/\s+/g, '-')
 
   return (
     <label className="flex w-full flex-col gap-1.5" htmlFor={inputId}>
-      <span className="text-sm font-medium text-stone-700">{label}</span>
+      <span className="text-sm font-medium text-foreground">{label}</span>
       <div className="relative">
         <input
           id={inputId}
@@ -41,8 +41,8 @@ export function Input({label, hint, error, trailing, className = '', id, ...prop
           </div>
         )}
       </div>
-      {hint != null && error == null && <span className="text-xs text-stone-500">{hint}</span>}
-      {error != null && <span className="text-xs text-red-600">{error}</span>}
+      {hint != null && error == null && <span className="text-xs text-muted">{hint}</span>}
+      {error != null && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
     </label>
   )
 }
@@ -57,21 +57,21 @@ export function TextArea({label, hint, className = '', id, ...props}: TextAreaPr
 
   return (
     <label className="flex w-full flex-col gap-1.5" htmlFor={inputId}>
-      <span className="text-sm font-medium text-stone-700">{label}</span>
+      <span className="text-sm font-medium text-foreground">{label}</span>
       <textarea
         id={inputId}
         className={[
-          'w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900',
-          'outline-none transition placeholder:text-stone-400',
-          'focus:border-brand-300 focus:ring-2 focus:ring-brand-200',
-          'disabled:cursor-not-allowed disabled:bg-stone-50 disabled:opacity-60',
+          'w-full rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground',
+          'outline-none transition placeholder:text-muted',
+          'focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900',
+          'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-60',
           className,
         ]
           .filter(Boolean)
           .join(' ')}
         {...props}
       />
-      {hint != null && <span className="text-xs text-stone-500">{hint}</span>}
+      {hint != null && <span className="text-xs text-muted">{hint}</span>}
     </label>
   )
 }
@@ -85,12 +85,12 @@ export function Select({label, className = '', id, children, ...props}: SelectPr
 
   return (
     <label className="flex w-full flex-col gap-1.5" htmlFor={inputId}>
-      <span className="text-sm font-medium text-stone-700">{label}</span>
+      <span className="text-sm font-medium text-foreground">{label}</span>
       <select
         id={inputId}
         className={[
-          'w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900',
-          'outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-200',
+          'w-full rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground',
+          'outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900',
           className,
         ]
           .filter(Boolean)

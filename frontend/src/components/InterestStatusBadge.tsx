@@ -3,9 +3,12 @@ import type {InterestStatus} from '../api/types'
 
 const STATUS_STYLES: Record<InterestStatus, string> = {
   NONE: '',
-  RESPONDED: 'bg-sky-100 text-sky-800',
-  INCOMING: 'bg-brand-100 text-brand-800',
-  MUTUAL: 'bg-accent-100 text-accent-800 ring-1 ring-accent-200',
+  RESPONDED:
+    'bg-sky-700 text-white dark:bg-sky-600 dark:text-white',
+  INCOMING:
+    'bg-brand-700 text-white dark:bg-brand-600 dark:text-white',
+  MUTUAL:
+    'bg-accent-700 text-white shadow-sm dark:bg-accent-600 dark:text-white',
 }
 
 interface InterestStatusBadgeProps {

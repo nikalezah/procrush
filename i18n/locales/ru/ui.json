@@ -108,6 +108,13 @@
       "ru": "Русский",
       "en": "English"
     },
+    "appearance": {
+      "title": "Оформление",
+      "description": "Тема интерфейса",
+      "light": "Светлая",
+      "dark": "Тёмная",
+      "system": "Системная"
+    },
     "emailSection": {
       "title": "Электронная почта",
       "description": "Раздел в разработке",

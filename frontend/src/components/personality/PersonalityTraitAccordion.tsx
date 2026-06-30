@@ -13,7 +13,7 @@ export function PersonalityTraitAccordion({trait, isOpen, onToggle}: Personality
   const {t} = useTranslation()
 
   return (
-    <div className="rounded-2xl border border-brand-100 bg-brand-50/40">
+    <div className="rounded-2xl border border-border-subtle bg-surface-muted">
       <button
         type="button"
         onClick={onToggle}
@@ -21,9 +21,9 @@ export function PersonalityTraitAccordion({trait, isOpen, onToggle}: Personality
         className="flex w-full cursor-pointer items-start justify-between gap-3 p-4 text-left"
       >
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-stone-900">{trait.label}</span>
+          <span className="text-sm font-semibold text-foreground">{trait.label}</span>
           {trait.isTopStrength === true && (
-            <span className="shrink-0 rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-800">
+            <span className="shrink-0 rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-semibold text-brand-800 dark:text-brand-300">
               {labelTopStrength(t)}
             </span>
           )}
@@ -36,8 +36,8 @@ export function PersonalityTraitAccordion({trait, isOpen, onToggle}: Personality
         </span>
       </button>
       {isOpen && (
-        <div className="border-t border-brand-100 px-4 pb-4 pt-3">
-          <p className="text-sm leading-relaxed text-stone-700">{trait.details.description}</p>
+        <div className="border-t border-border-subtle px-4 pb-4 pt-3">
+          <p className="text-sm leading-relaxed text-foreground">{trait.details.description}</p>
           <PersonalityTraitScale
             leftPole={trait.leftPole}
             rightPole={trait.rightPole}
@@ -45,18 +45,18 @@ export function PersonalityTraitAccordion({trait, isOpen, onToggle}: Personality
           />
           <div className="mt-4 flex flex-col gap-3 text-sm">
             <div className="flex flex-col gap-3 md:flex-row md:gap-4">
-              <div className="min-w-0 flex-1 rounded-xl bg-white/80 p-3">
-                <p className="font-medium text-stone-800">{labelGoodDay(t)}</p>
-                <p className="mt-0.5 text-stone-600">{trait.details.goodDay}</p>
+              <div className="min-w-0 flex-1 rounded-xl border border-border-subtle bg-surface p-3">
+                <p className="font-medium text-foreground">{labelGoodDay(t)}</p>
+                <p className="mt-0.5 text-muted">{trait.details.goodDay}</p>
               </div>
-              <div className="min-w-0 flex-1 rounded-xl bg-white/80 p-3">
-                <p className="font-medium text-stone-800">{labelBadDay(t)}</p>
-                <p className="mt-0.5 text-stone-600">{trait.details.badDay}</p>
+              <div className="min-w-0 flex-1 rounded-xl border border-border-subtle bg-surface p-3">
+                <p className="font-medium text-foreground">{labelBadDay(t)}</p>
+                <p className="mt-0.5 text-muted">{trait.details.badDay}</p>
               </div>
             </div>
-            <div className="rounded-xl bg-white/80 p-3">
-              <p className="font-medium text-stone-800">{labelSucceedThrough(t)}</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-stone-600">
+            <div className="rounded-xl border border-border-subtle bg-surface p-3">
+              <p className="font-medium text-foreground">{labelSucceedThrough(t)}</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted">
                 {[
                   trait.details.succeedThrough.point0,
                   trait.details.succeedThrough.point1,

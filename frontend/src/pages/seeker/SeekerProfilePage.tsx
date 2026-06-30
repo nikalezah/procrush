@@ -123,7 +123,7 @@ export function SeekerProfilePage() {
                   required
                   value={profile.firstName}
                   onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
+                  className="rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -133,7 +133,7 @@ export function SeekerProfilePage() {
                   onChange={(e) =>
                     setProfile({ ...profile, middleName: e.target.value || null })
                   }
-                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
+                  className="rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -142,7 +142,7 @@ export function SeekerProfilePage() {
                   required
                   value={profile.lastName}
                   onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
-                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
+                  className="rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -150,7 +150,7 @@ export function SeekerProfilePage() {
                 <input
                   value={profile.phone ?? ''}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value || null })}
-                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
+                  className="rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -158,7 +158,7 @@ export function SeekerProfilePage() {
                 <input
                   value={profile.telegram ?? ''}
                   onChange={(e) => setProfile({ ...profile, telegram: e.target.value || null })}
-                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
+                  className="rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900 outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -166,7 +166,7 @@ export function SeekerProfilePage() {
                 <input
                   value={profile.linkedin ?? ''}
                   onChange={(e) => setProfile({ ...profile, linkedin: e.target.value || null })}
-                  className="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm focus:border-brand-300 focus:ring-2 focus:ring-brand-200 outline-none"
+                  className="rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm text-foreground focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900 outline-none"
                 />
               </label>
             </div>
@@ -187,16 +187,16 @@ export function SeekerProfilePage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {experience.map((item) => (
-              <li key={item.id} className="rounded-2xl border border-brand-100 bg-brand-50/30 p-4">
+              <li key={item.id} className="rounded-2xl border border-border-subtle bg-surface-muted p-4">
                 <div className="flex justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-stone-900">{item.position}</p>
-                    <p className="text-sm text-stone-500">{item.companyName}</p>
-                    <p className="text-xs text-stone-400">
+                    <p className="font-semibold text-foreground">{item.position}</p>
+                    <p className="text-sm text-muted">{item.companyName}</p>
+                    <p className="text-xs text-muted">
                       {item.startDate} — {item.endDate ?? t('common.present')}
                     </p>
                     {item.description != null && (
-                      <p className="mt-1 text-sm text-stone-600">{item.description}</p>
+                      <p className="mt-1 text-sm text-muted">{item.description}</p>
                     )}
                   </div>
                   <button
@@ -224,15 +224,15 @@ export function SeekerProfilePage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {education.map((item) => (
-              <li key={item.id} className="rounded-2xl border border-brand-100 bg-brand-50/30 p-4">
+              <li key={item.id} className="rounded-2xl border border-border-subtle bg-surface-muted p-4">
                 <div className="flex justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-stone-900">{item.institution}</p>
-                    <p className="text-sm text-stone-500">{item.specialization}</p>
+                    <p className="font-semibold text-foreground">{item.institution}</p>
+                    <p className="text-sm text-muted">{item.specialization}</p>
                     {item.degree != null && (
-                      <p className="text-sm text-stone-500">{item.degree}</p>
+                      <p className="text-sm text-muted">{item.degree}</p>
                     )}
-                    <p className="text-xs text-stone-400">
+                    <p className="text-xs text-muted">
                       {t('seeker.profile.education.graduationYear', {year: item.endYear})}
                     </p>
                   </div>
@@ -284,33 +284,33 @@ function ExperienceForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl bg-brand-50/50 p-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl border border-border-subtle bg-surface-muted p-4 sm:grid-cols-2">
       <input
         required
         placeholder={t('seeker.profile.experience.placeholders.company')}
         value={companyName}
         onChange={(e) => setCompanyName(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <input
         required
         placeholder={t('seeker.profile.experience.placeholders.position')}
         value={position}
         onChange={(e) => setPosition(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <input
         required
         type="date"
         value={startDate}
         onChange={(e) => setStartDate(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <input
         type="date"
         value={endDate}
         onChange={(e) => setEndDate(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <button
         type="submit"
@@ -348,26 +348,26 @@ function EducationForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl bg-brand-50/50 p-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="mt-2 grid gap-3 rounded-2xl border border-border-subtle bg-surface-muted p-4 sm:grid-cols-2">
       <input
         required
         placeholder={t('seeker.profile.education.placeholders.institution')}
         value={institution}
         onChange={(e) => setInstitution(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <input
         required
         placeholder={t('seeker.profile.education.placeholders.specialization')}
         value={specialization}
         onChange={(e) => setSpecialization(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <input
         placeholder={t('seeker.profile.education.placeholders.degree')}
         value={degree}
         onChange={(e) => setDegree(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <input
         required
@@ -375,7 +375,7 @@ function EducationForm({
         placeholder={t('seeker.profile.education.placeholders.endYear')}
         value={endYear}
         onChange={(e) => setEndYear(e.target.value)}
-        className="rounded-2xl border border-brand-200 px-4 py-2.5 text-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200"
+        className="rounded-2xl border border-border-subtle bg-surface px-4 py-2.5 text-sm text-foreground outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-200 dark:focus:ring-brand-900"
       />
       <button
         type="submit"

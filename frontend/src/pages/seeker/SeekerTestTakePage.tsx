@@ -4,10 +4,10 @@ import {useTranslation} from 'react-i18next'
 import {completeSurvey, fetchSurvey, saveSurveyAnswers, startSurvey} from '../../api/seekerApi'
 import type {SurveyDetailDto} from '../../api/types'
 import {
-  isSurveyComplete,
-  parseAnswersJson,
-  parseSurveyDefinition,
-  SurveyQuestionRenderer,
+    isSurveyComplete,
+    parseAnswersJson,
+    parseSurveyDefinition,
+    SurveyQuestionRenderer,
 } from '../../components/survey/SurveyQuestionRenderer'
 import {Alert} from '../../components/ui/Alert'
 import {Button} from '../../components/ui/Button'
@@ -208,10 +208,10 @@ export function SeekerTestTakePage() {
       {error != null && <Alert variant="error">{error}</Alert>}
 
       {showNavBar && (
-        <div className="sticky top-0 z-10 rounded-2xl border border-brand-100 bg-white/95 p-4 card-shadow backdrop-blur-sm">
+        <div className="sticky top-0 z-10 rounded-2xl border border-border-subtle bg-surface/95 p-4 card-shadow backdrop-blur-sm">
           <div className="flex items-center justify-between gap-4">
             {progressLabel != null && (
-              <span className="text-sm font-medium text-stone-600">{progressLabel}</span>
+              <span className="text-sm font-medium text-muted">{progressLabel}</span>
             )}
             <div className="ml-auto flex shrink-0 gap-2">
               {(hasCoreSteps || hasScalePages) && (

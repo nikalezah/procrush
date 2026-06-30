@@ -17,7 +17,7 @@ function StatusBadge({status}: {status: SurveyStatus}) {
       ? 'bg-emerald-100 text-emerald-800'
       : status === 'IN_PROGRESS'
         ? 'bg-sky-100 text-sky-800'
-        : 'bg-stone-100 text-stone-600'
+        : 'bg-surface-muted text-muted'
   const labelKey = `seeker.tests.status.${status === 'NOT_STARTED' ? 'notStarted' : status === 'IN_PROGRESS' ? 'inProgress' : 'completed'}` as const
   return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${colors}`}>{t(labelKey)}</span>
 }
@@ -25,7 +25,7 @@ function StatusBadge({status}: {status: SurveyStatus}) {
 function LockedBadge() {
   const {t} = useTranslation()
   return (
-    <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-500">
+    <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-muted">
       {t('seeker.tests.status.locked')}
     </span>
   )
@@ -69,12 +69,12 @@ export function SeekerTestsListPage() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-stone-900">
+                    <h2 className="text-lg font-semibold text-foreground">
                       {t(`seeker.testTake.titles.${group.code}` as const)}
                     </h2>
                     {group.locked ? <LockedBadge /> : <StatusBadge status={group.status} />}
                   </div>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-sm text-muted">
                     {t(descriptionKey, {defaultValue: ''})}
                   </p>
                 </div>

@@ -51,8 +51,8 @@ export function RoleSelectionPage({
     <AdaptiveLayout>
       <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit} autoComplete="on">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-stone-900">{t('auth.roleSelection.title')}</h1>
-          <p className="mt-2 text-sm text-stone-500">
+          <h1 className="text-xl font-bold text-foreground">{t('auth.roleSelection.title')}</h1>
+          <p className="mt-2 text-sm text-muted">
             {t('auth.roleSelection.welcome', {email: user.email})}
           </p>
         </div>

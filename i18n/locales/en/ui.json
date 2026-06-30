@@ -108,6 +108,13 @@
       "ru": "Русский",
       "en": "English"
     },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Interface theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "emailSection": {
       "title": "Email",
       "description": "Section under development",

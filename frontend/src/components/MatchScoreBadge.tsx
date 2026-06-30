@@ -27,11 +27,11 @@ export function MatchScoreBadge({score, size = 'md'}: MatchScoreBadgeProps) {
       <div
         className={`relative flex ${ringSize} items-center justify-center rounded-full bg-gradient-to-br ${scoreGradient(score)} p-0.5`}
       >
-        <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white">
+        <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-surface">
           <span className={`font-bold tabular-nums ${textSize} ${scoreColor(score)}`}>{score}%</span>
         </div>
       </div>
-      <span className="text-xs font-medium text-stone-500">{t('components.matchScore.label')}</span>
+      <span className="text-xs font-medium text-muted">{t('components.matchScore.label')}</span>
     </div>
   )
 }

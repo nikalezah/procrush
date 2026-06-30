@@ -46,9 +46,9 @@ export function SeekerDashboardPage() {
       <Card className="flex items-center gap-4">
         <Avatar name={t('seeker.dashboard.avatarName')} size="lg" />
         <div className="flex-1">
-          <p className="text-sm text-stone-500">{t('seeker.dashboard.profileCompletion')}</p>
+          <p className="text-sm text-muted">{t('seeker.dashboard.profileCompletion')}</p>
           <div className="mt-2 flex items-center gap-3">
-            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-brand-100">
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-muted">
               <div
                 className="gradient-brand h-full rounded-full transition-all"
                 style={{width: `${data.profileCompletionPercent}%`}}
@@ -86,7 +86,7 @@ export function SeekerDashboardPage() {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-stone-900">{t('seeker.dashboard.recentMatches.title')}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('seeker.dashboard.recentMatches.title')}</h2>
           <Link
             to="/seeker/positions"
             className="text-sm font-medium text-brand-600 hover:text-brand-700"
@@ -121,10 +121,10 @@ export function SeekerDashboardPage() {
                 <div className="flex items-start gap-3">
                   <Avatar name={companyNameLabel(job.companyName, t)} size="md" />
                   <div>
-                    <h3 className="font-semibold text-stone-900">{job.positionName}</h3>
-                    <CompanyName name={job.companyName} className="text-sm text-stone-500" />
+                    <h3 className="font-semibold text-foreground">{job.positionName}</h3>
+                    <CompanyName name={job.companyName} className="text-sm text-muted" />
                     {job.description != null && job.description !== '' && (
-                      <p className="mt-2 line-clamp-2 text-sm text-stone-600">{job.description}</p>
+                      <p className="mt-2 line-clamp-2 text-sm text-muted">{job.description}</p>
                     )}
                   </div>
                 </div>

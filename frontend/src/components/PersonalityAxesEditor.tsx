@@ -12,11 +12,11 @@ export function PersonalityAxesEditor({value, onChange}: PersonalityAxesEditorPr
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-stone-500">{t('components.personalityAxesEditor.hint')}</p>
+      <p className="text-sm text-muted">{t('components.personalityAxesEditor.hint')}</p>
       {AXIS_KEYS.map((key) => (
         <label key={key} className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-stone-800">{axisLabel(key, t)}</span>
+            <span className="font-medium text-foreground">{axisLabel(key, t)}</span>
             <span className="tabular-nums font-semibold text-brand-600">
               {Math.round(value[key] * 100)}%
             </span>

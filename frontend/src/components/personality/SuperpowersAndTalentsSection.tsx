@@ -16,9 +16,9 @@ export function SuperpowersAndTalentsSection({items}: SuperpowersAndTalentsSecti
         {items.map((item) => (
           <li
             key={item.id}
-            className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-2"
+            className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-muted px-3 py-2"
           >
-            <span className="text-sm font-medium text-stone-900">{item.name}</span>
+            <span className="text-sm font-medium text-foreground">{item.name}</span>
             {item.isPronounced === true && (
               <span className="shrink-0 rounded-full bg-brand-200 px-2 py-0.5 text-xs font-semibold text-brand-800">
                 {labelPronounced(t)}

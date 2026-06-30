@@ -20,7 +20,7 @@ export function RoleToggle({value, onChange, disabled = false}: RoleToggleProps)
 
   return (
     <div
-      className="flex w-full rounded-2xl border border-brand-200 bg-brand-50/50 p-1"
+      className="flex w-full rounded-2xl border border-border-subtle bg-surface-muted/50 p-1"
       role="radiogroup"
       aria-label={t('auth.roleToggle.ariaLabel')}
     >
@@ -39,7 +39,7 @@ export function RoleToggle({value, onChange, disabled = false}: RoleToggleProps)
               'disabled:cursor-not-allowed disabled:opacity-60',
               selected
                 ? 'gradient-brand text-white shadow-md shadow-brand-500/20'
-                : 'text-stone-600 hover:bg-white/60 hover:text-stone-900',
+                : 'text-muted hover:bg-surface/60 hover:text-foreground',
             ].join(' ')}
           >
             <span aria-hidden>{roleIcons[role]}</span>

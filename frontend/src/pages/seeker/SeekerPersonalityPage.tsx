@@ -117,9 +117,9 @@ export function SeekerPersonalityPage() {
           subtitle={t('seeker.personality.subtitleProcessing')}
         />
         {testsBanner}
-        <div className="flex flex-col items-center gap-4 rounded-[var(--radius-card)] border border-brand-100 bg-white p-10 card-shadow">
+        <div className="flex flex-col items-center gap-4 rounded-[var(--radius-card)] border border-border-subtle bg-surface p-10 card-shadow">
           <Spinner />
-          <p className="text-center text-sm text-stone-600">
+          <p className="text-center text-sm text-muted">
             {t('seeker.personality.processing.message')}
           </p>
         </div>
@@ -171,26 +171,26 @@ export function SeekerPersonalityPage() {
       {testsBanner}
       <FormSection title={data.title ?? ''} description={data.description ?? undefined}>
         {data.profile != null && (
-          <p className="text-sm leading-relaxed text-stone-700">{data.profile}</p>
+          <p className="text-sm leading-relaxed text-foreground">{data.profile}</p>
         )}
         {(data.autonomy != null || data.thinkingStyle != null || data.burnoutRisk != null) && (
           <dl className="grid gap-4 sm:grid-cols-3">
             {data.autonomy != null && (
-              <div className="rounded-xl bg-brand-50/50 p-3">
-                <dt className="text-sm font-semibold text-stone-800">{t('seeker.personality.traits.autonomy')}</dt>
-                <dd className="mt-1 text-sm text-stone-600">{data.autonomy}</dd>
+              <div className="rounded-xl border border-border-subtle bg-surface-muted p-3">
+                <dt className="text-sm font-semibold text-foreground">{t('seeker.personality.traits.autonomy')}</dt>
+                <dd className="mt-1 text-sm text-muted">{data.autonomy}</dd>
               </div>
             )}
             {data.thinkingStyle != null && (
-              <div className="rounded-xl bg-brand-50/50 p-3">
-                <dt className="text-sm font-semibold text-stone-800">{t('seeker.personality.traits.thinkingStyle')}</dt>
-                <dd className="mt-1 text-sm text-stone-600">{data.thinkingStyle}</dd>
+              <div className="rounded-xl border border-border-subtle bg-surface-muted p-3">
+                <dt className="text-sm font-semibold text-foreground">{t('seeker.personality.traits.thinkingStyle')}</dt>
+                <dd className="mt-1 text-sm text-muted">{data.thinkingStyle}</dd>
               </div>
             )}
             {data.burnoutRisk != null && (
-              <div className="rounded-xl bg-brand-50/50 p-3">
-                <dt className="text-sm font-semibold text-stone-800">{t('seeker.personality.traits.burnoutRisk')}</dt>
-                <dd className="mt-1 text-sm text-stone-600">{data.burnoutRisk}</dd>
+              <div className="rounded-xl border border-border-subtle bg-surface-muted p-3">
+                <dt className="text-sm font-semibold text-foreground">{t('seeker.personality.traits.burnoutRisk')}</dt>
+                <dd className="mt-1 text-sm text-muted">{data.burnoutRisk}</dd>
               </div>
             )}
           </dl>
@@ -219,9 +219,9 @@ export function SeekerPersonalityPage() {
               <FormSection title={energySources.title}>
                 <ul className="flex flex-col gap-3">
                   {energySources.items.map((item) => (
-                    <li key={item.title} className="rounded-xl bg-brand-50/40 p-3">
-                      <p className="text-sm font-semibold text-stone-800">{item.title}</p>
-                      <p className="text-sm text-stone-600">{item.description}</p>
+                    <li key={item.title} className="rounded-xl border border-border-subtle bg-surface-muted p-3">
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="text-sm text-muted">{item.description}</p>
                     </li>
                   ))}
                 </ul>
@@ -233,9 +233,9 @@ export function SeekerPersonalityPage() {
               <FormSection title={stopFactors.title}>
                 <ul className="flex flex-col gap-3">
                   {stopFactors.items.map((item) => (
-                    <li key={item.title} className="rounded-xl bg-brand-50/40 p-3">
-                      <p className="text-sm font-semibold text-stone-800">{item.title}</p>
-                      <p className="text-sm text-stone-600">{item.description}</p>
+                    <li key={item.title} className="rounded-xl border border-border-subtle bg-surface-muted p-3">
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="text-sm text-muted">{item.description}</p>
                     </li>
                   ))}
                 </ul>

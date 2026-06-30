@@ -2,10 +2,10 @@ import {useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions} from '../../api/seekerApi'
 import type {
-  JobRecommendationDto,
-  MatchInterestEventDto,
-  OccupationDto,
-  SeekerInterestsResponseDto,
+    JobRecommendationDto,
+    MatchInterestEventDto,
+    OccupationDto,
+    SeekerInterestsResponseDto,
 } from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
@@ -52,22 +52,22 @@ function JobRecommendationCard({
   return (
     <Card
       highlighted={highlighted}
-      className={isMutual ? 'border-accent-200 bg-gradient-to-br from-white to-accent-50/60' : ''}
+      className={isMutual ? 'border-accent-200 bg-surface-muted dark:border-accent-800 dark:bg-accent-950/30' : ''}
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-4">
           <Avatar name={companyNameLabel(job.companyName, t)} size="lg" />
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold text-stone-900">{job.positionName}</h3>
-            <CompanyName name={job.companyName} className="text-sm text-stone-500" />
+            <h3 className="text-lg font-semibold text-foreground">{job.positionName}</h3>
+            <CompanyName name={job.companyName} className="text-sm text-muted" />
             {job.description != null && job.description !== '' && (
-              <p className="mt-2 text-sm leading-relaxed text-stone-600">{job.description}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{job.description}</p>
             )}
           </div>
           <MatchScoreBadge score={job.matchScoreDisplay} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-50 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-4">
           <InterestStatusBadge status={job.interestStatus} perspective="seeker" />
           <RespondButton
             status={job.interestStatus}

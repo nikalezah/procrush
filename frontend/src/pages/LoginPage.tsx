@@ -25,8 +25,8 @@ export function LoginPage({isBusy, errorMessage, onSignIn}: LoginPageProps) {
     <AdaptiveLayout>
       <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit} autoComplete="on">
         <div className="text-center">
-          <p className="text-lg font-medium text-stone-800">{t('auth.login.title')}</p>
-          <p className="mt-1 text-sm text-stone-500">{t('auth.login.subtitle')}</p>
+          <p className="text-lg font-medium text-foreground">{t('auth.login.title')}</p>
+          <p className="mt-1 text-sm text-muted">{t('auth.login.subtitle')}</p>
         </div>
 
         <Input
@@ -54,7 +54,7 @@ export function LoginPage({isBusy, errorMessage, onSignIn}: LoginPageProps) {
           </Button>
         )}
 
-        <p className="text-center text-xs text-stone-400">{t('auth.login.roleHint')}</p>
+        <p className="text-center text-xs text-muted">{t('auth.login.roleHint')}</p>
       </form>
     </AdaptiveLayout>
   )

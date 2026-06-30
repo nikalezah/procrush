@@ -61,7 +61,7 @@ export function OccupationPicker({
             className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
               selected
                 ? 'gradient-brand border-transparent text-white shadow-sm shadow-brand-500/20'
-                : 'border-brand-200 bg-white text-stone-700 hover:border-brand-300 hover:bg-brand-50'
+                : 'border-border-subtle bg-surface text-foreground hover:border-brand-300 hover:bg-surface-muted'
             } disabled:opacity-50`}
           >
             {occ.name}

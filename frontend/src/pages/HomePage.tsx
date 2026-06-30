@@ -14,8 +14,8 @@ export function HomePage({user, onLogout}: HomePageProps) {
   return (
     <AdaptiveLayout>
       <div className="flex flex-col gap-3">
-        <h1 className="text-xl font-semibold">{t('home.loggedIn')}</h1>
-        <p className="text-base text-neutral-700">
+        <h1 className="text-xl font-semibold text-foreground">{t('home.loggedIn')}</h1>
+        <p className="text-base text-muted">
           {user.profileName != null && user.profileName !== ''
             ? `${user.profileName} · `
             : ''}
@@ -24,7 +24,7 @@ export function HomePage({user, onLogout}: HomePageProps) {
         <button
           type="button"
           onClick={onLogout}
-          className="self-start rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800"
+          className="self-start rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-600"
         >
           {t('home.logout')}
         </button>

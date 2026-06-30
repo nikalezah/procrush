@@ -111,12 +111,12 @@ export function EmployerProfilesPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-stone-900">{profile.occupationName}</h3>
+                      <h3 className="text-lg font-semibold text-foreground">{profile.occupationName}</h3>
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           profile.isActive
                             ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-stone-100 text-stone-500'
+                            : 'bg-surface-muted text-muted'
                         }`}
                       >
                         {profile.isActive
@@ -125,13 +125,13 @@ export function EmployerProfilesPage() {
                       </span>
                     </div>
                     {profile.description != null && (
-                      <p className="mt-2 text-sm text-stone-600">{profile.description}</p>
+                      <p className="mt-2 text-sm text-muted">{profile.description}</p>
                     )}
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {profile.skills.map((s) => (
                         <span
                           key={s.id}
-                          className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700"
+                          className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-300"
                         >
                           {s.name}
                         </span>
@@ -141,7 +141,7 @@ export function EmployerProfilesPage() {
                       {AXIS_KEYS.slice(0, 3).map((key) => (
                         <span
                           key={key}
-                          className="rounded-full bg-stone-50 px-2 py-0.5 text-xs text-stone-500"
+                          className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-muted"
                         >
                           {axisLabel(key, t)}: {Math.round(profile.personalityAxes[key] * 100)}%
                         </span>
@@ -242,20 +242,20 @@ function JobProfileForm({
           onChange={(e) => setDescription(e.target.value)}
         />
         <div>
-          <span className="text-sm font-medium text-stone-700">{t('common.fields.skills')}</span>
+          <span className="text-sm font-medium text-foreground">{t('common.fields.skills')}</span>
           <div className="mt-2">
             <SkillPicker selectedIds={skillIds} onChange={setSkillIds} />
           </div>
         </div>
         <div>
-          <span className="text-sm font-medium text-stone-700">
+          <span className="text-sm font-medium text-foreground">
             {t('employer.profiles.form.personalityTraits')}
           </span>
           <div className="mt-2">
             <PersonalityAxesEditor value={personalityAxes} onChange={setPersonalityAxes} />
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-stone-700">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={isActive}

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
@@ -24,6 +26,10 @@
   --color-accent-800: #6b21a8;
   --color-accent-900: #581c87;
 
+  --color-foreground: #1c1917;
+  --color-muted: #78716c;
+  --color-border: #e7e5e4;
+  --color-border-subtle: rgb(255 228 232 / 0.6);
   --color-surface: #ffffff;
   --color-surface-muted: #faf5f7;
   --color-surface-elevated: #ffffff;
@@ -32,13 +38,36 @@
   --radius-button: 9999px;
 }
 
+:root {
+  --app-background: linear-gradient(160deg, #fff1f3 0%, #faf5ff 45%, #fff7ed 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #fff1f3 0%, #fdf4ff 100%);
+  --card-shadow: 0 1px 2px rgb(225 29 72 / 0.04), 0 8px 24px rgb(225 29 72 / 0.08);
+  --card-shadow-lg: 0 2px 4px rgb(225 29 72 / 0.06), 0 12px 32px rgb(225 29 72 / 0.12);
+  color-scheme: light;
+}
+
+.dark {
+  --color-foreground: #fafaf9;
+  --color-muted: #a8a29e;
+  --color-border: #44403c;
+  --color-border-subtle: rgb(136 19 55 / 0.45);
+  --color-surface: #1c1917;
+  --color-surface-muted: #292524;
+  --color-surface-elevated: #44403c;
+  --app-background: linear-gradient(160deg, #0c0a09 0%, #1a0a14 45%, #0f0a1a 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #1c1917 0%, #1a0a1a 100%);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.35);
+  --card-shadow-lg: 0 2px 4px rgb(0 0 0 / 0.25), 0 12px 32px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font-sans);
-  background: linear-gradient(160deg, #fff1f3 0%, #faf5ff 45%, #fff7ed 100%);
+  background: var(--app-background);
   background-attachment: fixed;
-  color: #1c1917;
+  color: var(--color-foreground);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -48,7 +77,7 @@ body {
 }
 
 .gradient-brand-soft {
-  background: linear-gradient(135deg, #fff1f3 0%, #fdf4ff 100%);
+  background: var(--gradient-brand-soft);
 }
 
 .gradient-text {
@@ -59,15 +88,11 @@ body {
 }
 
 .card-shadow {
-  box-shadow:
-    0 1px 2px rgb(225 29 72 / 0.04),
-    0 8px 24px rgb(225 29 72 / 0.08);
+  box-shadow: var(--card-shadow);
 }
 
 .card-shadow-lg {
-  box-shadow:
-    0 2px 4px rgb(225 29 72 / 0.06),
-    0 12px 32px rgb(225 29 72 / 0.12);
+  box-shadow: var(--card-shadow-lg);
 }
 
 @keyframes pulse-match {
