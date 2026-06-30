@@ -1,5 +1,9 @@
 -- Test users seed (depends on init_inserts.sql)
 -- Dev login: seekerN@procrush.test / employerN@procrush.test (provider: dev)
+--
+-- Stable numeric ids (aligned with backend/matching db/seed/test_seed.sql):
+--   employers 1–5, seekers 1–10, job profiles 1–9
+--   occupation leaf ids 4–15 (see init_inserts.sql insert order)
 
 -- =============================================================================
 -- Users
@@ -26,20 +30,20 @@ INSERT INTO users (id, email, role, oauth_provider, oauth_subject, created_at) V
 -- Employers
 -- =============================================================================
 
-INSERT INTO employers (user_id, name, description, website, phone, email_contact, updated_at) VALUES
-    ('10000000-0000-4000-8000-000000000001', '1-ТехНова',
+INSERT INTO employers (id, user_id, name, description, website, phone, email_contact, updated_at) VALUES
+    (1, '10000000-0000-4000-8000-000000000001', '1-ТехНова',
      'Продуктовая IT-компания, разрабатывает B2B SaaS для логистики. Команда 120 человек, гибридный формат.',
      'https://technova.example.com', '+7 (495) 111-22-33', 'hr@technova.example.com', NOW()),
-    ('10000000-0000-4000-8000-000000000002', '2-КлаудБридж',
+    (2, '10000000-0000-4000-8000-000000000002', '2-КлаудБридж',
      'Облачный интегратор и DevOps-консалтинг. Специализация — миграция в AWS и Kubernetes.',
      'https://cloudbridge.example.com', '+7 (812) 222-33-44', 'jobs@cloudbridge.example.com', NOW()),
-    ('10000000-0000-4000-8000-000000000003', '3-ДатаПульс',
+    (3, '10000000-0000-4000-8000-000000000003', '3-ДатаПульс',
      'Аналитическая платформа для ритейла. Big Data, ML-рекомендации, дата-инжиниринг.',
      'https://datapulse.example.com', '+7 (343) 333-44-55', 'talent@datapulse.example.com', NOW()),
-    ('10000000-0000-4000-8000-000000000004', '4-ДизайнМинт',
+    (4, '10000000-0000-4000-8000-000000000004', '4-ДизайнМинт',
      'UX/UI-студия полного цикла: исследования, прототипирование, дизайн-системы для финтеха.',
      'https://designmint.example.com', '+7 (495) 444-55-66', 'hello@designmint.example.com', NOW()),
-    ('10000000-0000-4000-8000-000000000005', '5-АджайлВоркс',
+    (5, '10000000-0000-4000-8000-000000000005', '5-АджайлВоркс',
      'Аутсорс-команда с фокусом на Agile-трансформацию и управление продуктами.',
      'https://agileworks.example.com', '+7 (383) 555-66-77', 'careers@agileworks.example.com', NOW());
 
@@ -47,17 +51,17 @@ INSERT INTO employers (user_id, name, description, website, phone, email_contact
 -- Seekers
 -- =============================================================================
 
-INSERT INTO seekers (user_id, first_name, middle_name, last_name, phone, telegram, linkedin, updated_at) VALUES
-    ('20000000-0000-4000-8000-000000000001', '1-Иван',     'Сергеевич',  'Петров',    '+7 (916) 100-01-01', '@ipetrov',    'https://linkedin.com/in/ipetrov',    NOW()),
-    ('20000000-0000-4000-8000-000000000002', '2-Мария',    'Александровна', 'Сидорова', '+7 (903) 100-02-02', '@msidorova',  'https://linkedin.com/in/msidorova',  NOW()),
-    ('20000000-0000-4000-8000-000000000003', '3-Алексей',  'Дмитриевич', 'Козлов',   '+7 (926) 100-03-03', '@akozlov',    'https://linkedin.com/in/akozlov',    NOW()),
-    ('20000000-0000-4000-8000-000000000004', '4-Елена',    'Игоревна',   'Волкова',   '+7 (977) 100-04-04', '@evolkova',   'https://linkedin.com/in/evolkova',   NOW()),
-    ('20000000-0000-4000-8000-000000000005', '5-Дмитрий',  'Павлович',   'Орлов',     '+7 (915) 100-05-05', '@dorlov',     'https://linkedin.com/in/dorlov',     NOW()),
-    ('20000000-0000-4000-8000-000000000006', '6-Анна',     'Викторовна', 'Морозова',  '+7 (981) 100-06-06', '@amorozova',  'https://linkedin.com/in/amorozova',  NOW()),
-    ('20000000-0000-4000-8000-000000000007', '7-Сергей',   'Николаевич', 'Лебедев',   '+7 (905) 100-07-07', '@slebedev',   'https://linkedin.com/in/slebedev',   NOW()),
-    ('20000000-0000-4000-8000-000000000008', '8-Ольга',    'Андреевна',  'Соколова',  '+7 (967) 100-08-08', '@osokolova',  'https://linkedin.com/in/osokolova',  NOW()),
-    ('20000000-0000-4000-8000-000000000009', '9-Никита',   NULL,         'Фролов',    '+7 (999) 100-09-09', '@nfrolov',    NULL,                                 NOW()),
-    ('20000000-0000-4000-8000-000000000010', '10-Виктория', 'Олеговна',   'Романова',  NULL,                 NULL,          'https://linkedin.com/in/vromanova',  NOW());
+INSERT INTO seekers (id, user_id, first_name, middle_name, last_name, phone, telegram, linkedin, updated_at) VALUES
+    (1, '20000000-0000-4000-8000-000000000001', '1-Иван',     'Сергеевич',  'Петров',    '+7 (916) 100-01-01', '@ipetrov',    'https://linkedin.com/in/ipetrov',    NOW()),
+    (2, '20000000-0000-4000-8000-000000000002', '2-Мария',    'Александровна', 'Сидорова', '+7 (903) 100-02-02', '@msidorova',  'https://linkedin.com/in/msidorova',  NOW()),
+    (3, '20000000-0000-4000-8000-000000000003', '3-Алексей',  'Дмитриевич', 'Козлов',   '+7 (926) 100-03-03', '@akozlov',    'https://linkedin.com/in/akozlov',    NOW()),
+    (4, '20000000-0000-4000-8000-000000000004', '4-Елена',    'Игоревна',   'Волкова',   '+7 (977) 100-04-04', '@evolkova',   'https://linkedin.com/in/evolkova',   NOW()),
+    (5, '20000000-0000-4000-8000-000000000005', '5-Дмитрий',  'Павлович',   'Орлов',     '+7 (915) 100-05-05', '@dorlov',     'https://linkedin.com/in/dorlov',     NOW()),
+    (6, '20000000-0000-4000-8000-000000000006', '6-Анна',     'Викторовна', 'Морозова',  '+7 (981) 100-06-06', '@amorozova',  'https://linkedin.com/in/amorozova',  NOW()),
+    (7, '20000000-0000-4000-8000-000000000007', '7-Сергей',   'Николаевич', 'Лебедев',   '+7 (905) 100-07-07', '@slebedev',   'https://linkedin.com/in/slebedev',   NOW()),
+    (8, '20000000-0000-4000-8000-000000000008', '8-Ольга',    'Андреевна',  'Соколова',  '+7 (967) 100-08-08', '@osokolova',  'https://linkedin.com/in/osokolova',  NOW()),
+    (9, '20000000-0000-4000-8000-000000000009', '9-Никита',   NULL,         'Фролов',    '+7 (999) 100-09-09', '@nfrolov',    NULL,                                 NOW()),
+    (10, '20000000-0000-4000-8000-000000000010', '10-Виктория', 'Олеговна',   'Романова',  NULL,                 NULL,          'https://linkedin.com/in/vromanova',  NOW());
 
 -- =============================================================================
 -- Seeker experience
@@ -257,37 +261,37 @@ WHERE u.email BETWEEN 'seeker1@procrush.test' AND 'seeker8@procrush.test';
 -- Employer job profiles (for matching)
 -- =============================================================================
 
-INSERT INTO employer_job_profiles (employer_id, occupation_id, description, required_personality, is_active, created_at, updated_at)
-SELECT e.id, o.id, v.description, v.required_personality, true, NOW(), NOW()
+INSERT INTO employer_job_profiles (id, employer_id, occupation_id, description, required_personality, is_active, created_at, updated_at)
+SELECT v.id, e.id, o.id, v.description, v.required_personality, true, NOW(), NOW()
 FROM (VALUES
-    ('employer1@procrush.test', 'Backend-разработчик',
+    (1, 'employer1@procrush.test', 'Backend-разработчик',
      'Разработка микросервисов на Kotlin/Spring Boot. Команда 6 человек, гибрид, code review и менторинг.',
      '{"axisDominance":0.55,"axisInfluence":0.40,"axisStability":0.70,"axisIntegrity":0.85,"axisAutonomy":0.75,"axisPace":0.50}'),
-    ('employer1@procrush.test', 'Team Lead',
+    (2, 'employer1@procrush.test', 'Team Lead',
      'Техническое лидерство backend-команды, архитектура, найм и развитие инженеров.',
      '{"axisDominance":0.80,"axisInfluence":0.75,"axisStability":0.55,"axisIntegrity":0.60,"axisAutonomy":0.65,"axisPace":0.70}'),
-    ('employer2@procrush.test', 'DevOps-инженер',
+    (3, 'employer2@procrush.test', 'DevOps-инженер',
      'Поддержка Kubernetes-кластеров, CI/CD, миграции в AWS, on-call по графику.',
      '{"axisDominance":0.50,"axisInfluence":0.35,"axisStability":0.85,"axisIntegrity":0.90,"axisAutonomy":0.80,"axisPace":0.60}'),
-    ('employer2@procrush.test', 'QA-инженер',
+    (4, 'employer2@procrush.test', 'QA-инженер',
      'Автотесты, тестовая стратегия, интеграция в CI/CD. Фокус на стабильность релизов.',
      '{"axisDominance":0.40,"axisInfluence":0.35,"axisStability":0.90,"axisIntegrity":0.90,"axisAutonomy":0.50,"axisPace":0.45}'),
-    ('employer3@procrush.test', 'Data Engineer',
+    (5, 'employer3@procrush.test', 'Data Engineer',
      'Построение ETL-пайплайнов, DWH, Spark/Airflow. Работа с аналитиками и ML-командой.',
      '{"axisDominance":0.45,"axisInfluence":0.30,"axisStability":0.75,"axisIntegrity":0.92,"axisAutonomy":0.78,"axisPace":0.48}'),
-    ('employer4@procrush.test', 'UX/UI дизайнер',
+    (6, 'employer4@procrush.test', 'UX/UI дизайнер',
      'Мобильные и веб-интерфейсы, user research, дизайн-система, тесная работа с разработкой.',
      '{"axisDominance":0.35,"axisInfluence":0.78,"axisStability":0.60,"axisIntegrity":0.55,"axisAutonomy":0.65,"axisPace":0.65}'),
-    ('employer4@procrush.test', 'Product Designer',
+    (7, 'employer4@procrush.test', 'Product Designer',
      'End-to-end дизайн продукта: от исследований до handoff, A/B-тесты, дизайн-системы.',
      '{"axisDominance":0.38,"axisInfluence":0.72,"axisStability":0.62,"axisIntegrity":0.58,"axisAutonomy":0.68,"axisPace":0.62}'),
-    ('employer5@procrush.test', 'Product Manager',
+    (8, 'employer5@procrush.test', 'Product Manager',
      'B2B SaaS, roadmap, метрики, работа с 2 командами разработки и стейкхолдерами.',
      '{"axisDominance":0.75,"axisInfluence":0.68,"axisStability":0.58,"axisIntegrity":0.62,"axisAutonomy":0.70,"axisPace":0.65}'),
-    ('employer5@procrush.test', 'Project Manager',
+    (9, 'employer5@procrush.test', 'Project Manager',
      'Agile-трансформация клиентов, управление сроками и рисками, фасилитация команд.',
      '{"axisDominance":0.65,"axisInfluence":0.70,"axisStability":0.65,"axisIntegrity":0.60,"axisAutonomy":0.55,"axisPace":0.60}')
-) AS v(email, occupation_name, description, required_personality)
+) AS v(id, email, occupation_name, description, required_personality)
 JOIN employers e ON e.user_id = (SELECT id FROM users WHERE email = v.email)
 JOIN occupations o ON o.name = v.occupation_name AND o.is_leaf = true;
 
@@ -591,3 +595,11 @@ FROM (VALUES
 ) AS v(email, talent_name, is_pronounced)
 JOIN seekers s ON s.user_id = (SELECT id FROM users WHERE email = v.email)
 JOIN superpowers_and_talents sat ON sat.name = v.talent_name;
+
+-- =============================================================================
+-- Reset sequences after explicit ids (keeps auto-increment correct for new rows)
+-- =============================================================================
+
+SELECT setval(pg_get_serial_sequence('employers', 'id'), (SELECT COALESCE(MAX(id), 1) FROM employers));
+SELECT setval(pg_get_serial_sequence('seekers', 'id'), (SELECT COALESCE(MAX(id), 1) FROM seekers));
+SELECT setval(pg_get_serial_sequence('employer_job_profiles', 'id'), (SELECT COALESCE(MAX(id), 1) FROM employer_job_profiles));

@@ -1,6 +1,6 @@
--- Matching DB test seed (aligned with backend/shared db/seed/test_users.sql)
--- Assumes main DB was migrated with default seeds: seeker ids 1–10, job profile ids 1–9,
--- occupation leaf ids 4–15, skill ids 1–30 (see init_inserts.sql).
+-- Matching DB test seed (aligned with backend/platform/persistence db/seed/test_users.sql)
+-- Main DB test_users.sql uses explicit ids: employers 1–5, seekers 1–10, job profiles 1–9.
+-- Occupation leaf ids 4–15, skill ids 1–30 (see init_inserts.sql).
 --
 -- Occupation id map (leaf, from init_inserts.sql insert order):
 --   4 Backend, 5 Frontend, 6 Fullstack, 7 DevOps, 8 QA, 9 Data Engineer,
