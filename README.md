@@ -88,5 +88,3 @@ flowchart LR
 | [i18n/](./i18n/README.md) | Коды ошибок API и переводы UI (ru/en) |
 | [deploy/](./deploy/README.md) | Деплой: Railway (облако) и ссылка на локальный Kubernetes |
 | [deploy/k8s/](./deploy/k8s/README.md) | Локальный полный стек в kind (Kubernetes) |
-
-Инструкции для AI-агентов и цели репозитория — в [AGENTS.md](./AGENTS.md).
