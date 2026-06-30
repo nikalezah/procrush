@@ -11,6 +11,7 @@ dependencies {
     implementation(projects.backend.contracts)
     implementation(projects.backend.platform.redis)
     implementation(projects.backend.platform.rabbit)
+    implementation(projects.backend.platform.observability)
     implementation(projects.backend.domain.reference)
     implementation(projects.backend.domain.auth)
     implementation(projects.backend.domain.seeker)

@@ -3,6 +3,9 @@ package jobs.procrush.matching.kafka
 import jobs.procrush.bootstrap.config.KafkaConfig
 import jobs.procrush.matching.events.MatchingEventEnvelope
 import jobs.procrush.matching.events.MatchingEventJson
+import jobs.procrush.observability.AppMetrics
+import jobs.procrush.observability.MdcContext
+import jobs.procrush.observability.TracePropagation
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
@@ -19,6 +22,7 @@ class MatchingEventPublisher(
         eventType: String,
         partitionKey: String,
         payload: kotlinx.serialization.json.JsonElement,
+        correlationId: String? = MdcContext.currentRequestId(),
     ) {
         val envelope =
             MatchingEventEnvelope(
@@ -26,6 +30,7 @@ class MatchingEventPublisher(
                 eventType = eventType,
                 occurredAt = OffsetDateTime.now().toString(),
                 payload = payload,
+                correlationId = correlationId,
             )
         val body = MatchingEventJson.json.encodeToString(MatchingEventEnvelope.serializer(), envelope)
         val record =
@@ -34,19 +39,23 @@ class MatchingEventPublisher(
                 partitionKey,
                 body,
             )
+        TracePropagation.injectCurrent(record)
         producer.send(record) { metadata, error ->
             if (error != null) {
+                AppMetrics.kafkaPublishFailure()
                 logger.error(
-                    "Failed to publish matching event type={} key={}",
+                    "Failed to publish matching event type={} key={} correlationId={}",
                     eventType,
                     partitionKey,
+                    correlationId,
                     error,
                 )
             } else {
                 logger.info(
-                    "Published matching event type={} key={} partition={} offset={}",
+                    "Published matching event type={} key={} correlationId={} partition={} offset={}",
                     eventType,
                     partitionKey,
+                    correlationId,
                     metadata.partition(),
                     metadata.offset(),
                 )

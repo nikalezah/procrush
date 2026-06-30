@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - monitoring
 
 patches:
   - path: patches/images-local.yaml

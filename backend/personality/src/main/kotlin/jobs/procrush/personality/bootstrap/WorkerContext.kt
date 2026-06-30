@@ -8,6 +8,7 @@ import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.kafka.MatchingEventsRuntime
 import jobs.procrush.matching.repository.MatchingRepository
+import jobs.procrush.personality.messaging.PersonalityJobConsumer
 import jobs.procrush.personality.port.PersonalitySurveyCoordinator
 import jobs.procrush.seeker.repository.SeekerRepository
 import jobs.procrush.shared.repository.ReferenceRepository
@@ -26,6 +27,7 @@ data class WorkerContext(
     val config: WorkerAppConfig,
     val redisModule: RedisModule,
     val rabbitMqModule: RabbitMqModule,
+    val personalityJobConsumer: PersonalityJobConsumer,
     private val matchingEventsRuntime: MatchingEventsRuntime,
     private val workerModule: PersonalityWorkerModule,
 ) {
@@ -77,6 +79,7 @@ data class WorkerContext(
                 config = config,
                 redisModule = redis,
                 rabbitMqModule = rabbitMq,
+                personalityJobConsumer = workerModule.consumer,
                 matchingEventsRuntime = matchingEvents,
                 workerModule = workerModule,
             )

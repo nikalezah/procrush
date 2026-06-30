@@ -18,6 +18,7 @@ data class MatchingEventEnvelope(
     val eventType: String,
     val occurredAt: String,
     val payload: JsonElement,
+    val correlationId: String? = null,
 )
 
 @Serializable

@@ -1,0 +1,33 @@
+<configuration>
+    <property name="ROOT_LEVEL" value="${LOG_LEVEL:-INFO}" />
+    <property name="LOG_FORMAT" value="${LOG_FORMAT:-text}" />
+
+    <if condition='property("LOG_FORMAT").equalsIgnoreCase("json")'>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                    <includeMdcKeyName>requestId</includeMdcKeyName>
+                    <includeMdcKeyName>traceId</includeMdcKeyName>
+                    <includeMdcKeyName>spanId</includeMdcKeyName>
+                    <includeMdcKeyName>userId</includeMdcKeyName>
+                    <includeMdcKeyName>seekerId</includeMdcKeyName>
+                    <includeMdcKeyName>eventId</includeMdcKeyName>
+                    <includeMdcKeyName>messageId</includeMdcKeyName>
+                </encoder>
+            </appender>
+        </then>
+        <else>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder>
+                    <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId}] - %msg%n</pattern>
+                </encoder>
+            </appender>
+        </else>
+    </if>
+
+    <root level="${ROOT_LEVEL}">
+        <appender-ref ref="STDOUT"/>
+    </root>
+    <logger name="org.eclipse.jetty" level="${ROOT_LEVEL}"/>
+    <logger name="io.netty" level="${ROOT_LEVEL}"/>
+</configuration>

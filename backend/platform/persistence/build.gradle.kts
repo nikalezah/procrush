@@ -8,6 +8,7 @@ version = "1.0.0"
 
 dependencies {
     implementation(projects.backend.config)
+    implementation(projects.backend.platform.observability)
     implementation(projects.backend.contracts)
     implementation(project(":backend:domain:reference"))
     implementation(project(":backend:domain:auth"))

@@ -3,6 +3,7 @@ package jobs.procrush.auth.repository
 import jobs.procrush.auth.service.SessionTokenHasher
 import jobs.procrush.bootstrap.config.RedisConfig
 import jobs.procrush.bootstrap.redis.RedisClient
+import jobs.procrush.observability.AppMetrics
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -23,9 +24,11 @@ class CachingSessionRepository(
         val hash = SessionTokenHasher.hash(rawToken)
         val cacheKey = sessionKey(hash)
         redis.get(cacheKey)?.let { cached ->
+            AppMetrics.redisCacheHit("session")
             logger.debug("session cache HIT")
             return runCatching { UUID.fromString(cached) }.getOrNull()
         }
+        AppMetrics.redisCacheMiss("session")
         logger.debug("session cache MISS")
         val userId = delegate.findUserIdByToken(rawToken) ?: return null
         val expiresAt = delegate.findExpiresAtByTokenHash(hash)

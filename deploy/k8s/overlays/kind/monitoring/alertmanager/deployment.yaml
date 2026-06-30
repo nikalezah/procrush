@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: procrush
+data:
+  alertmanager.yml: |
+    route:
+      receiver: default
+    receivers:
+      - name: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: procrush
+spec:
+  selector:
+    app: alertmanager
+  ports:
+    - name: http
+      port: 9093
+      targetPort: 9093
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: procrush
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.28.1
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+          ports:
+            - containerPort: 9093
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 200m
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config

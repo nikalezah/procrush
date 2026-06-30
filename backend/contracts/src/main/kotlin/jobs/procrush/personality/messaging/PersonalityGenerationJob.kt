@@ -8,4 +8,5 @@ data class PersonalityGenerationJob(
     val userId: String,
     val enqueuedAt: String,
     val attempt: Int = 1,
+    val correlationId: String? = null,
 )

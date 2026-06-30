@@ -25,6 +25,10 @@ spec:
     metadata:
       labels:
         app: personality
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8091"
+        prometheus.io/path: "/metrics"
     spec:
       initContainers:
         - name: wait-for-infra
@@ -60,15 +64,19 @@ spec:
                 secretKeyRef:
                   name: procrush-secret
                   key: LLM_API_KEY
+            - name: SERVICE_NAME
+              value: personality
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health/ready
               port: 8091
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 12
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health/live
               port: 8091
             initialDelaySeconds: 60
             periodSeconds: 30

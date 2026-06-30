@@ -25,6 +25,10 @@ spec:
     metadata:
       labels:
         app: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
     spec:
       initContainers:
         - name: wait-for-infra
@@ -60,9 +64,11 @@ spec:
                 secretKeyRef:
                   name: procrush-secret
                   key: MATCHING_DATABASE_PASSWORD
+            - name: SERVICE_NAME
+              value: api
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health/ready
               port: 8080
             initialDelaySeconds: 45
             periodSeconds: 10
@@ -70,7 +76,7 @@ spec:
             failureThreshold: 12
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/live
               port: 8080
             initialDelaySeconds: 90
             periodSeconds: 30

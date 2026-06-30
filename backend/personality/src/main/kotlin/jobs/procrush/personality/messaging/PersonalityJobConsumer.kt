@@ -7,6 +7,11 @@ import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.config.RedisConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisDistributedLock
+import jobs.procrush.observability.AppMetrics
+import jobs.procrush.observability.CorrelationIds
+import jobs.procrush.observability.MdcContext
+import jobs.procrush.observability.ObservabilityHolder
+import jobs.procrush.observability.TracePropagation
 import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.service.PersonalityGenerationHandler
 import jobs.procrush.personality.service.PersonalityGenerationLockGuard
@@ -54,6 +59,7 @@ class PersonalityJobConsumer(
                     }
                 },
             )
+        AppMetrics.setPersonalityConsumerRunning(true)
         logger.info("Personality job consumer started on queue {}", rabbitMqConfig.queue)
     }
 
@@ -63,8 +69,11 @@ class PersonalityJobConsumer(
         runCatching { channel.close() }
         consumerTag = null
         consumerChannel = null
+        AppMetrics.setPersonalityConsumerRunning(false)
         logger.info("Personality job consumer stopped")
     }
+
+    fun isRunning(): Boolean = consumerTag != null
 
     private fun processDelivery(
         channel: com.rabbitmq.client.Channel,
@@ -73,6 +82,28 @@ class PersonalityJobConsumer(
         body: ByteArray,
     ) {
         val messageId = properties.messageId ?: UUID.randomUUID().toString()
+        val headers = properties.headers.orEmpty()
+        val correlationId = TracePropagation.requestIdFromMap(headers) ?: messageId
+        MdcContext.runWith(
+            mapOf(
+                CorrelationIds.REQUEST_ID to correlationId,
+                CorrelationIds.MESSAGE_ID to messageId,
+            ),
+        ) {
+            ObservabilityHolder.tracing.withPropagatedHeaders(headers, "personality.generate") {
+                processDeliveryInternal(channel, deliveryTag, properties, body, messageId, correlationId)
+            }
+        }
+    }
+
+    private fun processDeliveryInternal(
+        channel: com.rabbitmq.client.Channel,
+        deliveryTag: Long,
+        properties: AMQP.BasicProperties,
+        body: ByteArray,
+        messageId: String,
+        correlationId: String,
+    ) {
         val job =
             runCatching {
                 json.decodeFromString(PersonalityGenerationJob.serializer(), String(body, Charsets.UTF_8))
@@ -81,6 +112,10 @@ class PersonalityJobConsumer(
                 channel.basicAck(deliveryTag, false)
                 return
             }
+
+        MdcContext.put(CorrelationIds.SEEKER_ID, job.seekerId.toString())
+        MdcContext.put(CorrelationIds.USER_ID, job.userId)
+        MdcContext.put(CorrelationIds.REQUEST_ID, job.correlationId ?: correlationId)
 
         val userId =
             runCatching { UUID.fromString(job.userId) }.getOrElse { error ->
@@ -107,6 +142,7 @@ class PersonalityJobConsumer(
             if (handler.isAlreadyReady(job.seekerId)) {
                 statusNotifier.notify(userId, PersonalityProfileStatus.READY)
                 channel.basicAck(deliveryTag, false)
+                AppMetrics.personalityJobProcessed("already_ready")
                 return
             }
 
@@ -118,6 +154,7 @@ class PersonalityJobConsumer(
 
             statusNotifier.notify(userId, PersonalityProfileStatus.READY)
             channel.basicAck(deliveryTag, false)
+            AppMetrics.personalityJobProcessed("success")
         } catch (error: Exception) {
             logger.error(
                 "Personality profile generation failed seekerId={} attempt={}",
@@ -126,12 +163,20 @@ class PersonalityJobConsumer(
                 error,
             )
             if (isTransient(error) && job.attempt < rabbitMqConfig.maxRetries) {
-                publisher.enqueue(job.seekerId, userId, attempt = job.attempt + 1)
+                publisher.enqueue(
+                    job.seekerId,
+                    userId,
+                    attempt = job.attempt + 1,
+                    correlationId = job.correlationId ?: correlationId,
+                )
                 channel.basicAck(deliveryTag, false)
+                AppMetrics.personalityJobProcessed("retry")
             } else {
                 profileRepository.markFailed(job.seekerId, handler.failureCode(error))
                 statusNotifier.notify(userId, PersonalityProfileStatus.FAILED)
                 channel.basicNack(deliveryTag, false, false)
+                AppMetrics.personalityJobDlq()
+                AppMetrics.personalityJobProcessed("dlq")
             }
         } finally {
             lockHandle?.let { distributedLock.release(it) }

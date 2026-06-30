@@ -6,6 +6,8 @@ import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.llm.LlmClient
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
+import jobs.procrush.observability.AppMetrics
+import jobs.procrush.observability.ObservabilityHolder
 import jobs.procrush.personality.dto.PersonalityAxesDto
 import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.llm.PersonalityProfileLlmMapper
@@ -52,7 +54,12 @@ class PersonalityGenerationHandler(
         val catalog = referenceRepository.listSuperpowersAndTalents()
         val catalogNames = catalog.map { it.name }.toSet()
         val (systemPrompt, userPrompt) = promptBuilder.build(context, catalog)
-        val rawResponse = llmClient.chat(systemPrompt, userPrompt)
+        val rawResponse =
+            AppMetrics.recordPersonalityLlm {
+                ObservabilityHolder.tracing.suspendSpan("llm.chat") {
+                    llmClient.chat(systemPrompt, userPrompt)
+                }
+            }
         val output = validator.validateAndParse(rawResponse, catalogNames)
         val record = profileMapper.fromLlmOutput(seekerId, output)
         val nameToId = referenceRepository.findSuperpowersAndTalentsByNames(output.superpowersAndTalents.map { it.name })

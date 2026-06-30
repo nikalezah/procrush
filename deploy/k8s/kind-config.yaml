@@ -2,7 +2,6 @@
 #
 # extraPortMappings publish cluster services on dedicated loopback IPs so several
 # local projects can reuse standard ports (80, 5432, 6379, …) without conflicts.
-# No hosts file entries are required — connect directly by IP.
 #
 # Host endpoints (after kind-up):
 #   127.10.0.10 — web (Ingress)
@@ -11,6 +10,8 @@
 #   127.10.0.13 — Redis
 #   127.10.0.14 — RabbitMQ (AMQP :5672, UI :15672)
 #   127.10.0.15 — Kafka
+#   127.10.0.16 — Grafana (:3000)
+#   127.10.0.17 — Prometheus (:9090 via NodePort 30090)
 #
 # Mapping fields:
 #   containerPort — NodePort on the kind node (must match Service.nodePort in manifests)
@@ -75,4 +76,16 @@ nodes:
       - containerPort: 30092
         hostPort: 9092
         listenAddress: 127.10.0.15
+        protocol: TCP
+
+      # Grafana — svc/grafana, NodePort 30300
+      - containerPort: 30300
+        hostPort: 3000
+        listenAddress: 127.10.0.16
+        protocol: TCP
+
+      # Prometheus — svc/prometheus, NodePort 30090
+      - containerPort: 30090
+        hostPort: 9090
+        listenAddress: 127.10.0.17
         protocol: TCP

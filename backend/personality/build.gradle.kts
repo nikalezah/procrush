@@ -18,6 +18,7 @@ dependencies {
     implementation(projects.backend.platform.rabbit)
     implementation(projects.backend.platform.kafka)
     implementation(projects.backend.platform.llm)
+    implementation(projects.backend.platform.observability)
     implementation(projects.backend.contracts)
     implementation(project(":backend:domain:reference"))
     implementation(project(":backend:domain:auth"))

@@ -5,6 +5,7 @@ import jobs.procrush.bootstrap.redis.RedisClient
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.service.MatchingQueries
+import jobs.procrush.observability.AppMetrics
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -26,9 +27,11 @@ class CachedMatchingService(
         val seekerId = resolveSeekerId(userId) ?: return emptyList()
         val cacheKey = MatchingCacheKeys.seekerJobs(config, seekerId)
         redis.get(cacheKey)?.let { cached ->
+            AppMetrics.redisCacheHit("recommendation")
             logger.debug("recommendation cache HIT seekerId={}", seekerId)
             return json.decodeFromString(jobListSerializer, cached)
         }
+        AppMetrics.redisCacheMiss("recommendation")
         logger.debug("recommendation cache MISS seekerId={}", seekerId)
         val recommendations = delegate.jobRecommendationsForSeeker(userId)
         if (recommendations.isNotEmpty()) {
@@ -47,9 +50,11 @@ class CachedMatchingService(
     ): List<CandidateRecommendationDto> {
         val cacheKey = MatchingCacheKeys.jobCandidates(config, jobProfileId)
         redis.get(cacheKey)?.let { cached ->
+            AppMetrics.redisCacheHit("recommendation")
             logger.debug("recommendation cache HIT jobProfileId={}", jobProfileId)
             return json.decodeFromString(candidateListSerializer, cached)
         }
+        AppMetrics.redisCacheMiss("recommendation")
         logger.debug("recommendation cache MISS jobProfileId={}", jobProfileId)
         val candidates = delegate.candidateRecommendationsForJob(occupationId, jobProfileId)
         if (candidates.isNotEmpty()) {

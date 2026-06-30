@@ -8,7 +8,7 @@ Kotlin backend: Ktor HTTP API, background workers, and domain logic. Three deplo
 |------|---------------|---------|
 | [`contracts/`](./contracts/src/main/kotlin) | `:backend:contracts` | Domain DTOs, events, ports, and pure domain logic (synced with OpenAPI via `ApiMappers` in `api`) |
 | [`config/`](./config/src/main/kotlin) | `:backend:config` | Env reading and typed application settings |
-| [`platform/`](./platform) | `:backend:platform:*` | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`) |
+| [`platform/`](./platform) | `:backend:platform:*` | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`), observability |
 | [`domain/`](./domain) | `:backend:domain:*` | Bounded contexts: auth, seeker, employer, survey, matching, personality |
 | [`api/`](./api/src/main/kotlin) | `:backend:api` | Ktor HTTP API, Spektor-generated routes/DTOs in `build/`, handlers, composition root |
 | [`personality/`](./personality) | `:backend:personality` | Deployable app: RabbitMQ consumer + health endpoint |
@@ -25,7 +25,7 @@ Main HTTP service: authentication, surveys, profiles, proxying recommendations f
 ./gradlew :backend:api:run
 ```
 
-Health: `GET /health` → `{"status":"ok","redis":"ok","rabbitmq":"ok"}`.
+Health: `GET /health` (alias for `/health/ready`), `GET /health/live`, `GET /health/ready`, `GET /metrics`.
 
 ### Personality worker (`:backend:personality`)
 
@@ -54,6 +54,42 @@ Consumes domain events from Kafka, recalculates recommendations, writes to a sep
 ```
 
 Health: `GET /health` (default port `8092`).
+
+## Observability
+
+Shared module: [`platform/observability`](./platform/observability). Three deployable apps expose the same endpoints.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health/live` | Liveness (process only) |
+| `GET /health/ready` | Readiness (dependencies + consumers) |
+| `GET /health` | Backward-compatible readiness summary |
+| `GET /metrics` | Prometheus scrape target |
+
+### Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SERVICE_NAME` | per app | `api`, `personality`, or `matching` |
+| `LOG_FORMAT` | `text` | `text` or `json` (JSON adds MDC fields) |
+| `OTEL_ENABLED` | `false` | Enable OpenTelemetry OTLP export |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | Tempo/OTLP collector gRPC endpoint |
+| `ENVIRONMENT` | `local` | Common metric label |
+| `APP_VERSION` / `GIT_SHA` | `dev` | Reported in health responses |
+
+### Correlation
+
+HTTP requests accept/propagate `X-Request-Id`. The same ID flows through RabbitMQ personality jobs and Kafka matching events (`correlationId` in envelope).
+
+### Local kind stack
+
+With `LOG_FORMAT=json`, `OTEL_ENABLED=true` in [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/base/configmap.yaml):
+
+- Grafana: http://127.10.0.16:3000 (`admin` / `admin`)
+- Prometheus: http://127.10.0.17:9090
+- Tempo OTLP: `tempo:4317` inside cluster
+
+See [deploy/k8s/README.md](../deploy/k8s/README.md) for alert rules and port-forward options.
 
 ## Infrastructure dependencies
 

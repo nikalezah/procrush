@@ -60,6 +60,28 @@ After `kind-up`, services are reachable from the host on dedicated loopback IPs 
 | RabbitMQ AMQP | `127.10.0.14:5672` |
 | RabbitMQ UI | http://127.10.0.14:15672 (`procrush` / `procrush`) |
 | Kafka | `127.10.0.15:9092` |
+| Grafana | http://127.10.0.16:3000 (`admin` / `admin`) |
+| Prometheus | http://127.10.0.17:9090 |
+
+## Observability (kind overlay)
+
+The kind overlay deploys Tempo, Prometheus, Alertmanager, and Grafana in the `procrush` namespace.
+
+| Check | Command / URL |
+|-------|---------------|
+| Metrics targets | http://127.10.0.17:9090/targets |
+| API metrics | `kubectl port-forward -n procrush svc/api 8080:8080` → `GET /metrics` |
+| Traces | Grafana → Explore → Tempo datasource |
+| Alerts | Prometheus → Alerts (rules in `deploy/k8s/overlays/kind/monitoring/prometheus/deployment.yaml`) |
+
+Configured alerts:
+
+- `PersonalityDlqNotEmpty` — messages in `personality.generation.dlq`
+- `MatchingDlqRate` — matching Kafka DLQ counter increasing
+- `MatchingConsumerDown` / `PersonalityConsumerDown` — consumer gauges at 0
+- `ServiceNotReady` — Prometheus scrape target down
+
+Recreate the kind cluster after changing `kind-config.yaml` port mappings for Grafana/Prometheus.
 
 API check (via Ingress): `GET http://127.10.0.10/api/...` or health directly:
 

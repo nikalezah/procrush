@@ -4,6 +4,7 @@ import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.Channel
 import jobs.procrush.bootstrap.config.RabbitMqConfig
+import jobs.procrush.observability.CorrelationIds
 
 object RabbitMqTopology {
     fun declare(channel: Channel, config: RabbitMqConfig) {
@@ -21,10 +22,19 @@ object RabbitMqTopology {
         channel.queueBind(config.deadLetterQueue, config.deadLetterExchange, config.deadLetterRoutingKey)
     }
 
-    fun persistentJsonProperties(messageId: String): AMQP.BasicProperties =
-        AMQP.BasicProperties.Builder()
+    fun persistentJsonProperties(
+        messageId: String,
+        correlationId: String? = null,
+        traceHeaders: Map<String, String> = emptyMap(),
+    ): AMQP.BasicProperties {
+        val headers = mutableMapOf<String, Any>()
+        correlationId?.let { headers[CorrelationIds.HEADER_REQUEST_ID] = it }
+        traceHeaders.forEach { (key, value) -> headers[key] = value }
+        return AMQP.BasicProperties.Builder()
             .contentType("application/json")
             .deliveryMode(2)
             .messageId(messageId)
+            .headers(headers.ifEmpty { null })
             .build()
+    }
 }
