@@ -1,4 +1,4 @@
-rootProject.name = "ProCrush"
+rootProject.name = "procrush"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
