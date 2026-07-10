@@ -131,7 +131,7 @@ Full REST endpoint list — in [openapi/README.md](../openapi/README.md).
 
 ## Local development (hot-reload)
 
-**Requirements:** JDK 17+, infrastructure from kind (see [deploy/k8s/README.md](../deploy/k8s/README.md)).
+**Requirements:** JDK 25 (Gradle toolchain; matches `deploy/Dockerfile.*`), infrastructure from kind (see [deploy/k8s/README.md](../deploy/k8s/README.md)).
 
 Environment variables — in [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/base/configmap.yaml) and local `secret.yaml` (template: [`secret.yaml.example`](../deploy/k8s/base/secret.yaml.example)).
 
@@ -141,7 +141,7 @@ Environment variables — in [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/ba
 ./gradlew :backend:matching:run
 ```
 
-To verify changes **inside kind** (local build → thin image → rollout), use `./gradlew apiToKind` (or `appsToKind` / `--continuous`). Details — [deploy/k8s/README.md](../deploy/k8s/README.md#iterative-development-gradle).
+To verify changes **inside kind** (local build → thin image → conditional rollout), use `./gradlew kindUp`. Details — [deploy/k8s/README.md](../deploy/k8s/README.md#iterative-development-gradle).
 
 After `git clone`, before working with handlers: run `./gradlew :backend:api:compileKotlin` once so the IDE sees generated sources in `build/`. In IntelliJ: *Build and run using → Gradle*.
 

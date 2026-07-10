@@ -9,34 +9,34 @@ Recommended local development setup. Cloud deployment — in [deploy/README.md](
 - [Docker](https://docs.docker.com/get-docker/) — allocate **≥ 8 GB RAM** in Docker Desktop settings
 - [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- **JDK 17+** and **Node.js 20+** — for iterative Gradle redeploy (`*ToKind`) and optional hot-reload (`./gradlew run` / `npm run dev`)
+- **JDK 25** and **Node.js 20+** — for `./gradlew kindUp` and optional hot-reload (`./gradlew run` / `npm run dev`)
 
 ## Quick start
 
-1. From the repository root:
+1. Copy [`deploy/k8s/base/secret.yaml.example`](./base/secret.yaml.example) to `secret.yaml` and set `LLM_API_KEY` (file is in `.gitignore`, do not commit).
+
+2. From the repository root:
 
    ```bash
-   chmod +x deploy/k8s/scripts/*.sh
-   ./deploy/k8s/scripts/kind-up.sh
+   ./gradlew kindUp
    ```
 
-   If cluster `procrush` was created before changing `listenAddress`, recreate it: `./deploy/k8s/scripts/kind-down.sh`, then `./deploy/k8s/scripts/kind-up.sh` again. `extraPortMappings` applies only when the kind node container is created.
+   If cluster `procrush` was created before changing `listenAddress`, recreate it: `./gradlew kindDown`, then `./gradlew kindUp` again. `extraPortMappings` applies only when the kind node container is created.
 
-   The script:
+   `kindUp`:
    - creates cluster `procrush` (if missing);
-   - installs ingress-nginx;
-   - builds 4 Docker images and loads them into kind (`kind load docker-image`);
-   - applies manifests: `kubectl apply -k deploy/k8s/overlays/kind`.
+   - installs ingress-nginx (if not ready);
+   - builds thin app images (`deploy/Dockerfile.*.dev`) only when artifacts changed, loads them into kind;
+   - applies manifests when the namespace is missing or kustomize sources changed: `kubectl apply -k deploy/k8s/overlays/kind`;
+   - restarts a Deployment only if its image was rebuilt **and** the Deployment already existed (first apply does not restart).
 
-   Before `kind-up`, copy [`deploy/k8s/base/secret.yaml.example`](./base/secret.yaml.example) to `secret.yaml` and set `LLM_API_KEY` (file is in `.gitignore`, do not commit).
-
-2. Wait for pods to become ready:
+3. Wait for pods to become ready:
 
    ```bash
    kubectl get pods -n procrush -w
    ```
 
-3. Open http://127.10.0.10 — dev login (`AUTH_DEV_MODE=true`).
+4. Open http://127.10.0.10 — dev login (`AUTH_DEV_MODE=true`).
 
 ## Verification
 
@@ -49,7 +49,7 @@ Recommended local development setup. Cloud deployment — in [deploy/README.md](
 
 ## Local endpoints
 
-After `kind-up`, services are reachable from the host on dedicated loopback IPs (see [kind-config.yaml](./kind-config.yaml)):
+After `kindUp`, services are reachable from the host on dedicated loopback IPs (see [kind-config.yaml](./kind-config.yaml)):
 
 | Service | Endpoint |
 |---------|----------|
@@ -143,47 +143,31 @@ Manifests: [base/](./base/) + overlay [overlays/kind/](./overlays/kind/) (Kustom
 
 ## Iterative development (Gradle)
 
-After `kind-up`, rebuild and redeploy **only changed** application services with local Gradle/npm (thin `deploy/Dockerfile.*.dev` images). Hash gate skips docker/kind/rollout when the packaged artifact is unchanged.
-
-Watch mode (recommended in WSL2):
+Use the same entry point after the first bootstrap:
 
 ```bash
-./gradlew apiToKind personalityToKind matchingToKind frontendToKind --continuous
+./gradlew kindUp
 ```
 
-One-shot:
-
-| Command | Effect |
-|---------|--------|
-| `./gradlew apiToKind` | api only |
-| `./gradlew personalityToKind` | personality only |
-| `./gradlew matchingToKind` | matching only |
-| `./gradlew frontendToKind` | frontend only |
-| `./gradlew appsToKind` | all four app services |
-
-Examples:
+Local Gradle/npm builds feed thin `deploy/Dockerfile.*.dev` images. Hash gates skip docker build, `kind load`, and rollout when packaged artifacts are unchanged. Manifest apply runs only when kustomize sources change (or the namespace is missing). Rollout restart runs only when an image was rebuilt and the Deployment already existed.
 
 | Change | What redeploys |
 |--------|----------------|
-| `backend/api/...` | api |
+| `backend/api/...` | api (if installDist artifact hash changed) |
 | `i18n/locales/...` | frontend |
-| `backend/contracts/...` | backend installDist for dependents; rollout only if artifact hash changed |
-| `i18n/error-codes.yaml` | `generateI18n`, then services whose inputs include it (hash-gated) |
-| `openapi/...` | api + frontend |
+| `backend/contracts/...` | backend installDist for dependents; image/rollout only if artifact hash changed |
+| `i18n/error-codes.yaml` | `generateI18n`, then services whose artifacts change |
+| `openapi/...` | api + frontend (when their artifacts change) |
+| `deploy/k8s/base` / `overlays/kind` | `kubectl apply -k` only |
 
-Tasks are defined in the root [`build.gradle.kts`](../../build.gradle.kts). Cache files live in `.kind-deploy-cache/` (gitignored).
+Tasks are defined in the root [`build.gradle.kts`](../../build.gradle.kts). Cache files live in `.kind-deploy-cache/` (gitignored); the cache is cleared when the cluster is created or deleted via Gradle.
 
 These tasks disable Gradle configuration cache for the invocation (Spektor / shell-out to docker are not CC-compatible). Build cache and the artifact hash gate still apply.
 
 ## Rebuild after code changes
 
-**Incremental (dev):** see [Iterative development (Gradle)](#iterative-development-gradle) — `appsToKind` or a single `*ToKind` task.
-
-**Full prod-like rebuild** (all four images via Railway-compatible Dockerfiles, no local Gradle cache):
-
 ```bash
-./deploy/k8s/scripts/build-images.sh
-kubectl rollout restart deployment -n procrush api personality matching frontend
+./gradlew kindUp
 ```
 
 ## RabbitMQ UI (optional)
@@ -208,12 +192,12 @@ kubectl rollout restart deployment -n procrush redis rabbitmq kafka
 ## Stop cluster
 
 ```bash
-./deploy/k8s/scripts/kind-down.sh
+./gradlew kindDown
 ```
 
 ## Hot-reload without rebuilding images (optional)
 
-Infrastructure is reachable from the host on loopback IPs immediately after `kind-up`. Set environment variables per [`configmap.yaml`](./base/configmap.yaml) and local `secret.yaml` (from [`secret.yaml.example`](./base/secret.yaml.example)). Different projects can use standard ports on their own `127.x.x.x` addresses simultaneously.
+Infrastructure is reachable from the host on loopback IPs immediately after `kindUp`. Set environment variables per [`configmap.yaml`](./base/configmap.yaml) and local `secret.yaml` (from [`secret.yaml.example`](./base/secret.yaml.example)). Different projects can use standard ports on their own `127.x.x.x` addresses simultaneously.
 
 | Application | Command | URL |
 |-------------|---------|-----|
@@ -228,13 +212,14 @@ More on backend modules — [backend/README.md](../../backend/README.md).
 
 | Symptom | What to check |
 |---------|---------------|
-| `ImagePullBackOff` | Rebuild: `./gradlew appsToKind` or prod-like `./deploy/k8s/scripts/build-images.sh`; overlay sets `imagePullPolicy: Never` |
+| `ImagePullBackOff` | Rebuild: `./gradlew kindUp` (or `./gradlew kindDown` then `kindUp` if the cluster was recreated outside Gradle); overlay sets `imagePullPolicy: Never` |
 | API not becoming Ready | `kubectl logs -n procrush deploy/api`; often matching or Kafka still starting |
 | Port 80 busy on `127.10.0.10` | Another service on same IP:port; change `listenAddress` / `hostPort` in [kind-config.yaml](./kind-config.yaml) |
 | http://127.10.0.10 not opening | `kubectl get ingress -n procrush`; recreate cluster after changing `kind-config.yaml` |
 | API/personality `Init:0/1` for long | RabbitMQ readiness — manifest uses `tcpSocket` + `publishNotReadyAddresses`; restart: `kubectl apply -k deploy/k8s/overlays/kind` |
 | personality `Unhealthy` / 406 | HTTP probe on `/health` without JSON — uses `tcpSocket:8091` |
-| `error: no matching resources found` for ingress | Re-run `kind-up` — script waits for admission jobs and deployment rollout |
+| `error: no matching resources found` for ingress | Re-run `./gradlew kindUp` — it waits for admission jobs and deployment rollout |
+| Missing `secret.yaml` | Copy from [`secret.yaml.example`](./base/secret.yaml.example) before `kindUp` |
 
 ## Related documentation
 

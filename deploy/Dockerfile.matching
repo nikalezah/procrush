@@ -1,5 +1,5 @@
 # Matching — Kafka consumer + HTTP read API for precomputed match results.
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
 COPY gradlew gradlew
@@ -12,7 +12,7 @@ RUN chmod +x gradlew \
     && ./gradlew :backend:matching:installDist --no-daemon \
         -Dorg.gradle.configuration-cache=false
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /app/backend/matching/build/install/matching ./
 

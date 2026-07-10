@@ -3,7 +3,7 @@
 # extraPortMappings publish cluster services on dedicated loopback IPs so several
 # local projects can reuse standard ports (80, 5432, 6379, …) without conflicts.
 #
-# Host endpoints (after kind-up):
+# Host endpoints (after ./gradlew kindUp):
 #   127.10.0.10 — web (Ingress)
 #   127.10.0.11 — PostgreSQL (api, personality)
 #   127.10.0.12 — matching PostgreSQL
@@ -19,7 +19,7 @@
 #   listenAddress — dedicated loopback IP for this project
 #
 # Applied only when the cluster is created — recreate after changes:
-#   kind delete cluster --name procrush && ./deploy/k8s/scripts/kind-up.sh
+#   ./gradlew kindDown && ./gradlew kindUp
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: procrush

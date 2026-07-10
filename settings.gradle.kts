@@ -23,13 +23,10 @@ plugins {
 }
 
 // Kind deploy tasks (and SpektorGenerateTask they pull in) are not configuration-cache
-// compatible. Disable CC for those invocations so ./gradlew appsToKind works.
+// compatible. Disable CC for those invocations so ./gradlew kindUp works.
 val kindTaskNames = setOf(
-    "apiToKind",
-    "personalityToKind",
-    "matchingToKind",
-    "frontendToKind",
-    "appsToKind",
+    "kindUp",
+    "kindDown",
     "frontendBuild",
     "generateI18n",
 )

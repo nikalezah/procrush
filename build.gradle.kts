@@ -58,11 +58,20 @@ tasks.register<Exec>("generateI18n") {
     }
 }
 
-// --- Kind deploy (local build → thin image → rollout) ---
+// --- Kind deploy (bootstrap + local build → thin image → conditional rollout) ---
 
+val isWindowsOs: Boolean = System.getProperty("os.name").lowercase().contains("windows")
 val kindClusterName: String = System.getenv("KIND_CLUSTER_NAME") ?: "procrush"
 val kindNamespace = "procrush"
 val kindDeployCacheDir = layout.projectDirectory.dir(".kind-deploy-cache")
+val kindIngressUrl =
+    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/kind/deploy.yaml"
+val kindK8sDir = layout.projectDirectory.dir("deploy/k8s")
+val kindOverlayDir = kindK8sDir.dir("overlays/kind")
+val kindSecretFile = kindK8sDir.file("base/secret.yaml")
+val kindConfigFile = kindK8sDir.file("kind-config.yaml")
+
+fun cli(name: String): String = if (isWindowsOs) "$name.exe" else name
 
 fun sha256Hex(bytes: ByteArray): String =
     MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
@@ -91,6 +100,14 @@ fun artifactFingerprint(artifactDir: File, dockerfile: File): String {
     return combined.digest().joinToString("") { "%02x".format(it) }
 }
 
+fun manifestsFingerprint(baseDir: File, overlayDir: File): String {
+    val combined = MessageDigest.getInstance("SHA-256")
+    combined.update(hashTree(baseDir).toByteArray(Charsets.UTF_8))
+    combined.update(0)
+    combined.update(hashTree(overlayDir).toByteArray(Charsets.UTF_8))
+    return combined.digest().joinToString("") { "%02x".format(it) }
+}
+
 fun runCommand(workdir: File, vararg args: String) {
     val process = ProcessBuilder(*args)
         .directory(workdir)
@@ -102,173 +119,151 @@ fun runCommand(workdir: File, vararg args: String) {
     }
 }
 
-fun redeployToKind(
-    service: String,
-    image: String,
-    deployment: String,
-    artifactDir: File,
-    dockerfile: File,
-    buildContext: File,
-    workdir: File,
-    logger: org.gradle.api.logging.Logger,
-) {
-    val cacheDir = kindDeployCacheDir.asFile
-    cacheDir.mkdirs()
-    val hashFile = cacheDir.resolve("$service.hash")
-    val fingerprint = artifactFingerprint(artifactDir, dockerfile)
-    val previous = if (hashFile.exists()) hashFile.readText().trim() else ""
+fun runCommandCapture(workdir: File, vararg args: String): Pair<Int, String> {
+    val process = ProcessBuilder(*args)
+        .directory(workdir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText()
+    val code = process.waitFor()
+    return code to output
+}
 
-    if (fingerprint == previous) {
-        logger.lifecycle("[$service] artifact unchanged, skip redeploy")
-        cacheDir.resolve("$service.stamp").writeText(fingerprint)
-        return
+fun commandSucceeds(workdir: File, vararg args: String): Boolean =
+    try {
+        runCommandCapture(workdir, *args).first == 0
+    } catch (_: Exception) {
+        false
     }
 
-    logger.lifecycle("[$service] building image $image:local ...")
-    runCommand(
-        workdir,
-        "docker", "build",
-        "-f", dockerfile.path,
-        "-t", "$image:local",
-        buildContext.path,
-    )
+fun requireCli(workdir: File, name: String) {
+    val checkArgs =
+        if (isWindowsOs) {
+            arrayOf("where.exe", name)
+        } else {
+            arrayOf("sh", "-c", "command -v $name")
+        }
+    if (!commandSucceeds(workdir, *checkArgs)) {
+        throw GradleException("Required command not found: $name")
+    }
+}
 
-    logger.lifecycle("[$service] loading image into kind cluster $kindClusterName ...")
-    runCommand(
-        workdir,
-        "kind", "load", "docker-image", "$image:local",
-        "--name", kindClusterName,
-    )
+fun clusterExists(workdir: File): Boolean {
+    val (code, output) = runCommandCapture(workdir, cli("kind"), "get", "clusters")
+    if (code != 0) {
+        return false
+    }
+    return output.lineSequence().any { it.trim() == kindClusterName }
+}
 
-    logger.lifecycle("[$service] restarting deployment/$deployment in $kindNamespace ...")
-    runCommand(
+fun deploymentExists(workdir: File, deployment: String): Boolean =
+    commandSucceeds(
         workdir,
-        "kubectl", "rollout", "restart", "deployment/$deployment",
+        cli("kubectl"), "get", "deployment", deployment,
         "-n", kindNamespace,
     )
 
-    hashFile.writeText(fingerprint)
-    cacheDir.resolve("$service.stamp").writeText(fingerprint)
-    logger.lifecycle("[$service] redeployed")
+fun namespaceExists(workdir: File): Boolean =
+    commandSucceeds(workdir, cli("kubectl"), "get", "namespace", kindNamespace)
+
+fun ingressControllerReady(workdir: File): Boolean {
+    val (code, output) = runCommandCapture(
+        workdir,
+        cli("kubectl"), "get", "deployment", "ingress-nginx-controller",
+        "-n", "ingress-nginx",
+        "-o", "jsonpath={.status.readyReplicas}",
+    )
+    if (code != 0) {
+        return false
+    }
+    return (output.trim().toIntOrNull() ?: 0) >= 1
 }
 
-fun Project.backendSourceTree(vararg paths: String) =
-    files(
-        paths.map { path ->
-            fileTree(path) {
-                exclude("**/build/**", "**/.gradle/**")
-            }
-        },
+/** @return true if a new cluster was created in this invocation */
+fun ensureCluster(workdir: File, logger: org.gradle.api.logging.Logger): Boolean {
+    val created =
+        if (clusterExists(workdir)) {
+            logger.lifecycle("Kind cluster $kindClusterName already exists.")
+            false
+        } else {
+            logger.lifecycle("Creating kind cluster $kindClusterName ...")
+            runCommand(
+                workdir,
+                cli("kind"), "create", "cluster",
+                "--name", kindClusterName,
+                "--config", kindConfigFile.asFile.path,
+            )
+            true
+        }
+    runCommand(workdir, cli("kubectl"), "config", "use-context", "kind-$kindClusterName")
+    return created
+}
+
+fun clearKindDeployCache(logger: org.gradle.api.logging.Logger) {
+    val cacheDir = kindDeployCacheDir.asFile
+    if (!cacheDir.exists()) {
+        return
+    }
+    cacheDir.listFiles()?.forEach { it.delete() }
+    logger.lifecycle("Cleared .kind-deploy-cache (images must be rebuilt for a new cluster)")
+}
+
+fun ensureIngress(workdir: File, logger: org.gradle.api.logging.Logger) {
+    if (ingressControllerReady(workdir)) {
+        logger.lifecycle("ingress-nginx already ready.")
+        return
+    }
+    logger.lifecycle("Installing ingress-nginx ...")
+    runCommand(workdir, cli("kubectl"), "apply", "-f", kindIngressUrl)
+    logger.lifecycle("Waiting for ingress-nginx admission jobs and controller ...")
+    runCommand(
+        workdir,
+        cli("kubectl"), "wait", "--namespace", "ingress-nginx",
+        "--for=condition=complete", "job/ingress-nginx-admission-create",
+        "--timeout=120s",
     )
+    runCommand(
+        workdir,
+        cli("kubectl"), "wait", "--namespace", "ingress-nginx",
+        "--for=condition=complete", "job/ingress-nginx-admission-patch",
+        "--timeout=120s",
+    )
+    runCommand(
+        workdir,
+        cli("kubectl"), "rollout", "status", "deployment/ingress-nginx-controller",
+        "-n", "ingress-nginx",
+        "--timeout=180s",
+    )
+}
+
+data class KindAppService(
+    val name: String,
+    val image: String,
+    val deployment: String,
+    val artifactDir: File,
+    val dockerfile: File,
+    val buildContext: File,
+)
+
+data class KindChangedService(
+    val service: KindAppService,
+    val fingerprint: String,
+    val deploymentExisted: Boolean,
+)
 
 // Spektor's generate task is not configuration-cache compatible; mark it so kind
 // deploy builds that depend on it do not fail CC serialization.
+// Pin JVM 25 so local installDist matches eclipse-temurin:25-jre images.
 subprojects {
+    pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+            jvmToolchain(25)
+        }
+    }
     tasks.configureEach {
         if (name == "spektorGenerate") {
             notCompatibleWithConfigurationCache("Spektor plugin is not configuration-cache compatible")
         }
-    }
-}
-
-tasks.register("apiToKind") {
-    group = "kind"
-    description = "Build api locally and redeploy to kind if the artifact changed"
-    dependsOn("generateI18n", ":backend:api:installDist")
-    inputs.files(
-        backendSourceTree(
-            "backend/api",
-            "backend/contracts",
-            "backend/config",
-            "backend/domain",
-            "backend/platform",
-        ),
-    )
-    inputs.file("i18n/error-codes.yaml")
-    inputs.dir("i18n/generated/kotlin")
-    inputs.files(fileTree("openapi") { exclude("**/dist/**") })
-    inputs.file("deploy/Dockerfile.api.dev")
-    outputs.file(kindDeployCacheDir.file("api.stamp"))
-    notCompatibleWithConfigurationCache("shells out to docker/kind/kubectl")
-
-    doLast {
-        redeployToKind(
-            service = "api",
-            image = "procrush-api",
-            deployment = "api",
-            artifactDir = file("backend/api/build/install/api"),
-            dockerfile = file("deploy/Dockerfile.api.dev"),
-            buildContext = file("backend/api/build/install/api"),
-            workdir = rootDir,
-            logger = logger,
-        )
-    }
-}
-
-tasks.register("personalityToKind") {
-    group = "kind"
-    description = "Build personality locally and redeploy to kind if the artifact changed"
-    dependsOn("generateI18n", ":backend:personality:installDist")
-    inputs.files(
-        backendSourceTree(
-            "backend/personality",
-            "backend/contracts",
-            "backend/config",
-            "backend/domain",
-            "backend/platform",
-        ),
-    )
-    inputs.file("i18n/error-codes.yaml")
-    inputs.dir("i18n/generated/kotlin")
-    inputs.file("deploy/Dockerfile.personality.dev")
-    outputs.file(kindDeployCacheDir.file("personality.stamp"))
-    notCompatibleWithConfigurationCache("shells out to docker/kind/kubectl")
-
-    doLast {
-        redeployToKind(
-            service = "personality",
-            image = "procrush-personality",
-            deployment = "personality",
-            artifactDir = file("backend/personality/build/install/personality"),
-            dockerfile = file("deploy/Dockerfile.personality.dev"),
-            buildContext = file("backend/personality/build/install/personality"),
-            workdir = rootDir,
-            logger = logger,
-        )
-    }
-}
-
-tasks.register("matchingToKind") {
-    group = "kind"
-    description = "Build matching locally and redeploy to kind if the artifact changed"
-    dependsOn("generateI18n", ":backend:matching:installDist")
-    inputs.files(
-        backendSourceTree(
-            "backend/matching",
-            "backend/contracts",
-            "backend/config",
-            "backend/platform/redis",
-            "backend/platform/kafka",
-            "backend/platform/observability",
-        ),
-    )
-    inputs.file("i18n/error-codes.yaml")
-    inputs.dir("i18n/generated/kotlin")
-    inputs.file("deploy/Dockerfile.matching.dev")
-    outputs.file(kindDeployCacheDir.file("matching.stamp"))
-    notCompatibleWithConfigurationCache("shells out to docker/kind/kubectl")
-
-    doLast {
-        redeployToKind(
-            service = "matching",
-            image = "procrush-matching",
-            deployment = "matching",
-            artifactDir = file("backend/matching/build/install/matching"),
-            dockerfile = file("deploy/Dockerfile.matching.dev"),
-            buildContext = file("backend/matching/build/install/matching"),
-            workdir = rootDir,
-            logger = logger,
-        )
     }
 }
 
@@ -277,7 +272,7 @@ tasks.register<Exec>("frontendBuild") {
     description = "Build the React frontend (npm run build)"
     dependsOn("generateI18n")
     workingDir = layout.projectDirectory.dir("frontend").asFile
-    val npmCmd = if (System.getProperty("os.name").lowercase().contains("windows")) "npm.cmd" else "npm"
+    val npmCmd = if (isWindowsOs) "npm.cmd" else "npm"
     commandLine(npmCmd, "run", "build")
     inputs.files(
         fileTree("frontend") {
@@ -292,39 +287,166 @@ tasks.register<Exec>("frontendBuild") {
     notCompatibleWithConfigurationCache("shells out to npm")
 }
 
-tasks.register("frontendToKind") {
+tasks.register("kindUp") {
     group = "kind"
-    description = "Build frontend locally and redeploy to kind if the artifact changed"
-    dependsOn("frontendBuild")
-    inputs.files(
-        fileTree("frontend") {
-            exclude("node_modules/**", "dist/**", ".vite/**")
-        },
+    description =
+        "Ensure kind cluster + ingress, build/load changed thin images, apply manifests, restart only when needed"
+    dependsOn(
+        "generateI18n",
+        ":backend:api:installDist",
+        ":backend:personality:installDist",
+        ":backend:matching:installDist",
+        "frontendBuild",
     )
-    inputs.dir("i18n/locales")
-    inputs.dir("i18n/generated/typescript")
-    inputs.file("i18n/error-codes.yaml")
-    inputs.files(fileTree("openapi") { exclude("**/dist/**") })
-    inputs.file("deploy/Dockerfile.frontend.dev")
-    outputs.file(kindDeployCacheDir.file("frontend.stamp"))
     notCompatibleWithConfigurationCache("shells out to docker/kind/kubectl")
 
     doLast {
-        redeployToKind(
-            service = "frontend",
-            image = "procrush-frontend",
-            deployment = "frontend",
-            artifactDir = file("frontend/dist"),
-            dockerfile = file("deploy/Dockerfile.frontend.dev"),
-            buildContext = file("frontend"),
-            workdir = rootDir,
-            logger = logger,
+        val workdir = rootDir
+        requireCli(workdir, "kind")
+        requireCli(workdir, "kubectl")
+        requireCli(workdir, "docker")
+
+        if (!kindSecretFile.asFile.exists()) {
+            throw GradleException(
+                "Missing deploy/k8s/base/secret.yaml — copy from secret.yaml.example and set LLM_API_KEY",
+            )
+        }
+
+        val clusterCreated = ensureCluster(workdir, logger)
+        if (clusterCreated) {
+            clearKindDeployCache(logger)
+        }
+        ensureIngress(workdir, logger)
+
+        val cacheDir = kindDeployCacheDir.asFile
+        cacheDir.mkdirs()
+
+        val services = listOf(
+            KindAppService(
+                name = "api",
+                image = "procrush-api",
+                deployment = "api",
+                artifactDir = file("backend/api/build/install/api"),
+                dockerfile = file("deploy/Dockerfile.api.dev"),
+                buildContext = file("backend/api/build/install/api"),
+            ),
+            KindAppService(
+                name = "personality",
+                image = "procrush-personality",
+                deployment = "personality",
+                artifactDir = file("backend/personality/build/install/personality"),
+                dockerfile = file("deploy/Dockerfile.personality.dev"),
+                buildContext = file("backend/personality/build/install/personality"),
+            ),
+            KindAppService(
+                name = "matching",
+                image = "procrush-matching",
+                deployment = "matching",
+                artifactDir = file("backend/matching/build/install/matching"),
+                dockerfile = file("deploy/Dockerfile.matching.dev"),
+                buildContext = file("backend/matching/build/install/matching"),
+            ),
+            KindAppService(
+                name = "frontend",
+                image = "procrush-frontend",
+                deployment = "frontend",
+                artifactDir = file("frontend/dist"),
+                dockerfile = file("deploy/Dockerfile.frontend.dev"),
+                buildContext = file("frontend"),
+            ),
         )
+
+        val changed = mutableListOf<KindChangedService>()
+        for (service in services) {
+            val hashFile = cacheDir.resolve("${service.name}.hash")
+            val fingerprint = artifactFingerprint(service.artifactDir, service.dockerfile)
+            val previous = if (hashFile.exists()) hashFile.readText().trim() else ""
+            if (fingerprint == previous) {
+                logger.lifecycle("[${service.name}] artifact unchanged, skip image rebuild")
+                cacheDir.resolve("${service.name}.stamp").writeText(fingerprint)
+                continue
+            }
+            val existed = deploymentExists(workdir, service.deployment)
+            logger.lifecycle("[${service.name}] building image ${service.image}:local ...")
+            runCommand(
+                workdir,
+                cli("docker"), "build",
+                "-f", service.dockerfile.path,
+                "-t", "${service.image}:local",
+                service.buildContext.path,
+            )
+            logger.lifecycle("[${service.name}] loading image into kind cluster $kindClusterName ...")
+            runCommand(
+                workdir,
+                cli("kind"), "load", "docker-image", "${service.image}:local",
+                "--name", kindClusterName,
+            )
+            changed += KindChangedService(service, fingerprint, existed)
+        }
+
+        val manifestsHash = manifestsFingerprint(
+            kindK8sDir.dir("base").asFile,
+            kindOverlayDir.asFile,
+        )
+        val manifestsHashFile = cacheDir.resolve("manifests.hash")
+        val previousManifests =
+            if (manifestsHashFile.exists()) manifestsHashFile.readText().trim() else ""
+        val needApply = !namespaceExists(workdir) || manifestsHash != previousManifests
+        if (needApply) {
+            logger.lifecycle("Applying Kubernetes manifests ...")
+            runCommand(
+                workdir,
+                cli("kubectl"), "apply", "-k", kindOverlayDir.asFile.path,
+            )
+            manifestsHashFile.writeText(manifestsHash)
+        } else {
+            logger.lifecycle("Manifests unchanged, skip kubectl apply")
+        }
+
+        for (item in changed) {
+            if (item.deploymentExisted) {
+                logger.lifecycle(
+                    "[${item.service.name}] restarting deployment/${item.service.deployment} ...",
+                )
+                runCommand(
+                    workdir,
+                    cli("kubectl"), "rollout", "restart",
+                    "deployment/${item.service.deployment}",
+                    "-n", kindNamespace,
+                )
+            } else {
+                logger.lifecycle(
+                    "[${item.service.name}] deployment did not exist before apply, skip restart",
+                )
+            }
+            cacheDir.resolve("${item.service.name}.hash").writeText(item.fingerprint)
+            cacheDir.resolve("${item.service.name}.stamp").writeText(item.fingerprint)
+        }
+
+        logger.lifecycle("")
+        logger.lifecycle("ProCrush kind stack is up.")
+        logger.lifecycle("Open:               http://127.10.0.10")
+        logger.lifecycle("API health:         http://127.10.0.10/api/auth/me (401 without session is OK)")
+        logger.lifecycle("")
+        logger.lifecycle("Infra endpoints:    127.10.0.11:5432 postgres, 127.10.0.13:6379 redis, 127.10.0.14:5672 rabbitmq")
+        logger.lifecycle("Observability:      http://127.10.0.16:3000 grafana, http://127.10.0.17:9090 prometheus")
     }
 }
 
-tasks.register("appsToKind") {
+tasks.register("kindDown") {
     group = "kind"
-    description = "Build and redeploy all application services to kind"
-    dependsOn("apiToKind", "personalityToKind", "matchingToKind", "frontendToKind")
+    description = "Delete the local kind cluster"
+    notCompatibleWithConfigurationCache("shells out to kind")
+
+    doLast {
+        val workdir = rootDir
+        requireCli(workdir, "kind")
+        if (clusterExists(workdir)) {
+            logger.lifecycle("Deleting kind cluster $kindClusterName ...")
+            runCommand(workdir, cli("kind"), "delete", "cluster", "--name", kindClusterName)
+            clearKindDeployCache(logger)
+        } else {
+            logger.lifecycle("Kind cluster $kindClusterName does not exist.")
+        }
+    }
 }
