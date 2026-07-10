@@ -9,7 +9,7 @@ Recommended local development setup. Cloud deployment — in [deploy/README.md](
 - [Docker](https://docs.docker.com/get-docker/) — allocate **≥ 8 GB RAM** in Docker Desktop settings
 - [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- **Hot-reload (optional):** JDK 17+, Node.js 20+ for `./gradlew run` / `npm run dev`
+- **JDK 17+** and **Node.js 20+** — for iterative Gradle redeploy (`*ToKind`) and optional hot-reload (`./gradlew run` / `npm run dev`)
 
 ## Quick start
 
@@ -141,7 +141,45 @@ Inside cluster (in-cluster DNS):
 
 Manifests: [base/](./base/) + overlay [overlays/kind/](./overlays/kind/) (Kustomize).
 
+## Iterative development (Gradle)
+
+After `kind-up`, rebuild and redeploy **only changed** application services with local Gradle/npm (thin `deploy/Dockerfile.*.dev` images). Hash gate skips docker/kind/rollout when the packaged artifact is unchanged.
+
+Watch mode (recommended in WSL2):
+
+```bash
+./gradlew apiToKind personalityToKind matchingToKind frontendToKind --continuous
+```
+
+One-shot:
+
+| Command | Effect |
+|---------|--------|
+| `./gradlew apiToKind` | api only |
+| `./gradlew personalityToKind` | personality only |
+| `./gradlew matchingToKind` | matching only |
+| `./gradlew frontendToKind` | frontend only |
+| `./gradlew appsToKind` | all four app services |
+
+Examples:
+
+| Change | What redeploys |
+|--------|----------------|
+| `backend/api/...` | api |
+| `i18n/locales/...` | frontend |
+| `backend/contracts/...` | backend installDist for dependents; rollout only if artifact hash changed |
+| `i18n/error-codes.yaml` | `generateI18n`, then services whose inputs include it (hash-gated) |
+| `openapi/...` | api + frontend |
+
+Tasks are defined in [`gradle/kind-deploy.gradle.kts`](../../gradle/kind-deploy.gradle.kts). Cache files live in `.kind-deploy-cache/` (gitignored).
+
+These tasks disable Gradle configuration cache for the invocation (Spektor / shell-out to docker are not CC-compatible). Build cache and the artifact hash gate still apply.
+
 ## Rebuild after code changes
+
+**Incremental (dev):** see [Iterative development (Gradle)](#iterative-development-gradle) — `appsToKind` or a single `*ToKind` task.
+
+**Full prod-like rebuild** (all four images via Railway-compatible Dockerfiles, no local Gradle cache):
 
 ```bash
 ./deploy/k8s/scripts/build-images.sh
@@ -190,7 +228,7 @@ More on backend modules — [backend/README.md](../../backend/README.md).
 
 | Symptom | What to check |
 |---------|---------------|
-| `ImagePullBackOff` | Rebuild images: `./deploy/k8s/scripts/build-images.sh`; overlay sets `imagePullPolicy: Never` |
+| `ImagePullBackOff` | Rebuild: `./gradlew appsToKind` or prod-like `./deploy/k8s/scripts/build-images.sh`; overlay sets `imagePullPolicy: Never` |
 | API not becoming Ready | `kubectl logs -n procrush deploy/api`; often matching or Kafka still starting |
 | Port 80 busy on `127.10.0.10` | Another service on same IP:port; change `listenAddress` / `hostPort` in [kind-config.yaml](./kind-config.yaml) |
 | http://127.10.0.10 not opening | `kubectl get ingress -n procrush`; recreate cluster after changing `kind-config.yaml` |

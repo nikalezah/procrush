@@ -1,0 +1,14 @@
+# Dev image: build context must be frontend/ (expects dist/ already built)
+FROM nginx:alpine
+RUN apk add --no-cache gettext
+
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+COPY dist /usr/share/nginx/html
+
+ENV PORT=8080
+EXPOSE 8080
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

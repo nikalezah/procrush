@@ -141,6 +141,8 @@ Environment variables — in [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/ba
 ./gradlew :backend:matching:run
 ```
 
+To verify changes **inside kind** (local build → thin image → rollout), use `./gradlew apiToKind` (or `appsToKind` / `--continuous`). Details — [deploy/k8s/README.md](../deploy/k8s/README.md#iterative-development-gradle).
+
 After `git clone`, before working with handlers: run `./gradlew :backend:api:compileKotlin` once so the IDE sees generated sources in `build/`. In IntelliJ: *Build and run using → Gradle*.
 
 LLM variables for personality: `LLM_BASE_URL`, `LLM_MODEL` — in configmap; `LLM_API_KEY` — in `secret.yaml`.

@@ -45,9 +45,10 @@ fun normalizeSpektorPackages(root: File) {
         .sortedByDescending { it.path.length }
         .forEach { dir ->
             val target = File(dir.parentFile, dir.name.removePrefix("_"))
-            if (!target.exists()) {
-                check(dir.renameTo(target)) { "Failed to rename ${dir.path} -> ${target.path}" }
+            if (target.exists()) {
+                check(target.deleteRecursively()) { "Failed to delete ${target.path}" }
             }
+            check(dir.renameTo(target)) { "Failed to rename ${dir.path} -> ${target.path}" }
         }
 }
 

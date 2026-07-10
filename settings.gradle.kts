@@ -1,3 +1,7 @@
+import org.gradle.api.internal.StartParameterInternal
+import org.gradle.initialization.StartParameterBuildOptions
+import org.gradle.internal.buildoption.Option
+
 rootProject.name = "procrush"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
@@ -16,6 +20,30 @@ dependencyResolutionManagement {
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
+// Kind deploy tasks (and SpektorGenerateTask they pull in) are not configuration-cache
+// compatible. Disable CC for those invocations so ./gradlew appsToKind works.
+val kindTaskNames = setOf(
+    "apiToKind",
+    "personalityToKind",
+    "matchingToKind",
+    "frontendToKind",
+    "appsToKind",
+    "frontendBuild",
+    "generateI18n",
+)
+val requestedKindTasks = startParameter.taskNames.any { taskName ->
+    taskName.substringAfterLast(':') in kindTaskNames
+}
+if (requestedKindTasks) {
+    @Suppress("UnstableApiUsage")
+    (startParameter as StartParameterInternal).apply {
+        setConfigurationCache(Option.Value.value(false))
+        // If CC is still enabled by gradle.properties timing, never fail the build for kind tasks.
+        setConfigurationCacheProblems(StartParameterBuildOptions.ConfigurationCacheProblemsOption.Value.WARN)
+        setConfigurationCacheQuiet(true)
+    }
 }
 
 include(":backend:contracts")

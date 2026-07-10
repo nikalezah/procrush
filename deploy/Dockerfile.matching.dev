@@ -1,0 +1,9 @@
+# Dev image: build context must be backend/matching/build/install/matching
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY . ./
+
+ENV MATCHING_SERVICE_PORT=8092
+EXPOSE 8092
+
+CMD ["bin/matching"]

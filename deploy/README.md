@@ -10,6 +10,7 @@ Dockerfiles, Kubernetes manifests, and Railway configs for deploying all ProCrus
 | [`Dockerfile.personality`](./Dockerfile.personality) | Personality worker image |
 | [`Dockerfile.matching`](./Dockerfile.matching) | Matching service image |
 | [`Dockerfile.frontend`](./Dockerfile.frontend) | React + nginx |
+| [`Dockerfile.*.dev`](./Dockerfile.api.dev) | Thin local images for Gradle `*ToKind` (kind) |
 | [`railway.*.toml`](./) | Railway configs for personality, matching, frontend |
 | [`k8s/`](./k8s/README.md) | Local full stack in kind (Kubernetes) |
 
@@ -25,6 +26,8 @@ chmod +x deploy/k8s/scripts/*.sh
 ```
 
 Open http://127.10.0.10 — dev login (`AUTH_DEV_MODE=true`).
+
+After the cluster is up, iterate with Gradle (local build + smart redeploy): `./gradlew appsToKind` or `./gradlew apiToKind --continuous`. See [k8s/README.md](./k8s/README.md#iterative-development-gradle).
 
 ## Railway deployment (GitHub)
 

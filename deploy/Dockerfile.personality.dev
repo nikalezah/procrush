@@ -1,0 +1,9 @@
+# Dev image: build context must be backend/personality/build/install/personality
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY . ./
+
+ENV WORKER_HEALTH_PORT=8091
+EXPOSE 8091
+
+CMD ["bin/personality"]

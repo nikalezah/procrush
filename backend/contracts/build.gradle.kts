@@ -10,6 +10,10 @@ kotlin.sourceSets.named("main") {
     kotlin.srcDir(rootProject.layout.projectDirectory.dir("i18n/generated/kotlin"))
 }
 
+tasks.named("compileKotlin") {
+    dependsOn(":generateI18n")
+}
+
 dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)

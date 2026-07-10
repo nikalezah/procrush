@@ -1,0 +1,9 @@
+# Dev image: build context must be backend/api/build/install/api
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY . ./
+
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["bin/api"]
