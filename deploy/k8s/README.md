@@ -171,7 +171,7 @@ Examples:
 | `i18n/error-codes.yaml` | `generateI18n`, then services whose inputs include it (hash-gated) |
 | `openapi/...` | api + frontend |
 
-Tasks are defined in [`gradle/kind-deploy.gradle.kts`](../../gradle/kind-deploy.gradle.kts). Cache files live in `.kind-deploy-cache/` (gitignored).
+Tasks are defined in the root [`build.gradle.kts`](../../build.gradle.kts). Cache files live in `.kind-deploy-cache/` (gitignored).
 
 These tasks disable Gradle configuration cache for the invocation (Spektor / shell-out to docker are not CC-compatible). Build cache and the artifact hash gate still apply.
 
