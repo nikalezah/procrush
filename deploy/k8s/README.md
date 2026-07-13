@@ -160,9 +160,7 @@ Local Gradle/npm builds feed thin `deploy/Dockerfile.*.dev` images. Hash gates s
 | `openapi/...` | api + frontend (when their artifacts change) |
 | `deploy/k8s/base` / `overlays/kind` | `kubectl apply -k` only |
 
-Tasks are defined in the root [`build.gradle.kts`](../../build.gradle.kts). Cache files live in `.kind-deploy-cache/` (gitignored); the cache is cleared when the cluster is created or deleted via Gradle.
-
-These tasks disable Gradle configuration cache for the invocation (Spektor / shell-out to docker are not CC-compatible). Build cache and the artifact hash gate still apply.
+Tasks (`kindUp`, `kindDown`, `generateI18n`, `frontendBuild`) are defined in [`build-logic`](../../build-logic). Cache files live in `.kind-deploy-cache/` (gitignored); the cache is cleared when the cluster is created or deleted via Gradle. Configuration cache is supported; build cache and the artifact hash gate still apply.
 
 ## Rebuild after code changes
 
