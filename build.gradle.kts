@@ -156,6 +156,73 @@ fun clusterExists(workdir: File): Boolean {
     return output.lineSequence().any { it.trim() == kindClusterName }
 }
 
+fun kindNodes(workdir: File): List<String> {
+    val (code, output) = runCommandCapture(
+        workdir,
+        cli("kind"), "get", "nodes",
+        "--name", kindClusterName,
+    )
+    if (code != 0) {
+        throw GradleException("Failed to list kind nodes for cluster $kindClusterName:\n$output")
+    }
+    return output.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+}
+
+fun dockerContainerRunning(workdir: File, container: String): Boolean {
+    val (code, output) = runCommandCapture(
+        workdir,
+        cli("docker"), "inspect",
+        "-f", "{{.State.Running}}",
+        container,
+    )
+    return code == 0 && output.trim().equals("true", ignoreCase = true)
+}
+
+/**
+ * After Docker Desktop stop/restart, kind node containers remain stopped while
+ * `kind get clusters` still lists the cluster. Start them and wait for the API.
+ */
+fun ensureClusterNodesRunning(workdir: File, logger: org.gradle.api.logging.Logger) {
+    val nodes = kindNodes(workdir)
+    if (nodes.isEmpty()) {
+        throw GradleException(
+            "Kind cluster $kindClusterName is registered but has no nodes. " +
+                "Recreate with: ./gradlew kindDown && ./gradlew kindUp",
+        )
+    }
+    val stopped = nodes.filterNot { dockerContainerRunning(workdir, it) }
+    if (stopped.isEmpty()) {
+        return
+    }
+    logger.lifecycle(
+        "Kind cluster $kindClusterName nodes are stopped (e.g. after Docker quit). Starting: ${stopped.joinToString()}",
+    )
+    for (node in stopped) {
+        runCommand(workdir, cli("docker"), "start", node)
+    }
+    waitForClusterApi(workdir, logger)
+}
+
+fun waitForClusterApi(
+    workdir: File,
+    logger: org.gradle.api.logging.Logger,
+    timeoutSeconds: Int = 120,
+) {
+    logger.lifecycle("Waiting for Kubernetes API (up to ${timeoutSeconds}s) ...")
+    val deadline = System.currentTimeMillis() + timeoutSeconds * 1000L
+    while (System.currentTimeMillis() < deadline) {
+        if (commandSucceeds(workdir, cli("kubectl"), "get", "--raw=/readyz")) {
+            logger.lifecycle("Kubernetes API is ready.")
+            return
+        }
+        Thread.sleep(2_000)
+    }
+    throw GradleException(
+        "Kubernetes API for kind cluster $kindClusterName did not become ready within ${timeoutSeconds}s. " +
+            "Try: ./gradlew kindDown && ./gradlew kindUp",
+    )
+}
+
 fun deploymentExists(workdir: File, deployment: String): Boolean =
     commandSucceeds(
         workdir,
@@ -196,6 +263,12 @@ fun ensureCluster(workdir: File, logger: org.gradle.api.logging.Logger): Boolean
             true
         }
     runCommand(workdir, cli("kubectl"), "config", "use-context", "kind-$kindClusterName")
+    if (!created) {
+        ensureClusterNodesRunning(workdir, logger)
+        if (!commandSucceeds(workdir, cli("kubectl"), "get", "--raw=/readyz")) {
+            waitForClusterApi(workdir, logger)
+        }
+    }
     return created
 }
 
@@ -290,7 +363,7 @@ tasks.register<Exec>("frontendBuild") {
 tasks.register("kindUp") {
     group = "kind"
     description =
-        "Ensure kind cluster + ingress, build/load changed thin images, apply manifests, restart only when needed"
+        "Ensure kind cluster (create or start stopped nodes) + ingress, build/load changed thin images, apply manifests, restart only when needed"
     dependsOn(
         "generateI18n",
         ":backend:api:installDist",

@@ -24,7 +24,7 @@ Recommended local development setup. Cloud deployment — in [deploy/README.md](
    If cluster `procrush` was created before changing `listenAddress`, recreate it: `./gradlew kindDown`, then `./gradlew kindUp` again. `extraPortMappings` applies only when the kind node container is created.
 
    `kindUp`:
-   - creates cluster `procrush` (if missing);
+   - creates cluster `procrush` (if missing), or starts stopped kind node containers (e.g. after Docker quit) and waits for the API;
    - installs ingress-nginx (if not ready);
    - builds thin app images (`deploy/Dockerfile.*.dev`) only when artifacts changed, loads them into kind;
    - applies manifests when the namespace is missing or kustomize sources changed: `kubectl apply -k deploy/k8s/overlays/kind`;
@@ -220,6 +220,7 @@ More on backend modules — [backend/README.md](../../backend/README.md).
 | personality `Unhealthy` / 406 | HTTP probe on `/health` without JSON — uses `tcpSocket:8091` |
 | `error: no matching resources found` for ingress | Re-run `./gradlew kindUp` — it waits for admission jobs and deployment rollout |
 | Missing `secret.yaml` | Copy from [`secret.yaml.example`](./base/secret.yaml.example) before `kindUp` |
+| `kindUp` fails after quitting Docker | Cluster still registered but nodes stopped — re-run `./gradlew kindUp` (starts containers). If API never becomes ready: `./gradlew kindDown && ./gradlew kindUp` |
 
 ## Related documentation
 
