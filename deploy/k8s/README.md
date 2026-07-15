@@ -213,12 +213,13 @@ More on backend modules — [backend/README.md](../../backend/README.md).
 | `ImagePullBackOff` | Rebuild: `./gradlew kindUp` (or `./gradlew kindDown` then `kindUp` if the cluster was recreated outside Gradle); overlay sets `imagePullPolicy: Never` |
 | API not becoming Ready | `kubectl logs -n procrush deploy/api`; often matching or Kafka still starting |
 | Port 80 busy on `127.10.0.10` | Another service on same IP:port; change `listenAddress` / `hostPort` in [kind-config.yaml](./kind-config.yaml) |
+| `docker start` fails: port bind / “forbidden by its access permissions” | Windows Hyper-V excluded the kind API host port (`netsh interface ipv4 show excludedportrange protocol=tcp`). Config pins `networking.apiServerPort: 16443` — recreate: `./gradlew kindDown && ./gradlew kindUp` |
 | http://127.10.0.10 not opening | `kubectl get ingress -n procrush`; recreate cluster after changing `kind-config.yaml` |
 | API/personality `Init:0/1` for long | RabbitMQ readiness — manifest uses `tcpSocket` + `publishNotReadyAddresses`; restart: `kubectl apply -k deploy/k8s/overlays/kind` |
 | personality `Unhealthy` / 406 | HTTP probe on `/health` without JSON — uses `tcpSocket:8091` |
 | `error: no matching resources found` for ingress | Re-run `./gradlew kindUp` — it waits for admission jobs and deployment rollout |
 | Missing `secret.yaml` | Copy from [`secret.yaml.example`](./base/secret.yaml.example) before `kindUp` |
-| `kindUp` fails after quitting Docker | Cluster still registered but nodes stopped — re-run `./gradlew kindUp` (starts containers). If API never becomes ready: `./gradlew kindDown && ./gradlew kindUp` |
+| `kindUp` fails after quitting Docker | Cluster still registered but nodes stopped — re-run `./gradlew kindUp` (starts containers). If `docker start` fails on a reserved port or API never becomes ready: `./gradlew kindDown && ./gradlew kindUp` |
 
 ## Related documentation
 

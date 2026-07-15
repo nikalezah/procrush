@@ -46,7 +46,7 @@ dependencies {
     implementation(projects.backend.domain.employer)
     implementation(projects.backend.domain.survey)
     implementation(projects.backend.domain.matching)
-    implementation(project(":backend:domain:personality-lib"))
+    implementation(projects.backend.domain.personalityLib)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)
