@@ -1,9 +1,12 @@
 package jobs.procrush.matching.runtime.messaging
 
 import jobs.procrush.bootstrap.config.KafkaConfig
+import jobs.procrush.matching.events.JobProfileChangedPayload
 import jobs.procrush.matching.events.MatchingEventEnvelope
 import jobs.procrush.matching.events.MatchingEventJson
 import jobs.procrush.matching.events.MatchingEventTypes
+import jobs.procrush.matching.events.SeekerPersonalityReadyPayload
+import jobs.procrush.matching.events.SeekerProfileChangedPayload
 import jobs.procrush.matching.runtime.service.MatchingEventProcessor
 import jobs.procrush.observability.AppMetrics
 import jobs.procrush.observability.CorrelationIds
@@ -120,17 +123,17 @@ class MatchingEventConsumer(
         try {
             when (envelope.eventType) {
                 MatchingEventTypes.SEEKER_PROFILE_CHANGED -> {
-                    val payload = MatchingEventJson.decodePayload<jobs.procrush.matching.events.SeekerProfileChangedPayload>(envelope)
+                    val payload = MatchingEventJson.decodePayload<SeekerProfileChangedPayload>(envelope)
                     MdcContext.put(CorrelationIds.SEEKER_ID, payload.seekerId.toString())
                     processor.processSeekerProfileChanged(payload)
                 }
                 MatchingEventTypes.SEEKER_PERSONALITY_READY -> {
-                    val payload = MatchingEventJson.decodePayload<jobs.procrush.matching.events.SeekerPersonalityReadyPayload>(envelope)
+                    val payload = MatchingEventJson.decodePayload<SeekerPersonalityReadyPayload>(envelope)
                     MdcContext.put(CorrelationIds.SEEKER_ID, payload.seekerId.toString())
                     processor.processSeekerPersonalityReady(payload)
                 }
                 MatchingEventTypes.JOB_PROFILE_CHANGED -> {
-                    val payload = MatchingEventJson.decodePayload<jobs.procrush.matching.events.JobProfileChangedPayload>(envelope)
+                    val payload = MatchingEventJson.decodePayload<JobProfileChangedPayload>(envelope)
                     processor.processJobProfileChanged(payload)
                 }
                 else -> logger.warn("Unknown matching event type: {}", envelope.eventType)

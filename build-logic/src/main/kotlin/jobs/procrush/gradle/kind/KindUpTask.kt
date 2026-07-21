@@ -150,6 +150,6 @@ abstract class KindUpTask : DefaultTask() {
         logger.lifecycle("API health:         http://127.10.0.10/api/auth/me (401 without session is OK)")
         logger.lifecycle("")
         logger.lifecycle("Infra endpoints:    127.10.0.11:5432 postgres, 127.10.0.13:6379 redis, 127.10.0.14:5672 rabbitmq")
-        logger.lifecycle("Observability:      http://127.10.0.16:3000 grafana, http://127.10.0.17:9090 prometheus")
+        logger.lifecycle("Observability:      http://127.10.0.16:3000 grafana (logs/traces), http://127.10.0.17:9090 prometheus")
     }
 }

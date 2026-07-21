@@ -43,7 +43,7 @@ Recommended local development setup. Cloud deployment — in [deploy/README.md](
 | Check | Command / URL |
 |-------|---------------|
 | Pod status | `kubectl get pods -n procrush` |
-| API logs | `kubectl logs -n procrush deploy/api -f` |
+| Logs (primary) | Grafana → Explore → Loki (http://127.10.0.16:3000) |
 | Session (no cookie → 401) | `curl -s -o /dev/null -w "%{http_code}" http://127.10.0.10/api/auth/me` |
 | Dev login | via UI at http://127.10.0.10 |
 
@@ -65,14 +65,27 @@ After `kindUp`, services are reachable from the host on dedicated loopback IPs (
 
 ## Observability (kind overlay)
 
-The kind overlay deploys Tempo, Prometheus, Alertmanager, and Grafana in the `procrush` namespace.
+The kind overlay deploys Loki, Promtail, Tempo, Prometheus, Alertmanager, and Grafana in the `procrush` namespace.
 
 | Check | Command / URL |
 |-------|---------------|
+| Logs | Grafana → Explore → Loki datasource |
 | Metrics targets | http://127.10.0.17:9090/targets |
 | API metrics | `kubectl port-forward -n procrush svc/api 8080:8080` → `GET /metrics` |
 | Traces | Grafana → Explore → Tempo datasource |
 | Alerts | Prometheus → Alerts (rules in `deploy/k8s/overlays/kind/monitoring/prometheus/deployment.yaml`) |
+
+Example LogQL queries in Grafana Explore:
+
+- `{namespace="procrush", app="api"}` — API access and error logs
+- `{namespace="procrush", app="matching"}` — matching Kafka consumer logs
+- `{namespace="procrush", app="personality"}` — personality worker logs
+- `{namespace="procrush"} | json | level="ERROR"` — errors across all services
+- `{namespace="procrush"} | json | requestId="<uuid>"` — logs for a specific request
+
+Log lines with `traceId` include a **View Trace** link to Tempo. From a Tempo trace, use **Logs for this trace** to jump back to related log lines.
+
+Fallback when Loki/Promtail is unavailable: `kubectl logs -n procrush deploy/api -f`
 
 Configured alerts:
 
@@ -211,7 +224,8 @@ More on backend modules — [backend/README.md](../../backend/README.md).
 | Symptom | What to check |
 |---------|---------------|
 | `ImagePullBackOff` | Rebuild: `./gradlew kindUp` (or `./gradlew kindDown` then `kindUp` if the cluster was recreated outside Gradle); overlay sets `imagePullPolicy: Never` |
-| API not becoming Ready | `kubectl logs -n procrush deploy/api`; often matching or Kafka still starting |
+| API not becoming Ready | Grafana → Loki `{namespace="procrush", app="api"}` or `kubectl logs -n procrush deploy/api`; often matching or Kafka still starting |
+| No logs in Grafana | `kubectl get pods -n procrush -l app=promtail`; check Promtail targets: `kubectl port-forward -n procrush pod/<promtail-pod> 3101:3101` → http://localhost:3101/targets (expect `kubernetes-pods (N/N ready)`); `kubectl logs -n procrush deploy/loki` |
 | Port 80 busy on `127.10.0.10` | Another service on same IP:port; change `listenAddress` / `hostPort` in [kind-config.yaml](./kind-config.yaml) |
 | `docker start` fails: port bind / “forbidden by its access permissions” | Windows Hyper-V excluded the kind API host port (`netsh interface ipv4 show excludedportrange protocol=tcp`). Config pins `networking.apiServerPort: 16443` — recreate: `./gradlew kindDown && ./gradlew kindUp` |
 | http://127.10.0.10 not opening | `kubectl get ingress -n procrush`; recreate cluster after changing `kind-config.yaml` |

@@ -1,0 +1,14 @@
+# Dev image only needs dist/, nginx.conf.template, docker-entrypoint.sh
+node_modules
+src
+scripts
+*.md
+.git
+.gitignore
+.npmrc
+package.json
+package-lock.json
+tsconfig.json
+tsconfig.*.json
+vite.config.ts
+index.html

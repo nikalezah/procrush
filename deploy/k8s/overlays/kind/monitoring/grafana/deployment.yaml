@@ -8,14 +8,38 @@ data:
     apiVersion: 1
     datasources:
       - name: Prometheus
+        uid: prometheus
         type: prometheus
         access: proxy
         url: http://prometheus:9090
         isDefault: true
       - name: Tempo
+        uid: tempo
         type: tempo
         access: proxy
         url: http://tempo:3200
+        jsonData:
+          tracesToLogs:
+            datasourceUid: loki
+            filterByTraceID: true
+            customQuery: true
+            query: '{namespace="procrush"} | json | traceId="$${__trace.traceId}"'
+          serviceMap:
+            datasourceUid: prometheus
+          nodeGraph:
+            enabled: true
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki:3100
+        jsonData:
+          derivedFields:
+            - name: Trace
+              datasourceUid: tempo
+              matcherRegex: '"traceId":"([a-f0-9]+)"'
+              url: '$${__value.raw}'
+              urlDisplayLabel: View Trace
 ---
 apiVersion: v1
 kind: Service
