@@ -18,9 +18,11 @@ import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.header.internals.RecordHeader
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicBoolean
@@ -97,6 +99,7 @@ class MatchingEventConsumer(
                 MatchingEventJson.json.decodeFromString(MatchingEventEnvelope.serializer(), body)
             }.getOrElse { error ->
                 logger.error("Invalid matching event payload", error)
+                sendToDlq(body, "invalid_json")
                 return
             }
 
@@ -126,33 +129,48 @@ class MatchingEventConsumer(
                     val payload = MatchingEventJson.decodePayload<SeekerProfileChangedPayload>(envelope)
                     MdcContext.put(CorrelationIds.SEEKER_ID, payload.seekerId.toString())
                     processor.processSeekerProfileChanged(payload)
+                    AppMetrics.matchingEventProcessed(envelope.eventType)
                 }
                 MatchingEventTypes.SEEKER_PERSONALITY_READY -> {
                     val payload = MatchingEventJson.decodePayload<SeekerPersonalityReadyPayload>(envelope)
                     MdcContext.put(CorrelationIds.SEEKER_ID, payload.seekerId.toString())
                     processor.processSeekerPersonalityReady(payload)
+                    AppMetrics.matchingEventProcessed(envelope.eventType)
                 }
                 MatchingEventTypes.JOB_PROFILE_CHANGED -> {
                     val payload = MatchingEventJson.decodePayload<JobProfileChangedPayload>(envelope)
                     processor.processJobProfileChanged(payload)
+                    AppMetrics.matchingEventProcessed(envelope.eventType)
                 }
-                else -> logger.warn("Unknown matching event type: {}", envelope.eventType)
+                else -> {
+                    logger.warn("Unknown matching event type: {}", envelope.eventType)
+                    sendToDlq(body, "unknown_event_type", envelope.eventId)
+                }
             }
-            AppMetrics.matchingEventProcessed(envelope.eventType)
         } catch (error: Exception) {
             logger.error("Failed to process matching event eventId={}", envelope.eventId, error)
-            AppMetrics.matchingEventDlq()
-            dlqProducer.send(
-                ProducerRecord(
-                    kafkaConfig.matchingEventsDlqTopic,
-                    envelope.eventId,
-                    body,
-                ),
-            ).get()
+            sendToDlq(body, "failed_to_process", envelope.eventId)
         } finally {
             AppMetrics.recordMatchingRecalculationDurationFromNanos(durationStarted)
             dedup.release(envelope.eventId)
         }
+    }
+
+    private fun sendToDlq(
+        body: String,
+        reason: String,
+        key: String? = null,
+    ) {
+        AppMetrics.matchingEventDlq()
+        val record = ProducerRecord(kafkaConfig.matchingEventsDlqTopic, key, body)
+        record.headers().add(RecordHeader("error.reason", reason.toByteArray(StandardCharsets.UTF_8)))
+        record.headers().add(
+            RecordHeader(
+                "original.topic",
+                kafkaConfig.matchingEventsTopic.toByteArray(StandardCharsets.UTF_8),
+            ),
+        )
+        dlqProducer.send(record).get()
     }
 
     companion object {
