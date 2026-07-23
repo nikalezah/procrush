@@ -10,6 +10,7 @@ object MatchingEventTypes {
     const val SEEKER_PROFILE_CHANGED = "seeker.profile_changed"
     const val SEEKER_PERSONALITY_READY = "seeker.personality_ready"
     const val JOB_PROFILE_CHANGED = "job_profile.changed"
+    const val MATCH_RESULTS_UPDATED = "match.results_updated"
 }
 
 @Serializable
@@ -57,6 +58,23 @@ data class JobProfileChangedPayload(
     val occupationName: String,
     val description: String? = null,
     val deleted: Boolean = false,
+)
+
+@Serializable
+data class MatchResultsUpdatedPayload(
+    val seekerId: Long? = null,
+    val jobProfileId: Long? = null,
+    val pairs: List<MatchScorePairDto>,
+    val computedAt: String,
+)
+
+@Serializable
+data class MatchScorePairDto(
+    val seekerId: Long,
+    val jobProfileId: Long,
+    val matchScore: Double,
+    val matchScoreDisplay: Int,
+    val personalityIncluded: Boolean,
 )
 
 object MatchingEventJson {

@@ -1,4 +1,4 @@
-package jobs.procrush.matching.kafka
+package jobs.procrush.matching.runtime.service
 
 import jobs.procrush.bootstrap.config.KafkaConfig
 import jobs.procrush.matching.events.MatchingEventEnvelope
@@ -13,11 +13,11 @@ import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class MatchingEventPublisher(
+class MatchResultsEventPublisher(
     private val producer: KafkaProducer<String, String>,
     private val config: KafkaConfig,
 ) {
-    private val logger = LoggerFactory.getLogger(MatchingEventPublisher::class.java)
+    private val logger = LoggerFactory.getLogger(MatchResultsEventPublisher::class.java)
 
     fun publish(
         eventType: String,
@@ -36,7 +36,7 @@ class MatchingEventPublisher(
         val body = MatchingEventJson.json.encodeToString(MatchingEventEnvelope.serializer(), envelope)
         val record =
             ProducerRecord(
-                config.matchingEventsTopic,
+                config.matchingResultsTopic,
                 partitionKey,
                 body,
             )

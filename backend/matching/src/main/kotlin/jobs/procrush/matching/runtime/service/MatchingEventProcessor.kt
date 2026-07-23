@@ -1,6 +1,10 @@
 package jobs.procrush.matching.runtime.service
 
 import jobs.procrush.matching.events.JobProfileChangedPayload
+import jobs.procrush.matching.events.MatchResultsUpdatedPayload
+import jobs.procrush.matching.events.MatchScorePairDto
+import jobs.procrush.matching.events.MatchingEventJson
+import jobs.procrush.matching.events.MatchingEventTypes
 import jobs.procrush.matching.events.SeekerPersonalityReadyPayload
 import jobs.procrush.matching.events.SeekerProfileChangedPayload
 import jobs.procrush.matching.model.JobMatchCandidate
@@ -15,12 +19,25 @@ import java.time.OffsetDateTime
 class MatchingEventProcessor(
     private val projectionRepository: MatchingProjectionRepository,
     private val matchResultsRepository: MatchResultsRepository,
+    private val matchResultsEventPublisher: MatchResultsEventPublisher,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     fun processSeekerProfileChanged(payload: SeekerProfileChangedPayload) {
         projectionRepository.upsertSeeker(payload)
         if (payload.desiredOccupationIds.isEmpty()) {
             matchResultsRepository.deleteAllForSeeker(payload.seekerId)
+            matchResultsEventPublisher.publish(
+                MatchingEventTypes.MATCH_RESULTS_UPDATED,
+                payload.seekerId.toString(),
+                MatchingEventJson.json.encodeToJsonElement(
+                    MatchResultsUpdatedPayload.serializer(),
+                    MatchResultsUpdatedPayload(
+                        seekerId = payload.seekerId,
+                        pairs = listOf(),
+                        computedAt = OffsetDateTime.now().toString()
+                    )
+                ),
+            )
             return
         }
         val jobs = projectionRepository.findMatchableJobProfiles(payload.desiredOccupationIds)
@@ -32,6 +49,24 @@ class MatchingEventProcessor(
         matchResultsRepository.deleteForSeekerExceptJobs(
             payload.seekerId,
             results.map { it.jobProfileId }.toSet(),
+        )
+        val resultPayload = MatchResultsUpdatedPayload(
+            seekerId = payload.seekerId,
+            pairs = results.map {
+                MatchScorePairDto(
+                    seekerId = it.seekerId,
+                    jobProfileId = it.jobProfileId,
+                    matchScore = it.matchScore,
+                    matchScoreDisplay = it.matchScoreDisplay,
+                    personalityIncluded = it.personalityIncluded,
+                )
+            },
+            computedAt = results.maxOfOrNull { it.computedAt }?.toString() ?: OffsetDateTime.now().toString()
+        )
+        matchResultsEventPublisher.publish(
+            MatchingEventTypes.MATCH_RESULTS_UPDATED,
+            payload.seekerId.toString(),
+            MatchingEventJson.json.encodeToJsonElement(MatchResultsUpdatedPayload.serializer(), resultPayload),
         )
     }
 
@@ -55,6 +90,18 @@ class MatchingEventProcessor(
         if (payload.deleted || !payload.isActive) {
             projectionRepository.deleteJob(payload.jobProfileId)
             matchResultsRepository.deleteAllForJob(payload.jobProfileId)
+            matchResultsEventPublisher.publish(
+                MatchingEventTypes.MATCH_RESULTS_UPDATED,
+                payload.jobProfileId.toString(),
+                MatchingEventJson.json.encodeToJsonElement(
+                    MatchResultsUpdatedPayload.serializer(),
+                    MatchResultsUpdatedPayload(
+                        jobProfileId = payload.jobProfileId,
+                        pairs = listOf(),
+                        computedAt = OffsetDateTime.now().toString()
+                    )
+                ),
+            )
             return
         }
         projectionRepository.upsertJob(payload)
@@ -68,6 +115,24 @@ class MatchingEventProcessor(
         matchResultsRepository.deleteForJobExceptSeekers(
             payload.jobProfileId,
             results.map { it.seekerId }.toSet(),
+        )
+        val resultPayload = MatchResultsUpdatedPayload(
+            jobProfileId = payload.jobProfileId,
+            pairs = results.map {
+                MatchScorePairDto(
+                    seekerId = it.seekerId,
+                    jobProfileId = it.jobProfileId,
+                    matchScore = it.matchScore,
+                    matchScoreDisplay = it.matchScoreDisplay,
+                    personalityIncluded = it.personalityIncluded,
+                )
+            },
+            computedAt = results.maxOfOrNull { it.computedAt }?.toString() ?: OffsetDateTime.now().toString()
+        )
+        matchResultsEventPublisher.publish(
+            MatchingEventTypes.MATCH_RESULTS_UPDATED,
+            payload.jobProfileId.toString(),
+            MatchingEventJson.json.encodeToJsonElement(MatchResultsUpdatedPayload.serializer(), resultPayload),
         )
     }
 

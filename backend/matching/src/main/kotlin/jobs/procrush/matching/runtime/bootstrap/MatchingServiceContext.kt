@@ -6,6 +6,7 @@ import jobs.procrush.matching.runtime.messaging.MatchingEventConsumer
 import jobs.procrush.matching.runtime.messaging.MatchingEventDedup
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
 import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
+import jobs.procrush.matching.runtime.service.MatchResultsEventPublisher
 import jobs.procrush.matching.runtime.service.MatchingEventProcessor
 
 class MatchingServiceContext private constructor(
@@ -16,9 +17,11 @@ class MatchingServiceContext private constructor(
     val matchResultsRepository: MatchResultsRepository,
     val projectionRepository: MatchingProjectionRepository,
     private val dlqProducer: org.apache.kafka.clients.producer.KafkaProducer<String, String>,
+    private val resultsPublisher: MatchResultsEventPublisher,
 ) {
     fun close() {
         eventConsumer.stop()
+        resultsPublisher.flush()
         dlqProducer.close()
         kafkaModule.close()
         redisModule.close()
@@ -32,7 +35,8 @@ class MatchingServiceContext private constructor(
             val kafka = KafkaModule.create(config.kafka)
             val projectionRepository = MatchingProjectionRepository()
             val matchResultsRepository = MatchResultsRepository()
-            val processor = MatchingEventProcessor(projectionRepository, matchResultsRepository)
+            val resultsPublisher = MatchResultsEventPublisher(kafka.producer, config.kafka)
+            val processor = MatchingEventProcessor(projectionRepository, matchResultsRepository, resultsPublisher)
             val dedup = MatchingEventDedup(redis.client, config.redis, config.kafka)
             val dlqProducer = MatchingEventConsumer.createDlqProducer(config.kafka)
             val eventConsumer =
@@ -51,6 +55,7 @@ class MatchingServiceContext private constructor(
                 matchResultsRepository = matchResultsRepository,
                 projectionRepository = projectionRepository,
                 dlqProducer = dlqProducer,
+                resultsPublisher = resultsPublisher,
             )
         }
     }
