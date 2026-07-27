@@ -5,6 +5,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
+import java.time.OffsetDateTime
+import java.util.UUID
 
 object MatchingEventTypes {
     const val SEEKER_PROFILE_CHANGED = "seeker.profile_changed"
@@ -86,4 +88,22 @@ object MatchingEventJson {
 
     inline fun <reified T> decodePayload(envelope: MatchingEventEnvelope): T =
         json.decodeFromJsonElement(envelope.payload)
+
+    fun encodeEnvelope(
+        eventType: String,
+        payload: JsonElement,
+        correlationId: String? = null,
+        eventId: String = UUID.randomUUID().toString(),
+        occurredAt: String = OffsetDateTime.now().toString(),
+    ): String =
+        json.encodeToString(
+            MatchingEventEnvelope.serializer(),
+            MatchingEventEnvelope(
+                eventId = eventId,
+                eventType = eventType,
+                occurredAt = occurredAt,
+                payload = payload,
+                correlationId = correlationId,
+            ),
+        )
 }

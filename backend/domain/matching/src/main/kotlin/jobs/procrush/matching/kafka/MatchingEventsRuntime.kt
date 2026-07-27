@@ -2,6 +2,7 @@ package jobs.procrush.matching.kafka
 
 import jobs.procrush.bootstrap.config.KafkaConfig
 import jobs.procrush.bootstrap.kafka.KafkaModule
+import jobs.procrush.bootstrap.kafka.KafkaStringPublisher
 import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.matching.repository.MatchingRepository
@@ -27,7 +28,10 @@ data class MatchingEventsRuntime(
             referenceRepository: ReferenceRepository,
         ): MatchingEventsRuntime {
             val kafkaModule = KafkaModule.create(kafka)
-            val publisher = MatchingEventPublisher(kafkaModule.producer, kafka)
+            val publisher =
+                MatchingEventPublisher(
+                    KafkaStringPublisher(kafkaModule.producer, kafka.matchingEventsTopic),
+                )
             val payloadFactory =
                 MatchingEventPayloadFactory(
                     seekerRepository = seekerRepository,

@@ -1,21 +1,15 @@
 package jobs.procrush.matching.kafka
 
-import jobs.procrush.bootstrap.config.KafkaConfig
-import jobs.procrush.matching.events.MatchingEventEnvelope
+import jobs.procrush.bootstrap.kafka.KafkaStringPublisher
 import jobs.procrush.matching.events.MatchingEventJson
 import jobs.procrush.observability.AppMetrics
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.TracePropagation
 import kotlinx.serialization.json.JsonElement
-import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.LoggerFactory
-import java.time.OffsetDateTime
-import java.util.UUID
 
 class MatchingEventPublisher(
-    private val producer: KafkaProducer<String, String>,
-    private val config: KafkaConfig,
+    private val publisher: KafkaStringPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(MatchingEventPublisher::class.java)
 
@@ -25,23 +19,17 @@ class MatchingEventPublisher(
         payload: JsonElement,
         correlationId: String? = MdcContext.currentRequestId(),
     ) {
-        val envelope =
-            MatchingEventEnvelope(
-                eventId = UUID.randomUUID().toString(),
+        val body =
+            MatchingEventJson.encodeEnvelope(
                 eventType = eventType,
-                occurredAt = OffsetDateTime.now().toString(),
                 payload = payload,
                 correlationId = correlationId,
             )
-        val body = MatchingEventJson.json.encodeToString(MatchingEventEnvelope.serializer(), envelope)
-        val record =
-            ProducerRecord(
-                config.matchingEventsTopic,
-                partitionKey,
-                body,
-            )
-        TracePropagation.injectCurrent(record)
-        producer.send(record) { metadata, error ->
+        publisher.publish(
+            key = partitionKey,
+            body = body,
+            configure = { TracePropagation.injectCurrent(it) },
+        ) { metadata, error ->
             if (error != null) {
                 AppMetrics.kafkaPublishFailure()
                 logger.error(
@@ -57,14 +45,14 @@ class MatchingEventPublisher(
                     eventType,
                     partitionKey,
                     correlationId,
-                    metadata.partition(),
-                    metadata.offset(),
+                    metadata?.partition(),
+                    metadata?.offset(),
                 )
             }
         }
     }
 
     fun flush() {
-        producer.flush()
+        publisher.flush()
     }
 }

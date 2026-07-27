@@ -1,5 +1,6 @@
 package jobs.procrush.matching.runtime.service
 
+import jobs.procrush.bootstrap.kafka.KafkaStringPublisher
 import jobs.procrush.matching.events.JobProfileChangedPayload
 import jobs.procrush.matching.events.MatchResultsUpdatedPayload
 import jobs.procrush.matching.events.MatchScorePairDto
@@ -13,31 +14,26 @@ import jobs.procrush.matching.runtime.model.StoredMatchResult
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
 import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
 import jobs.procrush.matching.service.MatchScoringService
+import jobs.procrush.observability.AppMetrics
+import jobs.procrush.observability.MdcContext
+import jobs.procrush.observability.TracePropagation
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
 
 class MatchingEventProcessor(
     private val projectionRepository: MatchingProjectionRepository,
     private val matchResultsRepository: MatchResultsRepository,
-    private val matchResultsEventPublisher: MatchResultsEventPublisher,
+    private val resultsPublisher: KafkaStringPublisher,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
+    private val logger = LoggerFactory.getLogger(MatchingEventProcessor::class.java)
+
     fun processSeekerProfileChanged(payload: SeekerProfileChangedPayload) {
         projectionRepository.upsertSeeker(payload)
         if (payload.desiredOccupationIds.isEmpty()) {
             matchResultsRepository.deleteAllForSeeker(payload.seekerId)
-            matchResultsEventPublisher.publish(
-                MatchingEventTypes.MATCH_RESULTS_UPDATED,
-                payload.seekerId.toString(),
-                MatchingEventJson.json.encodeToJsonElement(
-                    MatchResultsUpdatedPayload.serializer(),
-                    MatchResultsUpdatedPayload(
-                        seekerId = payload.seekerId,
-                        pairs = listOf(),
-                        computedAt = OffsetDateTime.now().toString()
-                    )
-                ),
-            )
+            publishResults(seekerId = payload.seekerId, results = emptyList())
             return
         }
         val jobs = projectionRepository.findMatchableJobProfiles(payload.desiredOccupationIds)
@@ -50,24 +46,7 @@ class MatchingEventProcessor(
             payload.seekerId,
             results.map { it.jobProfileId }.toSet(),
         )
-        val resultPayload = MatchResultsUpdatedPayload(
-            seekerId = payload.seekerId,
-            pairs = results.map {
-                MatchScorePairDto(
-                    seekerId = it.seekerId,
-                    jobProfileId = it.jobProfileId,
-                    matchScore = it.matchScore,
-                    matchScoreDisplay = it.matchScoreDisplay,
-                    personalityIncluded = it.personalityIncluded,
-                )
-            },
-            computedAt = results.maxOfOrNull { it.computedAt }?.toString() ?: OffsetDateTime.now().toString()
-        )
-        matchResultsEventPublisher.publish(
-            MatchingEventTypes.MATCH_RESULTS_UPDATED,
-            payload.seekerId.toString(),
-            MatchingEventJson.json.encodeToJsonElement(MatchResultsUpdatedPayload.serializer(), resultPayload),
-        )
+        publishResults(seekerId = payload.seekerId, results = results)
     }
 
     fun processSeekerPersonalityReady(payload: SeekerPersonalityReadyPayload) {
@@ -90,25 +69,14 @@ class MatchingEventProcessor(
         if (payload.deleted || !payload.isActive) {
             projectionRepository.deleteJob(payload.jobProfileId)
             matchResultsRepository.deleteAllForJob(payload.jobProfileId)
-            matchResultsEventPublisher.publish(
-                MatchingEventTypes.MATCH_RESULTS_UPDATED,
-                payload.jobProfileId.toString(),
-                MatchingEventJson.json.encodeToJsonElement(
-                    MatchResultsUpdatedPayload.serializer(),
-                    MatchResultsUpdatedPayload(
-                        jobProfileId = payload.jobProfileId,
-                        pairs = listOf(),
-                        computedAt = OffsetDateTime.now().toString()
-                    )
-                ),
-            )
+            publishResults(jobProfileId = payload.jobProfileId, results = emptyList())
             return
         }
         projectionRepository.upsertJob(payload)
         val job = payload.toJobCandidate()
         val seekers = projectionRepository.findMatchableSeekers(payload.occupationId)
         val results =
-            seekers.mapNotNull { seeker ->
+            seekers.map { seeker ->
                 scorePair(seeker, job)
             }
         matchResultsRepository.upsertAll(results)
@@ -116,25 +84,68 @@ class MatchingEventProcessor(
             payload.jobProfileId,
             results.map { it.seekerId }.toSet(),
         )
-        val resultPayload = MatchResultsUpdatedPayload(
-            jobProfileId = payload.jobProfileId,
-            pairs = results.map {
-                MatchScorePairDto(
-                    seekerId = it.seekerId,
-                    jobProfileId = it.jobProfileId,
-                    matchScore = it.matchScore,
-                    matchScoreDisplay = it.matchScoreDisplay,
-                    personalityIncluded = it.personalityIncluded,
-                )
-            },
-            computedAt = results.maxOfOrNull { it.computedAt }?.toString() ?: OffsetDateTime.now().toString()
-        )
-        matchResultsEventPublisher.publish(
-            MatchingEventTypes.MATCH_RESULTS_UPDATED,
-            payload.jobProfileId.toString(),
-            MatchingEventJson.json.encodeToJsonElement(MatchResultsUpdatedPayload.serializer(), resultPayload),
-        )
+        publishResults(jobProfileId = payload.jobProfileId, results = results)
     }
+
+    private fun publishResults(
+        seekerId: Long? = null,
+        jobProfileId: Long? = null,
+        results: List<StoredMatchResult>,
+    ) {
+        val partitionKey =
+            (seekerId ?: jobProfileId)?.toString()
+                ?: error("publishResults requires seekerId or jobProfileId")
+        val correlationId = MdcContext.currentRequestId()
+        val payload =
+            MatchResultsUpdatedPayload(
+                seekerId = seekerId,
+                jobProfileId = jobProfileId,
+                pairs = results.map { it.toScorePair() },
+                computedAt = results.maxOfOrNull { it.computedAt }?.toString()
+                    ?: OffsetDateTime.now().toString(),
+            )
+        val body =
+            MatchingEventJson.encodeEnvelope(
+                eventType = MatchingEventTypes.MATCH_RESULTS_UPDATED,
+                payload = MatchingEventJson.json.encodeToJsonElement(
+                    MatchResultsUpdatedPayload.serializer(),
+                    payload,
+                ),
+                correlationId = correlationId,
+            )
+        resultsPublisher.publish(
+            key = partitionKey,
+            body = body,
+            configure = { TracePropagation.injectCurrent(it) },
+        ) { metadata, error ->
+            if (error != null) {
+                AppMetrics.kafkaPublishFailure()
+                logger.error(
+                    "Failed to publish match.results_updated key={} correlationId={}",
+                    partitionKey,
+                    correlationId,
+                    error,
+                )
+            } else {
+                logger.info(
+                    "Published match.results_updated key={} correlationId={} partition={} offset={}",
+                    partitionKey,
+                    correlationId,
+                    metadata?.partition(),
+                    metadata?.offset(),
+                )
+            }
+        }
+    }
+
+    private fun StoredMatchResult.toScorePair(): MatchScorePairDto =
+        MatchScorePairDto(
+            seekerId = seekerId,
+            jobProfileId = jobProfileId,
+            matchScore = matchScore,
+            matchScoreDisplay = matchScoreDisplay,
+            personalityIncluded = personalityIncluded,
+        )
 
     private fun scorePair(
         seeker: SeekerProfileChangedPayload,
@@ -172,7 +183,7 @@ class MatchingEventProcessor(
     private fun scorePair(
         seeker: SeekerMatchCandidate,
         job: JobMatchCandidate,
-    ): StoredMatchResult? {
+    ): StoredMatchResult {
         val skills = MatchScoringService.skillsScore(seeker.skillIds, job.skillIds)
         val personalityAxes = seeker.personalityAxes
         val personality =

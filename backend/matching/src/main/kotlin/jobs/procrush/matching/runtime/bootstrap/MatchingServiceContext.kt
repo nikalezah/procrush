@@ -1,12 +1,12 @@
 package jobs.procrush.matching.runtime.bootstrap
 
 import jobs.procrush.bootstrap.kafka.KafkaModule
+import jobs.procrush.bootstrap.kafka.KafkaStringPublisher
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.matching.runtime.messaging.MatchingEventConsumer
 import jobs.procrush.matching.runtime.messaging.MatchingEventDedup
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
 import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
-import jobs.procrush.matching.runtime.service.MatchResultsEventPublisher
 import jobs.procrush.matching.runtime.service.MatchingEventProcessor
 
 class MatchingServiceContext private constructor(
@@ -17,7 +17,7 @@ class MatchingServiceContext private constructor(
     val matchResultsRepository: MatchResultsRepository,
     val projectionRepository: MatchingProjectionRepository,
     private val dlqProducer: org.apache.kafka.clients.producer.KafkaProducer<String, String>,
-    private val resultsPublisher: MatchResultsEventPublisher,
+    private val resultsPublisher: KafkaStringPublisher,
 ) {
     fun close() {
         eventConsumer.stop()
@@ -35,7 +35,8 @@ class MatchingServiceContext private constructor(
             val kafka = KafkaModule.create(config.kafka)
             val projectionRepository = MatchingProjectionRepository()
             val matchResultsRepository = MatchResultsRepository()
-            val resultsPublisher = MatchResultsEventPublisher(kafka.producer, config.kafka)
+            val resultsPublisher =
+                KafkaStringPublisher(kafka.producer, config.kafka.matchingResultsTopic)
             val processor = MatchingEventProcessor(projectionRepository, matchResultsRepository, resultsPublisher)
             val dedup = MatchingEventDedup(redis.client, config.redis, config.kafka)
             val dlqProducer = MatchingEventConsumer.createDlqProducer(config.kafka)
