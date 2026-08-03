@@ -2,7 +2,6 @@ package jobs.procrush.bootstrap.redis
 
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.config.RedisConfig
-import jobs.procrush.bootstrap.config.WorkerAppConfig
 
 data class RedisModule(
     val client: RedisClient,
@@ -20,8 +19,6 @@ data class RedisModule(
 
     companion object {
         fun create(config: AppConfig): RedisModule = create(config.redis)
-
-        fun create(config: WorkerAppConfig): RedisModule = create(config.redis)
 
         fun create(config: RedisConfig): RedisModule {
             val client = RedisClient.connect(config)

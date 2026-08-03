@@ -38,7 +38,7 @@ spec:
             - -c
             - |
               set -e
-              for host in postgres:5432 redis:6379 rabbitmq:5672 kafka:9092; do
+              for host in rabbitmq:5672; do
                 name="${host%:*}"
                 port="${host#*:}"
                 echo "Waiting for $name:$port..."
@@ -54,11 +54,6 @@ spec:
             - configMapRef:
                 name: procrush-config
           env:
-            - name: DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: procrush-secret
-                  key: DATABASE_PASSWORD
             - name: LLM_API_KEY
               valueFrom:
                 secretKeyRef:

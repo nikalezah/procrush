@@ -129,7 +129,7 @@ Dev login is enabled in the kind stack (`AUTH_DEV_MODE=true`). **httpOnly sessio
 
 ### RabbitMQ
 
-**RabbitMQ** — message broker for the `personality.generation` queue. UI: http://127.10.0.14:15672. After 3 failed attempts messages go to DLQ `personality.generation.dlq`.
+**RabbitMQ** — message broker for the `personality.generation` command queue and `personality.generation.results` result queue. UI: http://127.10.0.14:15672. After 3 failed attempts commands go to DLQ `personality.generation.dlq`.
 
 ### Kafka + matching
 

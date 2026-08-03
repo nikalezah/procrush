@@ -38,11 +38,13 @@ flowchart LR
 
 **2. Scoring.** Each survey stores scoring keys in the DB. The server applies the appropriate logic (`open_text`, `matrix`, `direct_sum`, `formula`) and writes structured JSON to `survey_results.calculated_results`. Examples: DISC axis sums, Belbin roles, normalized 0–4 scale scores.
 
-**3. Interpretation.** When both test groups are completed, the API enqueues a job; the separate **personality** process picks it up and calls the LLM:
+**3. Interpretation.** When both test groups are completed, the API builds an LLM snapshot (survey answers, scoring, glossary, superpowers catalog) and enqueues a RabbitMQ command. The separate **personality** process is a pure compute worker:
 
-- context is assembled: answers, scoring results, and a glossary of terms;
-- the LLM receives a system prompt with the required JSON schema;
-- the response is validated and saved as the personality profile.
+- receives the thick command (no DB/Redis/Kafka access);
+- calls the LLM with a system prompt and the required JSON schema;
+- validates the response and publishes a result back to RabbitMQ.
+
+The API result-consumer persists the profile, notifies the client (SSE), and publishes Kafka `seeker.personality_ready` for matching.
 
 Profile statuses: `NOT_READY` → `PROCESSING` → `READY` or `FAILED` (with retry). Profile readiness is pushed to the client in real time (SSE).
 

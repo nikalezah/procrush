@@ -11,15 +11,29 @@ object RabbitMqTopology {
         channel.exchangeDeclare(config.exchange, BuiltinExchangeType.DIRECT, true)
         channel.exchangeDeclare(config.deadLetterExchange, BuiltinExchangeType.DIRECT, true)
 
-        val queueArgs =
+        val commandQueueArgs =
             mapOf(
                 "x-dead-letter-exchange" to config.deadLetterExchange,
                 "x-dead-letter-routing-key" to config.deadLetterRoutingKey,
             )
-        channel.queueDeclare(config.queue, true, false, false, queueArgs)
+        channel.queueDeclare(config.queue, true, false, false, commandQueueArgs)
         channel.queueDeclare(config.deadLetterQueue, true, false, false, null)
         channel.queueBind(config.queue, config.exchange, config.routingKey)
         channel.queueBind(config.deadLetterQueue, config.deadLetterExchange, config.deadLetterRoutingKey)
+
+        val resultsQueueArgs =
+            mapOf(
+                "x-dead-letter-exchange" to config.deadLetterExchange,
+                "x-dead-letter-routing-key" to config.resultsDeadLetterRoutingKey,
+            )
+        channel.queueDeclare(config.resultsQueue, true, false, false, resultsQueueArgs)
+        channel.queueDeclare(config.resultsDeadLetterQueue, true, false, false, null)
+        channel.queueBind(config.resultsQueue, config.exchange, config.resultsRoutingKey)
+        channel.queueBind(
+            config.resultsDeadLetterQueue,
+            config.deadLetterExchange,
+            config.resultsDeadLetterRoutingKey,
+        )
     }
 
     fun persistentJsonProperties(

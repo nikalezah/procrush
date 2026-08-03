@@ -10,8 +10,6 @@ import jobs.procrush.auth.repository.SessionStore
 import jobs.procrush.auth.repository.UserRepository
 import jobs.procrush.auth.service.SessionService
 import jobs.procrush.bootstrap.config.AppConfig
-import jobs.procrush.bootstrap.config.WorkerAppConfig
-import jobs.procrush.bootstrap.config.toAuthAppConfig
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.seeker.repository.SeekerRepository
@@ -31,9 +29,6 @@ data class AuthModule(
 ) {
     companion object {
         fun create(config: AppConfig, redis: RedisModule): AuthModule = createInternal(config, redis)
-
-        fun create(config: WorkerAppConfig, redis: RedisModule): AuthModule =
-            createInternal(config.toAuthAppConfig(), redis)
 
         private fun createInternal(config: AppConfig, redis: RedisModule): AuthModule {
             val userRepository = UserRepository()

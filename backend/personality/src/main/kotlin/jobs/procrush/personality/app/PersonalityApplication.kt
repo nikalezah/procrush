@@ -28,16 +28,11 @@ fun main() {
                 config = observability.config,
                 readinessChecks =
                     listOf(
-                        simpleCheck("redis") {
-                            runCatching { context.redisModule.client.ping() }
-                                .getOrNull()
-                                ?.equals("PONG", ignoreCase = true) == true
-                        },
                         simpleCheck("rabbitmq") {
                             runCatching { context.rabbitMqModule.isConnected() }.getOrDefault(false)
                         },
                         simpleCheck("consumer") {
-                            context.personalityJobConsumer.isRunning()
+                            context.personalityCommandConsumer.isRunning()
                         },
                     ),
             )

@@ -1,4 +1,4 @@
-# Personality — consumes RabbitMQ jobs and calls LLM.
+# Personality — consumes RabbitMQ commands, calls LLM, publishes results.
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 

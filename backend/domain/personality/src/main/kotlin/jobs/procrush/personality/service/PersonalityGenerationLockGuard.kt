@@ -9,6 +9,13 @@ class PersonalityGenerationLockGuard(
     private val distributedLock: RedisDistributedLock,
     private val redisConfig: RedisConfig,
 ) {
+    fun tryAcquire(seekerId: Long): Boolean =
+        distributedLock.tryAcquire(lockKey(seekerId), redisConfig.personalityLockTtlSeconds) != null
+
+    fun release(seekerId: Long) {
+        distributedLock.forceRelease(lockKey(seekerId))
+    }
+
     fun isJobActive(seekerId: Long): Boolean =
         distributedLock.isHeld(lockKey(seekerId))
 

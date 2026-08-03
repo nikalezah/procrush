@@ -2,94 +2,48 @@ package jobs.procrush.personality.bootstrap
 
 import jobs.procrush.bootstrap.config.WorkerAppConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
-import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.llm.LlmFactory
-import jobs.procrush.matching.port.MatchingCachePort
-import jobs.procrush.matching.port.MatchingEventPort
-import jobs.procrush.personality.llm.PersonalityProfileLlmMapper
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
-import jobs.procrush.personality.messaging.PersonalityJobConsumer
-import jobs.procrush.personality.messaging.PersonalityJobPublisher
-import jobs.procrush.personality.messaging.PersonalityMessageDedup
+import jobs.procrush.personality.messaging.PersonalityCommandConsumer
+import jobs.procrush.personality.messaging.PersonalityCommandPublisher
+import jobs.procrush.personality.messaging.PersonalityResultPublisher
 import jobs.procrush.personality.service.PersonalityGenerationHandler
-import jobs.procrush.personality.service.PersonalityGenerationLockGuard
-import jobs.procrush.personality.service.RedisPersonalityStatusNotifier
-import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
-import jobs.procrush.shared.repository.ReferenceRepository
-import jobs.procrush.survey.service.SurveyService
-import kotlinx.coroutines.CoroutineScope
 
 data class PersonalityWorkerModule(
-    val consumer: PersonalityJobConsumer,
-    val statusNotifier: RedisPersonalityStatusNotifier,
+    val consumer: PersonalityCommandConsumer,
 ) {
     fun start() {
-        statusNotifier.start()
         consumer.start()
     }
 
     fun stop() {
         consumer.stop()
-        statusNotifier.close()
     }
 
     companion object {
         fun create(
             config: WorkerAppConfig,
-            referenceRepository: ReferenceRepository,
-            surveyService: SurveyService,
-            redis: RedisModule,
             rabbitMq: RabbitMqModule,
-            matchingCacheInvalidator: MatchingCachePort,
-            matchingEvents: MatchingEventPort,
-            scope: CoroutineScope,
         ): PersonalityWorkerModule {
-            val profileRepository = SeekerPersonalProfileRepository()
-            val lockGuard = PersonalityGenerationLockGuard(redis.distributedLock, config.redis)
-            val publisher = PersonalityJobPublisher(rabbitMq.publishChannel, rabbitMq.config)
-            val statusNotifier =
-                RedisPersonalityStatusNotifier(
-                    redis = redis.client,
-                    config = config.redis,
-                    scope = scope,
-                )
             val handler =
                 PersonalityGenerationHandler(
-                    profileRepository = profileRepository,
-                    referenceRepository = referenceRepository,
-                    surveyService = surveyService,
                     llmConfig = config.llm,
                     llmClient = LlmFactory.createClient(config.llm),
                     promptBuilder = PersonalityPromptBuilder(),
                     validator = PersonalityProfileValidator(),
-                    profileMapper = PersonalityProfileLlmMapper,
-                    matchingCache = matchingCacheInvalidator,
-                    matchingEvents = matchingEvents,
                 )
-            val dedup =
-                PersonalityMessageDedup(
-                    redis = redis.client,
-                    config = config.redis,
-                    rabbitMqConfig = rabbitMq.config,
-                )
+            val commandPublisher = PersonalityCommandPublisher(rabbitMq.publishChannel, rabbitMq.config)
+            val resultPublisher = PersonalityResultPublisher(rabbitMq.publishChannel, rabbitMq.config)
             val consumer =
-                PersonalityJobConsumer(
+                PersonalityCommandConsumer(
                     rabbitMq = rabbitMq,
                     handler = handler,
-                    publisher = publisher,
-                    profileRepository = profileRepository,
-                    statusNotifier = statusNotifier,
-                    lockGuard = lockGuard,
-                    distributedLock = redis.distributedLock,
-                    dedup = dedup,
-                    redisConfig = config.redis,
+                    commandPublisher = commandPublisher,
+                    resultPublisher = resultPublisher,
                     rabbitMqConfig = rabbitMq.config,
                 )
-            return PersonalityWorkerModule(
-                consumer = consumer,
-                statusNotifier = statusNotifier,
-            )
+            return PersonalityWorkerModule(consumer = consumer)
         }
     }
 }

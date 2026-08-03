@@ -45,7 +45,7 @@ data class AppContext(
     private val personalityModule: PersonalityModule,
 ) {
     fun close() {
-        personalityModule.personalityStatusNotifier.close()
+        personalityModule.close()
         matchingModule.close()
         matchingEventsRuntime.close()
         rabbitMqModule.close()

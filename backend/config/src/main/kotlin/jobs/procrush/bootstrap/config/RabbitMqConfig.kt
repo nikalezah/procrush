@@ -8,6 +8,10 @@ data class RabbitMqConfig(
     val deadLetterQueue: String = "personality.generation.dlq",
     val routingKey: String = "generate",
     val deadLetterRoutingKey: String = "dlq",
+    val resultsQueue: String = "personality.generation.results",
+    val resultsDeadLetterQueue: String = "personality.generation.results.dlq",
+    val resultsRoutingKey: String = "result",
+    val resultsDeadLetterRoutingKey: String = "results.dlq",
     val prefetch: Int = 1,
     val maxRetries: Int = 3,
     val dedupTtlSeconds: Long = 3600,
@@ -20,6 +24,8 @@ data class RabbitMqConfig(
             return RabbitMqConfig(
                 url = url,
                 queue = Env.env("RABBITMQ_PERSONALITY_QUEUE", "personality.generation", dotEnv),
+                resultsQueue =
+                    Env.env("RABBITMQ_PERSONALITY_RESULTS_QUEUE", "personality.generation.results", dotEnv),
                 prefetch = Env.env("RABBITMQ_PREFETCH", "1", dotEnv).toInt(),
                 maxRetries = Env.env("RABBITMQ_MAX_RETRIES", "3", dotEnv).toInt(),
             )

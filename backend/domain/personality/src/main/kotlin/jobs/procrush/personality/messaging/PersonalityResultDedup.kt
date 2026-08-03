@@ -1,12 +1,13 @@
 package jobs.procrush.personality.messaging
 
+import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.config.RedisConfig
 import jobs.procrush.bootstrap.redis.RedisClient
 
-class PersonalityMessageDedup(
+class PersonalityResultDedup(
     private val redis: RedisClient,
     private val config: RedisConfig,
-    private val rabbitMqConfig: jobs.procrush.bootstrap.config.RabbitMqConfig,
+    private val rabbitMqConfig: RabbitMqConfig,
 ) {
     fun tryMarkProcessing(messageId: String): Boolean =
         redis.setNxEx(
@@ -19,5 +20,5 @@ class PersonalityMessageDedup(
         redis.del(dedupKey(messageId))
     }
 
-    private fun dedupKey(messageId: String): String = config.key("dedup", "personality", messageId)
+    private fun dedupKey(messageId: String): String = config.key("dedup", "personality-result", messageId)
 }

@@ -6,12 +6,15 @@ import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
-import jobs.procrush.personality.messaging.PersonalityJobPublisher
+import jobs.procrush.personality.messaging.PersonalityCommandPublisher
+import jobs.procrush.personality.messaging.PersonalityResultConsumer
+import jobs.procrush.personality.messaging.PersonalityResultDedup
 import jobs.procrush.personality.port.PersonalitySurveyCoordinator
 import jobs.procrush.personality.service.PersonalityGenerationCoordinator
 import jobs.procrush.personality.service.PersonalityGenerationLockGuard
 import jobs.procrush.personality.service.PersonalityProfileReader
 import jobs.procrush.personality.service.PersonalityProfileService
+import jobs.procrush.personality.service.PersonalityResultApplyService
 import jobs.procrush.personality.service.RedisPersonalityStatusNotifier
 import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
 import jobs.procrush.seeker.repository.SeekerSuperpowersAndTalentsRepository
@@ -43,7 +46,13 @@ data class PersonalityModule(
     val coordinator: PersonalityGenerationCoordinator,
     val personalityProfileService: PersonalityProfileService,
     val personalityStatusNotifier: RedisPersonalityStatusNotifier,
+    private val resultConsumer: PersonalityResultConsumer,
 ) {
+    fun close() {
+        resultConsumer.stop()
+        personalityStatusNotifier.close()
+    }
+
     companion object {
         fun create(
             config: AppConfig,
@@ -58,7 +67,7 @@ data class PersonalityModule(
             val profileRepository = SeekerPersonalProfileRepository()
             val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
             val lockGuard = PersonalityGenerationLockGuard(redis.distributedLock, config.redis)
-            val publisher = PersonalityJobPublisher(rabbitMq.publishChannel, rabbitMq.config)
+            val publisher = PersonalityCommandPublisher(rabbitMq.publishChannel, rabbitMq.config)
             val personalityStatusNotifier =
                 RedisPersonalityStatusNotifier(
                     redis = redis.client,
@@ -69,6 +78,7 @@ data class PersonalityModule(
                 PersonalityGenerationCoordinator(
                     seekerRepository = auth.seekerRepository,
                     profileRepository = profileRepository,
+                    referenceRepository = auth.referenceRepository,
                     surveyService = survey.surveyService,
                     lockGuard = lockGuard,
                     publisher = publisher,
@@ -90,11 +100,34 @@ data class PersonalityModule(
                     surveyService = survey.surveyService,
                     notifier = personalityStatusNotifier,
                 )
+            val applyService =
+                PersonalityResultApplyService(
+                    profileRepository = profileRepository,
+                    referenceRepository = auth.referenceRepository,
+                    lockGuard = lockGuard,
+                    statusNotifier = personalityStatusNotifier,
+                    matchingCache = matchingCache,
+                    matchingEvents = matchingEvents,
+                )
+            val resultConsumer =
+                PersonalityResultConsumer(
+                    rabbitMq = rabbitMq,
+                    applyService = applyService,
+                    dedup =
+                        PersonalityResultDedup(
+                            redis = redis.client,
+                            config = config.redis,
+                            rabbitMqConfig = rabbitMq.config,
+                        ),
+                    rabbitMqConfig = rabbitMq.config,
+                )
             personalityStatusNotifier.start()
+            resultConsumer.start()
             return PersonalityModule(
                 coordinator = coordinator,
                 personalityProfileService = personalityProfileService,
                 personalityStatusNotifier = personalityStatusNotifier,
+                resultConsumer = resultConsumer,
             )
         }
     }

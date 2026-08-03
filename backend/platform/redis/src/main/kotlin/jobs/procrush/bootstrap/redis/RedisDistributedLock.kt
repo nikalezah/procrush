@@ -23,6 +23,10 @@ class RedisDistributedLock(
         redis.releaseLock(handle.key, handle.token)
     }
 
+    fun forceRelease(key: String) {
+        redis.del(key)
+    }
+
     fun isHeld(key: String): Boolean = redis.exists(key)
 
     data class LockHandle(

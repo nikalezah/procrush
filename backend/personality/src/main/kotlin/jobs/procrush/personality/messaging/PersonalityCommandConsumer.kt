@@ -4,39 +4,28 @@ import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import jobs.procrush.bootstrap.config.RabbitMqConfig
-import jobs.procrush.bootstrap.config.RedisConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
-import jobs.procrush.bootstrap.redis.RedisDistributedLock
 import jobs.procrush.observability.AppMetrics
 import jobs.procrush.observability.CorrelationIds
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.ObservabilityHolder
 import jobs.procrush.observability.TracePropagation
-import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.service.PersonalityGenerationHandler
-import jobs.procrush.personality.service.PersonalityGenerationLockGuard
-import jobs.procrush.personality.service.RedisPersonalityStatusNotifier
-import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.UUID
 
-class PersonalityJobConsumer(
+class PersonalityCommandConsumer(
     private val rabbitMq: RabbitMqModule,
     private val handler: PersonalityGenerationHandler,
-    private val publisher: PersonalityJobPublisher,
-    private val profileRepository: SeekerPersonalProfileRepository,
-    private val statusNotifier: RedisPersonalityStatusNotifier,
-    private val lockGuard: PersonalityGenerationLockGuard,
-    private val distributedLock: RedisDistributedLock,
-    private val dedup: PersonalityMessageDedup,
-    private val redisConfig: RedisConfig,
+    private val commandPublisher: PersonalityCommandPublisher,
+    private val resultPublisher: PersonalityResultPublisher,
     private val rabbitMqConfig: RabbitMqConfig,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
-    private val logger = LoggerFactory.getLogger(PersonalityJobConsumer::class.java)
+    private val logger = LoggerFactory.getLogger(PersonalityCommandConsumer::class.java)
     private var consumerTag: String? = null
     private var consumerChannel: com.rabbitmq.client.Channel? = null
 
@@ -60,7 +49,7 @@ class PersonalityJobConsumer(
                 },
             )
         AppMetrics.setPersonalityConsumerRunning(true)
-        logger.info("Personality job consumer started on queue {}", rabbitMqConfig.queue)
+        logger.info("Personality command consumer started on queue {}", rabbitMqConfig.queue)
     }
 
     fun stop() {
@@ -70,7 +59,7 @@ class PersonalityJobConsumer(
         consumerTag = null
         consumerChannel = null
         AppMetrics.setPersonalityConsumerRunning(false)
-        logger.info("Personality job consumer stopped")
+        logger.info("Personality command consumer stopped")
     }
 
     fun isRunning(): Boolean = consumerTag != null
@@ -91,7 +80,7 @@ class PersonalityJobConsumer(
             ),
         ) {
             ObservabilityHolder.tracing.withPropagatedHeaders(headers, "personality.generate") {
-                processDeliveryInternal(channel, deliveryTag, properties, body, messageId, correlationId)
+                processDeliveryInternal(channel, deliveryTag, body, messageId, correlationId)
             }
         }
     }
@@ -99,88 +88,54 @@ class PersonalityJobConsumer(
     private fun processDeliveryInternal(
         channel: com.rabbitmq.client.Channel,
         deliveryTag: Long,
-        properties: AMQP.BasicProperties,
         body: ByteArray,
         messageId: String,
         correlationId: String,
     ) {
-        val job =
+        val command =
             runCatching {
-                json.decodeFromString(PersonalityGenerationJob.serializer(), String(body, Charsets.UTF_8))
+                json.decodeFromString(PersonalityGenerationCommand.serializer(), String(body, Charsets.UTF_8))
             }.getOrElse { error ->
-                logger.error("Invalid personality job payload messageId={}", messageId, error)
+                logger.error("Invalid personality command payload messageId={}", messageId, error)
                 channel.basicAck(deliveryTag, false)
                 return
             }
 
-        MdcContext.put(CorrelationIds.SEEKER_ID, job.seekerId.toString())
-        MdcContext.put(CorrelationIds.USER_ID, job.userId)
-        MdcContext.put(CorrelationIds.REQUEST_ID, job.correlationId ?: correlationId)
-
-        val userId =
-            runCatching { UUID.fromString(job.userId) }.getOrElse { error ->
-                logger.error("Invalid personality job userId messageId={}", messageId, error)
-                channel.basicAck(deliveryTag, false)
-                return
-            }
-
-        if (!dedup.tryMarkProcessing(messageId)) {
-            logger.info("Duplicate personality job messageId={}, acking", messageId)
-            channel.basicAck(deliveryTag, false)
-            return
-        }
-
-        val lockHandle =
-            distributedLock.tryAcquire(lockGuard.lockKey(job.seekerId), redisConfig.personalityLockTtlSeconds)
-        if (lockHandle == null) {
-            dedup.release(messageId)
-            channel.basicNack(deliveryTag, false, true)
-            return
-        }
+        MdcContext.put(CorrelationIds.SEEKER_ID, command.seekerId.toString())
+        MdcContext.put(CorrelationIds.USER_ID, command.userId)
+        MdcContext.put(CorrelationIds.REQUEST_ID, command.correlationId ?: correlationId)
 
         try {
-            if (handler.isAlreadyReady(job.seekerId)) {
-                statusNotifier.notify(userId, PersonalityProfileStatus.READY)
-                channel.basicAck(deliveryTag, false)
-                AppMetrics.personalityJobProcessed("already_ready")
-                return
-            }
-
-            profileRepository.markProcessing(job.seekerId)
-
-            runBlocking {
-                handler.generate(job.seekerId, userId)
-            }
-
-            statusNotifier.notify(userId, PersonalityProfileStatus.READY)
+            val result =
+                runBlocking {
+                    handler.generate(command)
+                }.copy(commandMessageId = messageId)
+            resultPublisher.publish(result, correlationId = command.correlationId ?: correlationId)
             channel.basicAck(deliveryTag, false)
             AppMetrics.personalityJobProcessed("success")
         } catch (error: Exception) {
             logger.error(
                 "Personality profile generation failed seekerId={} attempt={}",
-                job.seekerId,
-                job.attempt,
+                command.seekerId,
+                command.attempt,
                 error,
             )
-            if (isTransient(error) && job.attempt < rabbitMqConfig.maxRetries) {
-                publisher.enqueue(
-                    job.seekerId,
-                    userId,
-                    attempt = job.attempt + 1,
-                    correlationId = job.correlationId ?: correlationId,
+            if (isTransient(error) && command.attempt < rabbitMqConfig.maxRetries) {
+                commandPublisher.enqueue(
+                    command.copy(attempt = command.attempt + 1),
+                    correlationId = command.correlationId ?: correlationId,
                 )
                 channel.basicAck(deliveryTag, false)
                 AppMetrics.personalityJobProcessed("retry")
             } else {
-                profileRepository.markFailed(job.seekerId, handler.failureCode(error))
-                statusNotifier.notify(userId, PersonalityProfileStatus.FAILED)
+                resultPublisher.publish(
+                    handler.failureResult(command, error, messageId),
+                    correlationId = command.correlationId ?: correlationId,
+                )
                 channel.basicNack(deliveryTag, false, false)
                 AppMetrics.personalityJobDlq()
                 AppMetrics.personalityJobProcessed("dlq")
             }
-        } finally {
-            lockHandle?.let { distributedLock.release(it) }
-            dedup.release(messageId)
         }
     }
 

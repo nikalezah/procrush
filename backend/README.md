@@ -11,8 +11,8 @@ Kotlin backend: Ktor HTTP API, background workers, and domain logic. Three deplo
 | [`platform/`](./platform) | `:backend:platform:*` | Redis, RabbitMQ, Kafka, LLM, Flyway main DB (`persistence`), observability |
 | [`domain/`](./domain) | `:backend:domain:*` | Bounded contexts: auth, seeker, employer, survey, matching, personality |
 | [`api/`](./api/src/main/kotlin) | `:backend:api` | Ktor HTTP API, Spektor-generated routes/DTOs in `build/`, handlers, composition root |
-| [`personality/`](./personality) | `:backend:personality` | Deployable app: RabbitMQ consumer + health endpoint |
-| [`domain/personality/`](./domain/personality) | `:backend:domain:personality-lib` | Domain library (coordinator, publisher, worker logic) |
+| [`personality/`](./personality) | `:backend:personality` | Deployable compute app: RabbitMQ command → LLM → result |
+| [`domain/personality/`](./domain/personality) | `:backend:domain:personality-lib` | Domain library (coordinator, command/result messaging, apply) |
 | [`matching/`](./matching) | `:backend:matching` | Kafka consumer + score publisher, separate matching DB |
 
 ## Deployable applications
@@ -29,7 +29,7 @@ Health: `GET /health` (alias for `/health/ready`), `GET /health/live`, `GET /hea
 
 ### Personality worker (`:backend:personality`)
 
-Consumes the `personality.generation` queue, calls the LLM, saves the personality profile.
+Consumes thick generation commands from `personality.generation`, calls the LLM, validates the output, and publishes a result to `personality.generation.results`. No Postgres, Redis, or Kafka.
 
 ```bash
 ./gradlew :backend:personality:run
@@ -37,10 +37,11 @@ Consumes the `personality.generation` queue, calls the LLM, saves the personalit
 
 | Criterion | Implementation |
 |-----------|------------------|
-| Publisher in API | `PersonalityGenerationCoordinator` → `PersonalityJobPublisher` |
-| Consumer only in worker | `AppContext` does not start the consumer; `WorkerContext` does |
-| Retry + DLQ | up to 3 attempts, then `personality.generation.dlq` |
-| Distributed lock + dedup | Redis lock and `PersonalityMessageDedup` |
+| Command publisher in API | `PersonalityGenerationCoordinator` → `PersonalityCommandPublisher` (thick snapshot) |
+| Compute only in worker | `PersonalityCommandConsumer` → LLM + validate → `PersonalityResultPublisher` |
+| Result consumer in API | `PersonalityResultConsumer` → persist profile, Redis SSE, Kafka `seeker.personality_ready` |
+| Retry + DLQ | up to 3 attempts on the command queue, then FAILED result + `personality.generation.dlq` |
+| Generation lock | Redis lock acquired by API on enqueue, released by result consumer |
 | SSE / pub-sub | `RedisPersonalityStatusNotifier` + SSE in API |
 
 **Known gap:** no end-to-end test for "publish → consume → READY".
@@ -79,7 +80,7 @@ Shared module: [`platform/observability`](./platform/observability). Three deplo
 
 ### Correlation
 
-HTTP requests accept/propagate `X-Request-Id`. The same ID flows through RabbitMQ personality jobs and Kafka matching events (`correlationId` in envelope).
+HTTP requests accept/propagate `X-Request-Id`. The same ID flows through RabbitMQ personality commands/results and Kafka matching events (`correlationId` in envelope).
 
 ### Local kind stack
 
@@ -104,17 +105,17 @@ Separate matching DB: `backend/matching/src/main/kotlin/db/migration/`.
 **Redis** — in-memory store used for:
 
 - recommendation cache (cache-aside, TTL 10 min);
-- distributed lock during LLM personality profile generation (held by the worker);
+- distributed lock during personality generation (held by the API while a command is in flight);
 - session cache (PostgreSQL remains source of truth);
 - pub/sub for SSE notifications about match interests, recommendation invalidation, and profile generation status (works with multiple API instances).
 
 ### RabbitMQ (required)
 
-**RabbitMQ** — message broker: the API enqueues a "generate personality profile" job on `personality.generation`; the worker picks it up and calls the LLM. After 3 failed attempts the message goes to DLQ `personality.generation.dlq`.
+**RabbitMQ** — message broker for personality compute: the API enqueues a thick generation command on `personality.generation`; the personality worker returns a result on `personality.generation.results`. After 3 failed attempts the command goes to DLQ `personality.generation.dlq`.
 
 ### Kafka (required for matching)
 
-**Kafka** — event log for matching. The API and personality publish domain profile events (`procrush.matching.events`); matching recalculates scores and publishes `match.results_updated` (`procrush.matching.results`); the API consumes results into `match_scores`.
+**Kafka** — event log for matching. The API publishes domain profile events (`procrush.matching.events`), including `seeker.personality_ready` after applying a personality result; matching recalculates scores and publishes `match.results_updated` (`procrush.matching.results`); the API consumes results into `match_scores`.
 
 ## Authentication
 

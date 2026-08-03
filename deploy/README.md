@@ -102,8 +102,6 @@ The project should already have **Postgres**. Add application services and conne
 
    | Variable | Value |
    |----------|-------|
-   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-   | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
    | `RABBITMQ_URL` | `${{RabbitMQ.RABBITMQ_URL}}` |
    | `LLM_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta/openai` |
    | `LLM_MODEL` | `gemini-3.1-flash-lite` |
