@@ -50,7 +50,7 @@ Profile statuses: `NOT_READY` → `PROCESSING` → `READY` or `FAILED` (with ret
 
 After both test groups are completed, the seeker specifies desired occupations. The employer creates job profiles linked to an occupation, skills, and expected personality axes.
 
-**Recommendations.** The separate **matching** service is the sole source of recommendations: the API reads them over HTTP. Seeker ↔ job pairs are matched within the same occupation; the match score combines skill overlap (Jaccard) and, when the seeker's personality profile is ready, personality axis similarity (50/50). Lists are sorted by score descending.
+**Recommendations.** The **matching** service computes seeker ↔ job scores and publishes them on Kafka. The API stores scores locally (`match_scores`), builds recommendation cards by joining its own profile tables, and can push a light `recommendations-updated` SSE signal so open list pages refetch. Seeker ↔ job pairs are matched within the same occupation; the match score combines skill overlap (Jaccard) and, when the seeker's personality profile is ready, personality axis similarity (50/50). Lists are sorted by score descending.
 
 | Side | Recommendation list |
 |------|---------------------|

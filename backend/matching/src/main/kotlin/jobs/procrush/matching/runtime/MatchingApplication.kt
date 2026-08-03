@@ -66,7 +66,7 @@ fun main() {
                     ),
             )
             routing {
-                matchingReadRoutes(context.matchResultsRepository, context.projectionRepository)
+                matchingReadRoutes()
             }
         }
 

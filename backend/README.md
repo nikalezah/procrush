@@ -13,13 +13,13 @@ Kotlin backend: Ktor HTTP API, background workers, and domain logic. Three deplo
 | [`api/`](./api/src/main/kotlin) | `:backend:api` | Ktor HTTP API, Spektor-generated routes/DTOs in `build/`, handlers, composition root |
 | [`personality/`](./personality) | `:backend:personality` | Deployable app: RabbitMQ consumer + health endpoint |
 | [`domain/personality/`](./domain/personality) | `:backend:domain:personality-lib` | Domain library (coordinator, publisher, worker logic) |
-| [`matching/`](./matching) | `:backend:matching` | Kafka consumer + HTTP read API, separate matching DB |
+| [`matching/`](./matching) | `:backend:matching` | Kafka consumer + score publisher, separate matching DB |
 
 ## Deployable applications
 
 ### API (`:backend:api`)
 
-Main HTTP service: authentication, surveys, profiles, proxying recommendations from matching, SSE notifications.
+Main HTTP service: authentication, surveys, profiles, local recommendation read-model (scores from Kafka), SSE notifications.
 
 ```bash
 ./gradlew :backend:api:run
@@ -47,7 +47,7 @@ Consumes the `personality.generation` queue, calls the LLM, saves the personalit
 
 ### Matching service (`:backend:matching`)
 
-Consumes domain events from Kafka, recalculates recommendations, writes to a separate PostgreSQL (`procrush_matching`). The API reads recommendations over HTTP (`MATCHING_SERVICE_URL` is required).
+Consumes domain events from Kafka, recalculates scores, writes score pairs to a separate PostgreSQL (`procrush_matching`), and publishes `match.results_updated` to Kafka (`procrush.matching.results`). Display/PII fields are not stored here — the API joins cards from its own tables.
 
 ```bash
 ./gradlew :backend:matching:run
@@ -106,7 +106,7 @@ Separate matching DB: `backend/matching/src/main/kotlin/db/migration/`.
 - recommendation cache (cache-aside, TTL 10 min);
 - distributed lock during LLM personality profile generation (held by the worker);
 - session cache (PostgreSQL remains source of truth);
-- pub/sub for SSE notifications about new responses and profile generation status (works with multiple API instances).
+- pub/sub for SSE notifications about match interests, recommendation invalidation, and profile generation status (works with multiple API instances).
 
 ### RabbitMQ (required)
 
@@ -114,7 +114,7 @@ Separate matching DB: `backend/matching/src/main/kotlin/db/migration/`.
 
 ### Kafka (required for matching)
 
-**Kafka** — event log for matching recalculation. The API and personality publish domain events; matching consumes them and updates projections in its DB.
+**Kafka** — event log for matching. The API and personality publish domain profile events (`procrush.matching.events`); matching recalculates scores and publishes `match.results_updated` (`procrush.matching.results`); the API consumes results into `match_scores`.
 
 ## Authentication
 

@@ -32,12 +32,9 @@ class MatchingProjectionRepository(
                 it[seekerId] = payload.seekerId
                 it[desiredOccupationIdsJson] = encodeLongList(payload.desiredOccupationIds)
                 it[skillIdsJson] = encodeLongList(payload.skillIds)
-                it[skillNamesJson] = json.encodeToString(ListSerializer(String.serializer()), payload.skillNames)
                 it[personalityReady] = payload.personalityReady
                 it[personalityAxesJson] = payload.personalityAxes?.let { axes -> PersonalityAxesDto.toJson(axes) }
                 it[matchingEligible] = payload.matchingEligible
-                it[firstName] = payload.firstName
-                it[lastName] = payload.lastName
                 it[updatedAt] = OffsetDateTime.now()
             }
         }
@@ -51,9 +48,6 @@ class MatchingProjectionRepository(
                 skillIds = payload.skillIds,
                 personalityReady = true,
                 personalityAxes = payload.personalityAxes,
-                firstName = payload.firstName,
-                lastName = payload.lastName,
-                skillNames = payload.skillNames,
                 matchingEligible = payload.matchingEligible,
             ),
         )
@@ -69,9 +63,6 @@ class MatchingProjectionRepository(
                 it[skillIdsJson] = encodeLongList(payload.skillIds)
                 it[personalityAxesJson] = PersonalityAxesDto.toJson(payload.personalityAxes)
                 it[isActive] = payload.isActive
-                it[companyName] = payload.companyName.orEmpty()
-                it[occupationName] = payload.occupationName
-                it[description] = payload.description
                 it[updatedAt] = OffsetDateTime.now()
             }
         }
@@ -82,31 +73,6 @@ class MatchingProjectionRepository(
             JobProfileSnapshotsTable.deleteWhere { JobProfileSnapshotsTable.jobProfileId eq jobProfileId }
         }
     }
-
-    fun findJobSnapshot(jobProfileId: Long): JobMatchCandidate? =
-        transaction(MatchingDatabaseRegistry.matching) {
-            JobProfileSnapshotsTable
-                .selectAll()
-                .where { JobProfileSnapshotsTable.jobProfileId eq jobProfileId }
-                .firstOrNull()
-                ?.toJobMatchCandidate()
-        }
-
-    fun findSeekerSnapshotForJob(seekerId: Long, jobProfileId: Long): SeekerMatchCandidate? =
-        transaction(MatchingDatabaseRegistry.matching) {
-            val job =
-                JobProfileSnapshotsTable
-                    .selectAll()
-                    .where { JobProfileSnapshotsTable.jobProfileId eq jobProfileId }
-                    .firstOrNull()
-                    ?: return@transaction null
-            val occupationId = job[JobProfileSnapshotsTable.occupationId]
-            SeekerSnapshotsTable
-                .selectAll()
-                .where { SeekerSnapshotsTable.seekerId eq seekerId }
-                .firstOrNull()
-                ?.toSeekerMatchCandidate(occupationId)
-        }
 
     fun findMatchableJobProfiles(occupationIds: List<Long>): List<JobMatchCandidate> {
         if (occupationIds.isEmpty()) return emptyList()
@@ -129,36 +95,12 @@ class MatchingProjectionRepository(
                 .mapNotNull { row -> row.toSeekerMatchCandidate(occupationId) }
         }
 
-    fun countEligibleSeekersForOccupations(occupationIds: List<Long>): Map<Long, Int> {
-        if (occupationIds.isEmpty()) return emptyMap()
-        return transaction(MatchingDatabaseRegistry.matching) {
-            val counts = occupationIds.associateWith { 0 }.toMutableMap()
-            SeekerSnapshotsTable
-                .selectAll()
-                .where { SeekerSnapshotsTable.matchingEligible eq true }
-                .forEach { row ->
-                    val desiredOccupationIds = decodeLongList(row[SeekerSnapshotsTable.desiredOccupationIdsJson])
-                    desiredOccupationIds.forEach { occupationId ->
-                        if (occupationId in counts) {
-                            counts[occupationId] = counts.getValue(occupationId) + 1
-                        }
-                    }
-                }
-            counts
-        }
-    }
-
     private fun encodeLongList(values: List<Long>): String =
         json.encodeToString(ListSerializer(Long.serializer()), values)
 
     private fun decodeLongList(raw: String): List<Long> =
         runCatching {
             json.decodeFromString(ListSerializer(Long.serializer()), raw)
-        }.getOrDefault(emptyList())
-
-    private fun decodeSkillNames(raw: String): List<String> =
-        runCatching {
-            json.decodeFromString(ListSerializer(String.serializer()), raw)
         }.getOrDefault(emptyList())
 
     private fun ResultRow.toJobMatchCandidate(): JobMatchCandidate {
@@ -168,10 +110,10 @@ class MatchingProjectionRepository(
         return JobMatchCandidate(
             jobProfileId = this[JobProfileSnapshotsTable.jobProfileId],
             employerId = 0,
-            companyName = this[JobProfileSnapshotsTable.companyName],
+            companyName = "",
             occupationId = this[JobProfileSnapshotsTable.occupationId],
-            occupationName = this[JobProfileSnapshotsTable.occupationName],
-            description = this[JobProfileSnapshotsTable.description],
+            occupationName = "",
+            description = null,
             isActive = this[JobProfileSnapshotsTable.isActive],
             skillIds = skillIds,
             personalityAxes = personalityAxes,
@@ -190,12 +132,8 @@ class MatchingProjectionRepository(
 
         return SeekerMatchCandidate(
             seekerId = this[SeekerSnapshotsTable.seekerId],
-            firstName = this[SeekerSnapshotsTable.firstName],
-            lastName = this[SeekerSnapshotsTable.lastName],
             occupationId = occupationId,
-            occupationName = "—",
             skillIds = decodeLongList(this[SeekerSnapshotsTable.skillIdsJson]).toSet(),
-            skillNames = decodeSkillNames(this[SeekerSnapshotsTable.skillNamesJson]),
             personalityAxes = personalityAxes,
             personalityReady = personalityReady,
         )

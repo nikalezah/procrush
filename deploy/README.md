@@ -85,7 +85,9 @@ The project should already have **Postgres**. Add application services and conne
    | `WEB_ORIGIN` | `https://${{Frontend.RAILWAY_PUBLIC_DOMAIN}}` (after frontend domain exists) |
    | `FRONTEND_URL` | same as `WEB_ORIGIN` |
    | `AUTH_DEV_MODE` | `false` (prod) or `true` (staging) |
-   | `MATCHING_SERVICE_URL` | `http://${{Matching.RAILWAY_PRIVATE_DOMAIN}}:8092` |
+   | `KAFKA_BOOTSTRAP_SERVERS` | your Kafka service URL |
+   | `KAFKA_MATCHING_RESULTS_TOPIC` | `procrush.matching.results` (optional override) |
+   | `KAFKA_MATCHING_RESULTS_CONSUMER_GROUP` | `api-matching-results` (optional override) |
 
 6. Deploy (automatic on push or **Deploy** in dashboard).
 7. Public domain optional (health: `GET /health`).

@@ -6,7 +6,6 @@ data class AppConfig(
     val redis: RedisConfig,
     val rabbitMq: RabbitMqConfig,
     val kafka: KafkaConfig,
-    val matchingServiceUrl: String,
     val webOrigins: List<String>,
     val sessionCookieName: String,
     val sessionDays: Long,
@@ -28,16 +27,12 @@ data class AppConfig(
                     databaseUser = Env.resolve("DATABASE_USER", dotEnv),
                     databasePassword = Env.resolve("DATABASE_PASSWORD", dotEnv),
                 )
-            val matchingServiceUrl =
-                Env.resolve("MATCHING_SERVICE_URL", dotEnv)?.trim()?.takeIf { it.isNotEmpty() }
-                    ?: error("MATCHING_SERVICE_URL is required")
             return AppConfig(
                 port = Env.env("PORT", "8080", dotEnv).toIntOrNull() ?: 8080,
                 database = database,
                 redis = RedisConfig.fromEnvironment(dotEnv),
                 rabbitMq = RabbitMqConfig.fromEnvironment(dotEnv),
                 kafka = KafkaConfig.fromEnvironment(dotEnv),
-                matchingServiceUrl = matchingServiceUrl,
                 webOrigins = webOrigins,
                 sessionCookieName = Env.env("SESSION_COOKIE_NAME", "procrush_session", dotEnv),
                 sessionDays = Env.env("SESSION_DAYS", "30", dotEnv).toLong(),

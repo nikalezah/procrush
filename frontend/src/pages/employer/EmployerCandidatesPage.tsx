@@ -15,6 +15,7 @@ import {Avatar} from '../../components/ui/Avatar'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
+import {subscribeEmployerRecommendationsUpdated} from '../../api/recommendationsApi'
 import {resolveError} from '../../i18n/resolveApiError'
 
 function patchEmployerCandidateFromEvent(
@@ -115,6 +116,14 @@ export function EmployerCandidatesPage() {
       .catch((err) => setError(resolveError(err)))
       .finally(() => setLoading(false))
     return () => setHighlightedId(null)
+  }, [profileId])
+
+  useEffect(() => {
+    if (Number.isNaN(profileId)) return
+    return subscribeEmployerRecommendationsUpdated((event) => {
+      if (event.scope === 'job' && event.id !== profileId) return
+      void loadData(profileId).catch(() => {})
+    })
   }, [profileId])
 
   useEffect(() => {

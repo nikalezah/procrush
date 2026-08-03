@@ -8,11 +8,12 @@ import io.ktor.sse.ServerSentEvent
 import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.UserRole
 import jobs.procrush.matching.service.MatchInterestService
+import jobs.procrush.matching.service.RecommendationsEventService
 import jobs.procrush.personality.service.PersonalityProfileService
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
-private val matchInterestJson =
+private val sseJson =
     Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -21,6 +22,7 @@ private val matchInterestJson =
 fun Route.sseRoutes(
     roleGuard: RoleGuard,
     matchInterestService: MatchInterestService,
+    recommendationsEventService: RecommendationsEventService,
     personalityProfileService: PersonalityProfileService,
 ) {
     route("/api/seeker") {
@@ -32,8 +34,21 @@ fun Route.sseRoutes(
             }
             matchInterestService.streamEvents(user.id) { event ->
                 send(
-                    data = matchInterestJson.encodeToString(event),
+                    data = sseJson.encodeToString(event),
                     event = "match-interest",
+                )
+            }
+        }
+        sse("/recommendations/events") {
+            val user = roleGuard.peekRole(call, UserRole.SEEKER) ?: return@sse
+            heartbeat {
+                period = 30.seconds
+                event = ServerSentEvent(comments = "keepalive")
+            }
+            recommendationsEventService.streamEvents(user.id) { event ->
+                send(
+                    data = sseJson.encodeToString(event),
+                    event = "recommendations-updated",
                 )
             }
         }
@@ -60,8 +75,21 @@ fun Route.sseRoutes(
             }
             matchInterestService.streamEvents(user.id) { event ->
                 send(
-                    data = matchInterestJson.encodeToString(event),
+                    data = sseJson.encodeToString(event),
                     event = "match-interest",
+                )
+            }
+        }
+        sse("/recommendations/events") {
+            val user = roleGuard.peekRole(call, UserRole.EMPLOYER) ?: return@sse
+            heartbeat {
+                period = 30.seconds
+                event = ServerSentEvent(comments = "keepalive")
+            }
+            recommendationsEventService.streamEvents(user.id) { event ->
+                send(
+                    data = sseJson.encodeToString(event),
+                    event = "recommendations-updated",
                 )
             }
         }

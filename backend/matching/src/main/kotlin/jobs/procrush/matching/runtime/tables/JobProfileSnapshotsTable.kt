@@ -9,9 +9,6 @@ object JobProfileSnapshotsTable : Table("job_profile_snapshots") {
     val skillIdsJson = text("skill_ids_json")
     val personalityAxesJson = text("personality_axes_json")
     val isActive = bool("is_active")
-    val companyName = text("company_name")
-    val occupationName = text("occupation_name")
-    val description = text("description").nullable()
     val updatedAt = timestampWithTimeZone("updated_at")
 
     override val primaryKey = PrimaryKey(jobProfileId)

@@ -17,7 +17,6 @@ import jobs.procrush.matching.service.MatchScoringService
 import jobs.procrush.observability.AppMetrics
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.TracePropagation
-import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
 
@@ -25,7 +24,6 @@ class MatchingEventProcessor(
     private val projectionRepository: MatchingProjectionRepository,
     private val matchResultsRepository: MatchResultsRepository,
     private val resultsPublisher: KafkaStringPublisher,
-    private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     private val logger = LoggerFactory.getLogger(MatchingEventProcessor::class.java)
 
@@ -57,9 +55,6 @@ class MatchingEventProcessor(
                 skillIds = payload.skillIds,
                 personalityReady = true,
                 personalityAxes = payload.personalityAxes,
-                firstName = payload.firstName,
-                lastName = payload.lastName,
-                skillNames = payload.skillNames,
                 matchingEligible = payload.matchingEligible,
             ),
         )
@@ -166,13 +161,6 @@ class MatchingEventProcessor(
         return StoredMatchResult(
             seekerId = seeker.seekerId,
             jobProfileId = job.jobProfileId,
-            occupationId = job.occupationId,
-            companyName = job.companyName,
-            positionName = job.occupationName,
-            jobDescription = job.description.orEmpty(),
-            seekerFirstName = seeker.firstName,
-            seekerLastName = seeker.lastName,
-            seekerSkillsJson = json.encodeToString(seeker.skillNames),
             matchScore = matchScore,
             matchScoreDisplay = MatchScoringService.toDisplayScore(matchScore),
             personalityIncluded = personalityIncluded,
@@ -198,13 +186,6 @@ class MatchingEventProcessor(
         return StoredMatchResult(
             seekerId = seeker.seekerId,
             jobProfileId = job.jobProfileId,
-            occupationId = job.occupationId,
-            companyName = job.companyName,
-            positionName = job.occupationName,
-            jobDescription = job.description.orEmpty(),
-            seekerFirstName = seeker.firstName,
-            seekerLastName = seeker.lastName,
-            seekerSkillsJson = json.encodeToString(seeker.skillNames),
             matchScore = matchScore,
             matchScoreDisplay = MatchScoringService.toDisplayScore(matchScore),
             personalityIncluded = personalityIncluded,
@@ -216,10 +197,10 @@ class MatchingEventProcessor(
         JobMatchCandidate(
             jobProfileId = jobProfileId,
             employerId = 0,
-            companyName = companyName.orEmpty(),
+            companyName = "",
             occupationId = occupationId,
-            occupationName = occupationName,
-            description = description,
+            occupationName = "",
+            description = null,
             isActive = isActive,
             skillIds = skillIds.toSet(),
             personalityAxes = personalityAxes,

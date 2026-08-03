@@ -31,9 +31,6 @@ data class SeekerProfileChangedPayload(
     val skillIds: List<Long>,
     val personalityReady: Boolean,
     val personalityAxes: PersonalityAxesDto? = null,
-    val firstName: String = "",
-    val lastName: String = "",
-    val skillNames: List<String> = emptyList(),
     val matchingEligible: Boolean = false,
 )
 
@@ -43,9 +40,6 @@ data class SeekerPersonalityReadyPayload(
     val desiredOccupationIds: List<Long>,
     val skillIds: List<Long>,
     val personalityAxes: PersonalityAxesDto,
-    val firstName: String = "",
-    val lastName: String = "",
-    val skillNames: List<String> = emptyList(),
     val matchingEligible: Boolean = true,
 )
 
@@ -56,9 +50,6 @@ data class JobProfileChangedPayload(
     val skillIds: List<Long>,
     val personalityAxes: PersonalityAxesDto,
     val isActive: Boolean,
-    val companyName: String? = null,
-    val occupationName: String,
-    val description: String? = null,
     val deleted: Boolean = false,
 )
 

@@ -2,10 +2,10 @@ import {useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions} from '../../api/seekerApi'
 import type {
-    JobRecommendationDto,
-    MatchInterestEventDto,
-    OccupationDto,
-    SeekerInterestsResponseDto,
+  JobRecommendationDto,
+  MatchInterestEventDto,
+  OccupationDto,
+  SeekerInterestsResponseDto,
 } from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
@@ -21,6 +21,7 @@ import {Avatar} from '../../components/ui/Avatar'
 import {Card} from '../../components/ui/Card'
 import {PageHeader} from '../../components/ui/PageHeader'
 import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
+import {subscribeSeekerRecommendationsUpdated} from '../../api/recommendationsApi'
 import {resolveError} from '../../i18n/resolveApiError'
 
 function patchSeekerJobFromEvent(
@@ -117,6 +118,12 @@ export function SeekerPositionsPage() {
       .catch((err) => setError(resolveError(err)))
       .finally(() => setLoading(false))
     return () => setHighlightedId(null)
+  }, [])
+
+  useEffect(() => {
+    return subscribeSeekerRecommendationsUpdated(() => {
+      void loadData().catch(() => {})
+    })
   }, [])
 
   useEffect(() => {

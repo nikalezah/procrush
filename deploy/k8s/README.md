@@ -133,7 +133,7 @@ Dev login is enabled in the kind stack (`AUTH_DEV_MODE=true`). **httpOnly sessio
 
 ### Kafka + matching
 
-**Kafka** — event log for matching recalculation. Services `kafka`, `matching-postgres`, `matching` in namespace `procrush`. The API reads recommendations from matching over HTTP (`MATCHING_SERVICE_URL` in [configmap.yaml](./base/configmap.yaml)).
+**Kafka** — event log for matching recalculation and score fan-out (`procrush.matching.events` → matching, `procrush.matching.results` → API). Services `kafka`, `matching-postgres`, `matching` in namespace `procrush`. The API owns the recommendation read-model (`match_scores` + joins).
 
 ## Database schema
 

@@ -14,14 +14,11 @@ data class JobMatchCandidate(
     val personalityAxes: PersonalityAxesDto,
 )
 
+/** Scoring-only seeker projection used by the matching service. */
 data class SeekerMatchCandidate(
     val seekerId: Long,
-    val firstName: String,
-    val lastName: String,
     val occupationId: Long,
-    val occupationName: String,
     val skillIds: Set<Long>,
-    val skillNames: List<String>,
     val personalityAxes: PersonalityAxesDto?,
     val personalityReady: Boolean,
 )

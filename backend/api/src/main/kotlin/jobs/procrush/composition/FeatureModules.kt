@@ -4,10 +4,8 @@ import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
-import jobs.procrush.matching.client.MatchingServiceClient
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
-import jobs.procrush.matching.service.HttpMatchingQueries
 import jobs.procrush.personality.messaging.PersonalityJobPublisher
 import jobs.procrush.personality.port.PersonalitySurveyCoordinator
 import jobs.procrush.personality.service.PersonalityGenerationCoordinator
@@ -106,11 +104,14 @@ data class MatchingModule(
     val matchingService: jobs.procrush.matching.cache.CachedMatchingService,
     val matchInterestService: jobs.procrush.matching.service.MatchInterestService,
     val matchInterestNotifier: jobs.procrush.matching.service.RedisMatchInterestNotifier,
+    val recommendationsEventService: jobs.procrush.matching.service.RecommendationsEventService,
+    val recommendationsNotifier: jobs.procrush.matching.service.RedisRecommendationsNotifier,
     val cacheInvalidator: MatchingCacheInvalidator,
-    val matchingClient: MatchingServiceClient,
+    private val matchResultsConsumer: jobs.procrush.matching.messaging.MatchResultsConsumer,
 ) {
     fun close() {
-        matchingClient.close()
+        matchResultsConsumer.stop()
+        recommendationsNotifier.close()
     }
 
     companion object {
@@ -122,6 +123,7 @@ data class MatchingModule(
         ): MatchingModule {
             val matchingRepository =
                 jobs.procrush.matching.repository.MatchingRepository(auth.referenceRepository)
+            val matchScoreRepository = jobs.procrush.matching.repository.MatchScoreRepository()
             val matchInterestRepository = jobs.procrush.matching.repository.MatchInterestRepository()
             val cacheInvalidator = MatchingCacheInvalidator(redis.client, config.redis)
             val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -131,11 +133,18 @@ data class MatchingModule(
                     config = config.redis,
                     scope = coroutineScope,
                 )
-            val matchingClient = MatchingServiceClient(config.matchingServiceUrl)
+            val recommendationsNotifier =
+                jobs.procrush.matching.service.RedisRecommendationsNotifier(
+                    redis = redis.client,
+                    config = config.redis,
+                    scope = coroutineScope,
+                )
             val matchingQueries =
-                HttpMatchingQueries(
-                    client = matchingClient,
+                jobs.procrush.matching.service.LocalMatchingQueries(
+                    matchScoreRepository = matchScoreRepository,
+                    matchingRepository = matchingRepository,
                     seekerRepository = auth.seekerRepository,
+                    referenceRepository = auth.referenceRepository,
                 )
             val matchingService =
                 jobs.procrush.matching.cache.CachedMatchingService(
@@ -154,14 +163,41 @@ data class MatchingModule(
                     surveyService = survey.surveyService,
                     notifier = matchInterestNotifier,
                 )
+            val recommendationsEventService =
+                jobs.procrush.matching.service.RecommendationsEventService(recommendationsNotifier)
+            val applyService =
+                jobs.procrush.matching.service.MatchResultsApplyService(
+                    matchScoreRepository = matchScoreRepository,
+                    matchingRepository = matchingRepository,
+                    cacheInvalidator = cacheInvalidator,
+                    seekerRepository = auth.seekerRepository,
+                    employerRepository = auth.employerRepository,
+                    recommendationsNotifier = recommendationsNotifier,
+                )
+            val matchResultsConsumer =
+                jobs.procrush.matching.messaging.MatchResultsConsumer(
+                    kafkaConfig = config.kafka,
+                    applyService = applyService,
+                    dedup =
+                        jobs.procrush.matching.messaging.MatchResultsEventDedup(
+                            redis = redis.client,
+                            config = config.redis,
+                            kafkaConfig = config.kafka,
+                        ),
+                )
             redis.registerOnClose(matchInterestNotifier)
+            redis.registerOnClose(recommendationsNotifier)
             matchInterestNotifier.start()
+            recommendationsNotifier.start()
+            matchResultsConsumer.start()
             return MatchingModule(
                 matchingService = matchingService,
                 matchInterestService = matchInterestService,
                 matchInterestNotifier = matchInterestNotifier,
+                recommendationsEventService = recommendationsEventService,
+                recommendationsNotifier = recommendationsNotifier,
                 cacheInvalidator = cacheInvalidator,
-                matchingClient = matchingClient,
+                matchResultsConsumer = matchResultsConsumer,
             )
         }
     }

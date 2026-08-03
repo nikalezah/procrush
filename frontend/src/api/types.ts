@@ -52,6 +52,7 @@ export type EmployerContactDto = Schemas['EmployerContactDto']
 export type SeekerContactDto = Schemas['SeekerContactDto']
 export type JobRecommendationDto = Schemas['JobRecommendationDto']
 export type CandidateRecommendationDto = Schemas['CandidateRecommendationDto']
+export type {RecommendationsUpdatedEventDto} from './recommendationsApi'
 
 export type SurveyListItemDto = Schemas['SurveyListItemDto']
 export type SurveyGroupDto = Schemas['SurveyGroupDto']

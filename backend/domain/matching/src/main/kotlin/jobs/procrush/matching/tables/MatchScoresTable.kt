@@ -1,9 +1,9 @@
-package jobs.procrush.matching.runtime.tables
+package jobs.procrush.matching.tables
 
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-object MatchResultsTable : Table("match_results") {
+object MatchScoresTable : Table("match_scores") {
     val seekerId = long("seeker_id")
     val jobProfileId = long("job_profile_id")
     val matchScore = double("match_score")

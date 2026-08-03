@@ -6,6 +6,7 @@ data class KafkaConfig(
     val matchingEventsDlqTopic: String = "procrush.matching.events.dlq",
     val matchingResultsTopic: String = "procrush.matching.results",
     val consumerGroupId: String = "matching",
+    val resultsConsumerGroupId: String = "api-matching-results",
     val dedupTtlSeconds: Long = 3600,
 ) {
     companion object {
@@ -16,6 +17,7 @@ data class KafkaConfig(
             Env.env("KAFKA_MATCHING_EVENTS_DLQ_TOPIC", "procrush.matching.events.dlq", dotEnv),
             Env.env("KAFKA_MATCHING_RESULTS_TOPIC", "procrush.matching.results", dotEnv),
             Env.env("KAFKA_MATCHING_CONSUMER_GROUP", "matching", dotEnv),
+            Env.env("KAFKA_MATCHING_RESULTS_CONSUMER_GROUP", "api-matching-results", dotEnv),
             Env.env("KAFKA_DEDUP_TTL_SECONDS", "3600", dotEnv).toLong(),
         )
     }

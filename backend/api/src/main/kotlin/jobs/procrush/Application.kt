@@ -17,7 +17,6 @@ import jobs.procrush.bootstrap.plugins.configureCors
 import jobs.procrush.bootstrap.plugins.configureSerialization
 import jobs.procrush.bootstrap.plugins.configureStatusPages
 import jobs.procrush.composition.AppContext
-import jobs.procrush.composition.checkMatchingServiceHealthBlocking
 import jobs.procrush.observability.DlqDepthPoller
 import jobs.procrush.observability.HealthCheck
 import jobs.procrush.observability.KafkaHealth
@@ -69,9 +68,6 @@ fun Application.module() {
                 HealthCheck {
                     KafkaHealth.check(app.config.kafka.bootstrapServers)
                 },
-                simpleCheck("matching") {
-                    runCatching { app.checkMatchingServiceHealthBlocking() }.getOrDefault(false)
-                },
             ),
     )
 
@@ -80,6 +76,11 @@ fun Application.module() {
             call.respondText("ProCrush API")
         }
         generatedApiRoutes(app.handlers)
-        sseRoutes(app.roleGuard, app.matchInterestService, app.personalityProfileService)
+        sseRoutes(
+            app.roleGuard,
+            app.matchInterestService,
+            app.recommendationsEventService,
+            app.personalityProfileService,
+        )
     }
 }

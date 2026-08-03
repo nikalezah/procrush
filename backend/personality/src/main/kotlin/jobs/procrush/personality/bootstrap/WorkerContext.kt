@@ -4,7 +4,6 @@ import jobs.procrush.bootstrap.DatabaseFactory
 import jobs.procrush.bootstrap.config.WorkerAppConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
-import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.kafka.MatchingEventsRuntime
 import jobs.procrush.matching.repository.MatchingRepository
@@ -46,15 +45,12 @@ data class WorkerContext(
             val rabbitMq = RabbitMqModule.create(config.rabbitMq)
             val referenceRepository = ReferenceRepository()
             val seekerRepository = SeekerRepository()
-            val employerRepository = EmployerRepository(referenceRepository)
             val matchingRepository = MatchingRepository(referenceRepository)
             val matchingEvents =
                 MatchingEventsRuntime.create(
                     kafka = config.kafka,
                     seekerRepository = seekerRepository,
-                    employerRepository = employerRepository,
                     matchingRepository = matchingRepository,
-                    referenceRepository = referenceRepository,
                 )
             val surveyService =
                 SurveyService(

@@ -1,8 +1,6 @@
 package jobs.procrush.matching.kafka
 
 import jobs.procrush.employer.dto.JobProfileDto
-import jobs.procrush.employer.repository.EmployerRepository
-import jobs.procrush.matching.dto.apiCompanyName
 import jobs.procrush.matching.events.JobProfileChangedPayload
 import jobs.procrush.matching.events.MatchingEventJson
 import jobs.procrush.matching.events.MatchingEventTypes
@@ -11,13 +9,10 @@ import jobs.procrush.matching.events.SeekerProfileChangedPayload
 import jobs.procrush.matching.repository.MatchingRepository
 import jobs.procrush.personality.dto.PersonalityAxesDto
 import jobs.procrush.seeker.repository.SeekerRepository
-import jobs.procrush.shared.repository.ReferenceRepository
 
 class MatchingEventPayloadFactory(
     private val seekerRepository: SeekerRepository,
-    private val employerRepository: EmployerRepository,
     private val matchingRepository: MatchingRepository,
-    private val referenceRepository: ReferenceRepository,
 ) {
     fun publishSeekerProfileChanged(
         publisher: MatchingEventPublisher,
@@ -43,9 +38,6 @@ class MatchingEventPayloadFactory(
                 desiredOccupationIds = base.desiredOccupationIds,
                 skillIds = base.skillIds,
                 personalityAxes = personalityAxes,
-                firstName = base.firstName,
-                lastName = base.lastName,
-                skillNames = base.skillNames,
                 matchingEligible = base.matchingEligible,
             )
         publisher.publish(
@@ -58,11 +50,9 @@ class MatchingEventPayloadFactory(
     fun publishJobProfileChanged(
         publisher: MatchingEventPublisher,
         jobProfile: JobProfileDto,
-        employerId: Long,
+        @Suppress("UNUSED_PARAMETER") employerId: Long,
         deleted: Boolean = false,
     ) {
-        val employer = employerRepository.findById(employerId)
-        val companyName = apiCompanyName(employer?.name)
         val payload =
             JobProfileChangedPayload(
                 jobProfileId = jobProfile.id,
@@ -70,9 +60,6 @@ class MatchingEventPayloadFactory(
                 skillIds = jobProfile.skillIds,
                 personalityAxes = jobProfile.personalityAxes,
                 isActive = jobProfile.isActive,
-                companyName = companyName,
-                occupationName = jobProfile.occupationName,
-                description = jobProfile.description,
                 deleted = deleted,
             )
         publisher.publish(
@@ -83,15 +70,9 @@ class MatchingEventPayloadFactory(
     }
 
     fun buildSeekerProfileChangedPayload(seekerId: Long): SeekerProfileChangedPayload? {
-        val seeker = seekerRepository.findById(seekerId) ?: return null
+        if (seekerRepository.findById(seekerId) == null) return null
         val desiredOccupationIds = seekerRepository.getDesiredOccupationIds(seekerId)
         val skillIds = seekerRepository.getSkillIds(seekerId)
-        val skillNames =
-            if (skillIds.isEmpty()) {
-                emptyList()
-            } else {
-                referenceRepository.findSkillsByIds(skillIds).map { it.name }
-            }
         val context = matchingRepository.getSeekerMatchingContext(seekerId)
         val matchingEligible = matchingRepository.findSeekerIdsWithAllTestsComplete().contains(seekerId)
         return SeekerProfileChangedPayload(
@@ -100,9 +81,6 @@ class MatchingEventPayloadFactory(
             skillIds = skillIds,
             personalityReady = context?.personalityReady == true,
             personalityAxes = context?.personalityAxes,
-            firstName = seeker.firstName,
-            lastName = seeker.lastName,
-            skillNames = skillNames,
             matchingEligible = matchingEligible,
         )
     }

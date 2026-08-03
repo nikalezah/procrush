@@ -44,7 +44,6 @@ fun WorkerAppConfig.toAuthAppConfig(): AppConfig =
         redis = redis,
         rabbitMq = rabbitMq,
         kafka = kafka,
-        matchingServiceUrl = "http://localhost:8092",
         webOrigins = listOf("http://localhost:8081"),
         sessionCookieName = "procrush_session",
         sessionDays = 30,

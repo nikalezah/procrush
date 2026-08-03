@@ -3,11 +3,9 @@ package jobs.procrush.matching.kafka
 import jobs.procrush.bootstrap.config.KafkaConfig
 import jobs.procrush.bootstrap.kafka.KafkaModule
 import jobs.procrush.bootstrap.kafka.KafkaStringPublisher
-import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.matching.repository.MatchingRepository
 import jobs.procrush.seeker.repository.SeekerRepository
-import jobs.procrush.shared.repository.ReferenceRepository
 
 data class MatchingEventsRuntime(
     private val kafkaModule: KafkaModule,
@@ -23,9 +21,7 @@ data class MatchingEventsRuntime(
         fun create(
             kafka: KafkaConfig,
             seekerRepository: SeekerRepository,
-            employerRepository: EmployerRepository,
             matchingRepository: MatchingRepository,
-            referenceRepository: ReferenceRepository,
         ): MatchingEventsRuntime {
             val kafkaModule = KafkaModule.create(kafka)
             val publisher =
@@ -35,9 +31,7 @@ data class MatchingEventsRuntime(
             val payloadFactory =
                 MatchingEventPayloadFactory(
                     seekerRepository = seekerRepository,
-                    employerRepository = employerRepository,
                     matchingRepository = matchingRepository,
-                    referenceRepository = referenceRepository,
                 )
             val eventPort = MatchingEventPortAdapter(publisher, payloadFactory)
             return MatchingEventsRuntime(

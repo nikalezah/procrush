@@ -6,7 +6,6 @@ import jobs.procrush.matching.runtime.tables.MatchResultsTable
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.notInList
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -105,40 +104,10 @@ class MatchResultsRepository {
                 ?.toStored()
         }
 
-    fun countDistinctSeekersForOccupation(occupationId: Long): Int =
-        transaction(MatchingDatabaseRegistry.matching) {
-            MatchResultsTable
-                .selectAll()
-                .where { MatchResultsTable.occupationId eq occupationId }
-                .map { it[MatchResultsTable.seekerId] }
-                .distinct()
-                .size
-        }
-
-    fun countDistinctSeekersForOccupations(occupationIds: List<Long>): Map<Long, Int> {
-        if (occupationIds.isEmpty()) return emptyMap()
-        return transaction(MatchingDatabaseRegistry.matching) {
-            val grouped =
-                MatchResultsTable
-                    .selectAll()
-                    .where { MatchResultsTable.occupationId inList occupationIds }
-                    .groupBy { it[MatchResultsTable.occupationId] }
-                    .mapValues { (_, rows) -> rows.map { it[MatchResultsTable.seekerId] }.distinct().size }
-            occupationIds.associateWith { grouped[it] ?: 0 }
-        }
-    }
-
     private fun insertRow(result: StoredMatchResult) {
         MatchResultsTable.insert {
             it[MatchResultsTable.seekerId] = result.seekerId
             it[MatchResultsTable.jobProfileId] = result.jobProfileId
-            it[MatchResultsTable.occupationId] = result.occupationId
-            it[MatchResultsTable.companyName] = result.companyName
-            it[MatchResultsTable.positionName] = result.positionName
-            it[MatchResultsTable.jobDescription] = result.jobDescription
-            it[MatchResultsTable.seekerFirstName] = result.seekerFirstName
-            it[MatchResultsTable.seekerLastName] = result.seekerLastName
-            it[MatchResultsTable.seekerSkillsJson] = result.seekerSkillsJson
             it[MatchResultsTable.matchScore] = result.matchScore
             it[MatchResultsTable.matchScoreDisplay] = result.matchScoreDisplay
             it[MatchResultsTable.personalityIncluded] = result.personalityIncluded
@@ -150,13 +119,6 @@ class MatchResultsRepository {
         StoredMatchResult(
             seekerId = this[MatchResultsTable.seekerId],
             jobProfileId = this[MatchResultsTable.jobProfileId],
-            occupationId = this[MatchResultsTable.occupationId],
-            companyName = this[MatchResultsTable.companyName],
-            positionName = this[MatchResultsTable.positionName],
-            jobDescription = this[MatchResultsTable.jobDescription],
-            seekerFirstName = this[MatchResultsTable.seekerFirstName],
-            seekerLastName = this[MatchResultsTable.seekerLastName],
-            seekerSkillsJson = this[MatchResultsTable.seekerSkillsJson],
             matchScore = this[MatchResultsTable.matchScore],
             matchScoreDisplay = this[MatchResultsTable.matchScoreDisplay],
             personalityIncluded = this[MatchResultsTable.personalityIncluded],

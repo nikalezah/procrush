@@ -11,7 +11,8 @@ data:
   REDIS_URL: redis://redis:6379
   RABBITMQ_URL: amqp://procrush:procrush@rabbitmq:5672/%2F
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  MATCHING_SERVICE_URL: http://matching:8092
+  KAFKA_MATCHING_RESULTS_TOPIC: procrush.matching.results
+  KAFKA_MATCHING_RESULTS_CONSUMER_GROUP: api-matching-results
   MATCHING_SERVICE_PORT: "8092"
   WORKER_HEALTH_PORT: "8091"
   LOG_FORMAT: json

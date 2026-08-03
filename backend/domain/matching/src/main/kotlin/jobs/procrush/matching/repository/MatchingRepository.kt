@@ -8,6 +8,7 @@ import jobs.procrush.matching.model.JobMatchCandidate
 import jobs.procrush.matching.model.SeekerMatchingContext
 import jobs.procrush.personality.dto.PersonalityAxesDto
 import jobs.procrush.personality.dto.PersonalityProfileStatus
+import jobs.procrush.seeker.tables.SeekerDesiredPositionsTable
 import jobs.procrush.seeker.tables.SeekerPersonalProfilesTable
 import jobs.procrush.seeker.tables.SeekerSkillsTable
 import jobs.procrush.shared.repository.ReferenceRepository
@@ -73,6 +74,28 @@ class MatchingRepository(
 
     fun findSeekerIdsWithAllTestsComplete(): Set<Long> =
         inTx { findSeekerIdsWithAllTestsCompleteInTx() }
+
+    fun countEligibleSeekersForOccupations(occupationIds: List<Long>): Map<Long, Int> {
+        if (occupationIds.isEmpty()) return emptyMap()
+        return inTx {
+            val eligible = findSeekerIdsWithAllTestsCompleteInTx()
+            if (eligible.isEmpty()) {
+                return@inTx occupationIds.associateWith { 0 }
+            }
+            val counts = occupationIds.associateWith { 0 }.toMutableMap()
+            SeekerDesiredPositionsTable
+                .selectAll()
+                .where {
+                    (SeekerDesiredPositionsTable.seekerId inList eligible.toList()) and
+                        (SeekerDesiredPositionsTable.occupationId inList occupationIds)
+                }
+                .forEach { row ->
+                    val occupationId = row[SeekerDesiredPositionsTable.occupationId].value
+                    counts[occupationId] = counts.getValue(occupationId) + 1
+                }
+            counts
+        }
+    }
 
     private fun findSeekerIdsWithAllTestsCompleteInTx(): Set<Long> {
         val requiredSurveyIds =
