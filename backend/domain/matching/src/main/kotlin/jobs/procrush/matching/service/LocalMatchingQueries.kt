@@ -1,6 +1,8 @@
 package jobs.procrush.matching.service
 
+import jobs.procrush.matching.dto.CandidateCardDto
 import jobs.procrush.matching.dto.CandidateRecommendationDto
+import jobs.procrush.matching.dto.JobCardDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.dto.apiCompanyName
 import jobs.procrush.matching.repository.MatchScoreRepository
@@ -18,7 +20,7 @@ class LocalMatchingQueries(
     override fun jobRecommendationsForSeeker(userId: UUID): List<JobRecommendationDto> {
         val seekerId = seekerRepository.findByUserId(userId)?.id ?: return emptyList()
         return matchScoreRepository.listForSeeker(seekerId).mapNotNull { score ->
-            toJobRecommendation(score.jobProfileId, score.matchScore, score.matchScoreDisplay)
+            toJobRecommendation(score.jobProfileId, score.matchScore)
         }
     }
 
@@ -32,14 +34,13 @@ class LocalMatchingQueries(
                 seekerId = score.seekerId,
                 positionName = job.occupationName,
                 matchScore = score.matchScore,
-                matchScoreDisplay = score.matchScoreDisplay,
             )
         }
     }
 
     override fun jobRecommendationForSeeker(seekerId: Long, jobProfileId: Long): JobRecommendationDto? {
         val score = matchScoreRepository.findPair(seekerId, jobProfileId) ?: return null
-        return toJobRecommendation(jobProfileId, score.matchScore, score.matchScoreDisplay)
+        return toJobRecommendation(jobProfileId, score.matchScore)
     }
 
     override fun candidateRecommendationForJob(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
@@ -49,21 +50,14 @@ class LocalMatchingQueries(
             seekerId = seekerId,
             positionName = job.occupationName,
             matchScore = score.matchScore,
-            matchScoreDisplay = score.matchScoreDisplay,
         )
     }
 
-    override fun jobRecommendationDisplay(jobProfileId: Long): JobRecommendationDto? =
-        toJobRecommendation(jobProfileId, matchScore = 0.0, matchScoreDisplay = 0)
+    override fun jobCard(jobProfileId: Long): JobCardDto? = toJobCard(jobProfileId)
 
-    override fun candidateRecommendationDisplay(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? {
+    override fun candidateCard(seekerId: Long, jobProfileId: Long): CandidateCardDto? {
         val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
-        return toCandidateRecommendation(
-            seekerId = seekerId,
-            positionName = job.occupationName,
-            matchScore = 0.0,
-            matchScoreDisplay = 0,
-        )
+        return toCandidateCard(seekerId = seekerId, positionName = job.occupationName)
     }
 
     override fun countMatchedCandidatesForOccupation(occupationId: Long): Int =
@@ -75,19 +69,24 @@ class LocalMatchingQueries(
     private fun toJobRecommendation(
         jobProfileId: Long,
         matchScore: Double,
-        matchScoreDisplay: Int,
     ): JobRecommendationDto? {
         val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
-        if (!job.isActive && matchScoreDisplay == 0 && matchScore == 0.0) {
-            // display fallback still allowed for inactive jobs (interests outside)
-        }
         return JobRecommendationDto(
             id = job.jobProfileId,
             companyName = apiCompanyName(job.companyName),
             positionName = job.occupationName,
             description = job.description.orEmpty(),
             matchScore = matchScore,
-            matchScoreDisplay = matchScoreDisplay,
+        )
+    }
+
+    private fun toJobCard(jobProfileId: Long): JobCardDto? {
+        val job = matchingRepository.findJobProfileById(jobProfileId) ?: return null
+        return JobCardDto(
+            id = job.jobProfileId,
+            companyName = apiCompanyName(job.companyName),
+            positionName = job.occupationName,
+            description = job.description.orEmpty(),
         )
     }
 
@@ -95,24 +94,35 @@ class LocalMatchingQueries(
         seekerId: Long,
         positionName: String,
         matchScore: Double,
-        matchScoreDisplay: Int,
     ): CandidateRecommendationDto? {
         val seeker = seekerRepository.findById(seekerId) ?: return null
-        val skillIds = seekerRepository.getSkillIds(seekerId)
-        val skills =
-            if (skillIds.isEmpty()) {
-                emptyList()
-            } else {
-                referenceRepository.findSkillsByIds(skillIds).map { it.name }
-            }
         return CandidateRecommendationDto(
             id = seeker.id,
             firstName = seeker.firstName,
             lastName = seeker.lastName,
             positionName = positionName,
-            skills = skills,
+            skills = resolveSkillNames(seekerId),
             matchScore = matchScore,
-            matchScoreDisplay = matchScoreDisplay,
         )
+    }
+
+    private fun toCandidateCard(
+        seekerId: Long,
+        positionName: String,
+    ): CandidateCardDto? {
+        val seeker = seekerRepository.findById(seekerId) ?: return null
+        return CandidateCardDto(
+            id = seeker.id,
+            firstName = seeker.firstName,
+            lastName = seeker.lastName,
+            positionName = positionName,
+            skills = resolveSkillNames(seekerId),
+        )
+    }
+
+    private fun resolveSkillNames(seekerId: Long): List<String> {
+        val skillIds = seekerRepository.getSkillIds(seekerId)
+        if (skillIds.isEmpty()) return emptyList()
+        return referenceRepository.findSkillsByIds(skillIds).map { it.name }
     }
 }

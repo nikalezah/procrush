@@ -50,7 +50,9 @@ export type MatchInterestEventDto = Schemas['MatchInterestEventDto']
 export type MatchInterestCountDto = Schemas['MatchInterestCountDto']
 export type EmployerContactDto = Schemas['EmployerContactDto']
 export type SeekerContactDto = Schemas['SeekerContactDto']
+export type JobCardDto = Schemas['JobCardDto']
 export type JobRecommendationDto = Schemas['JobRecommendationDto']
+export type CandidateCardDto = Schemas['CandidateCardDto']
 export type CandidateRecommendationDto = Schemas['CandidateRecommendationDto']
 export type {RecommendationsUpdatedEventDto} from './recommendationsApi'
 

@@ -11,11 +11,13 @@ import jobs.procrush.employer.dto.EmployerProfileDto
 import jobs.procrush.employer.dto.JobProfileDto
 import jobs.procrush.employer.dto.UpdateEmployerProfileRequest
 import jobs.procrush.employer.dto.UpdateJobProfileRequest
+import jobs.procrush.matching.dto.CandidateCardDto
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.EmployerCandidatesOverviewDto
 import jobs.procrush.matching.dto.EmployerContactDto
 import jobs.procrush.matching.dto.EmployerInterestsResponseDto
 import jobs.procrush.matching.dto.InterestStatus
+import jobs.procrush.matching.dto.JobCardDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.dto.MatchInterestCountDto
 import jobs.procrush.matching.dto.SeekerContactDto
@@ -72,10 +74,12 @@ import jobs.procrush.api.generated.employer_models_yaml.employer_models.Employer
 import jobs.procrush.api.generated.employer_models_yaml.employer_models.JobProfileDto as ApiJobProfileDto
 import jobs.procrush.api.generated.employer_models_yaml.employer_models.UpdateEmployerProfileRequest as ApiUpdateEmployerProfileRequest
 import jobs.procrush.api.generated.employer_models_yaml.employer_models.UpdateJobProfileRequest as ApiUpdateJobProfileRequest
+import jobs.procrush.api.generated.matching_models_yaml.matching_models.CandidateCardDto as ApiCandidateCardDto
 import jobs.procrush.api.generated.matching_models_yaml.matching_models.CandidateRecommendationDto as ApiCandidateRecommendationDto
 import jobs.procrush.api.generated.matching_models_yaml.matching_models.EmployerCandidatesOverviewDto as ApiEmployerCandidatesOverviewDto
 import jobs.procrush.api.generated.matching_models_yaml.matching_models.EmployerContactDto as ApiEmployerContactDto
 import jobs.procrush.api.generated.matching_models_yaml.matching_models.EmployerInterestsResponseDto as ApiEmployerInterestsResponseDto
+import jobs.procrush.api.generated.matching_models_yaml.matching_models.JobCardDto as ApiJobCardDto
 import jobs.procrush.api.generated.matching_models_yaml.matching_models.JobRecommendationDto as ApiJobRecommendationDto
 import jobs.procrush.api.generated.matching_models_yaml.matching_models.MatchInterestCountDto as ApiMatchInterestCountDto
 import jobs.procrush.api.generated.matching_models_yaml.matching_models.SeekerContactDto as ApiSeekerContactDto
@@ -247,6 +251,26 @@ fun ApiSeekerContactDto.toContract(): SeekerContactDto =
         linkedin = linkedin,
     )
 
+fun JobCardDto.toApi(): ApiJobCardDto =
+    ApiJobCardDto(
+        id = id,
+        companyName = companyName,
+        positionName = positionName,
+        description = description,
+        interestStatus = interestStatus.toApi(),
+        contactInfo = contactInfo?.toApi(),
+    )
+
+fun ApiJobCardDto.toContract(): JobCardDto =
+    JobCardDto(
+        id = id,
+        companyName = companyName,
+        positionName = positionName,
+        description = description,
+        interestStatus = interestStatus.toContract(),
+        contactInfo = contactInfo?.toContract(),
+    )
+
 fun JobRecommendationDto.toApi(): ApiJobRecommendationDto =
     ApiJobRecommendationDto(
         id = id,
@@ -254,7 +278,6 @@ fun JobRecommendationDto.toApi(): ApiJobRecommendationDto =
         positionName = positionName,
         description = description,
         matchScore = matchScore,
-        matchScoreDisplay = matchScoreDisplay,
         interestStatus = interestStatus.toApi(),
         contactInfo = contactInfo?.toApi(),
     )
@@ -266,7 +289,28 @@ fun ApiJobRecommendationDto.toContract(): JobRecommendationDto =
         positionName = positionName,
         description = description,
         matchScore = matchScore,
-        matchScoreDisplay = matchScoreDisplay,
+        interestStatus = interestStatus.toContract(),
+        contactInfo = contactInfo?.toContract(),
+    )
+
+fun CandidateCardDto.toApi(): ApiCandidateCardDto =
+    ApiCandidateCardDto(
+        id = id,
+        firstName = firstName,
+        lastName = lastName,
+        positionName = positionName,
+        skills = skills,
+        interestStatus = interestStatus.toApi(),
+        contactInfo = contactInfo?.toApi(),
+    )
+
+fun ApiCandidateCardDto.toContract(): CandidateCardDto =
+    CandidateCardDto(
+        id = id,
+        firstName = firstName,
+        lastName = lastName,
+        positionName = positionName,
+        skills = skills,
         interestStatus = interestStatus.toContract(),
         contactInfo = contactInfo?.toContract(),
     )
@@ -279,7 +323,6 @@ fun CandidateRecommendationDto.toApi(): ApiCandidateRecommendationDto =
         positionName = positionName,
         skills = skills,
         matchScore = matchScore,
-        matchScoreDisplay = matchScoreDisplay,
         interestStatus = interestStatus.toApi(),
         contactInfo = contactInfo?.toApi(),
     )
@@ -292,7 +335,6 @@ fun ApiCandidateRecommendationDto.toContract(): CandidateRecommendationDto =
         positionName = positionName,
         skills = skills,
         matchScore = matchScore,
-        matchScoreDisplay = matchScoreDisplay,
         interestStatus = interestStatus.toContract(),
         contactInfo = contactInfo?.toContract(),
     )

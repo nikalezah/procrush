@@ -724,7 +724,6 @@ export interface components {
             description: string;
             /** Format: double */
             matchScore: number;
-            matchScoreDisplay: number;
             interestStatus: components["schemas"]["InterestStatus"];
             contactInfo?: components["schemas"]["EmployerContactDto"];
         };
@@ -737,17 +736,16 @@ export interface components {
             skills: string[];
             /** Format: double */
             matchScore: number;
-            matchScoreDisplay: number;
             interestStatus: components["schemas"]["InterestStatus"];
             contactInfo?: components["schemas"]["SeekerContactDto"];
         };
         SeekerInterestsResponseDto: {
-            respondedOutside: components["schemas"]["JobRecommendationDto"][];
-            mutualOutside: components["schemas"]["JobRecommendationDto"][];
+            respondedOutside: components["schemas"]["JobCardDto"][];
+            mutualOutside: components["schemas"]["JobCardDto"][];
         };
         EmployerInterestsResponseDto: {
-            respondedOutside: components["schemas"]["CandidateRecommendationDto"][];
-            mutualOutside: components["schemas"]["CandidateRecommendationDto"][];
+            respondedOutside: components["schemas"]["CandidateCardDto"][];
+            mutualOutside: components["schemas"]["CandidateCardDto"][];
         };
         EmployerCandidatesOverviewDto: {
             candidates: components["schemas"]["CandidateRecommendationDto"][];
@@ -1057,6 +1055,25 @@ export interface components {
             jobProfilesCount: number;
             activeJobProfilesCount: number;
             totalMatchedCandidates: number;
+        };
+        JobCardDto: {
+            /** Format: int64 */
+            id: number;
+            companyName?: string | null;
+            positionName: string;
+            description: string;
+            interestStatus: components["schemas"]["InterestStatus"];
+            contactInfo?: components["schemas"]["EmployerContactDto"];
+        };
+        CandidateCardDto: {
+            /** Format: int64 */
+            id: number;
+            firstName: string;
+            lastName: string;
+            positionName: string;
+            skills: string[];
+            interestStatus: components["schemas"]["InterestStatus"];
+            contactInfo?: components["schemas"]["SeekerContactDto"];
         };
     };
     responses: never;
@@ -2065,7 +2082,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobRecommendationDto"];
+                    "application/json": components["schemas"]["JobCardDto"];
                 };
             };
             /** @description Not authenticated */
@@ -3015,7 +3032,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CandidateRecommendationDto"];
+                    "application/json": components["schemas"]["CandidateCardDto"];
                 };
             };
             /** @description Not authenticated */

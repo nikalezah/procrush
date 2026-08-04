@@ -2,7 +2,6 @@ package jobs.procrush.matching.service
 
 import jobs.procrush.personality.dto.PersonalityAxesDto
 import kotlin.math.abs
-import kotlin.math.round
 
 object MatchScoringService {
     fun skillsScore(
@@ -38,7 +37,4 @@ object MatchScoringService {
         } else {
             skills
         }
-
-    fun toDisplayScore(score: Double): Int =
-        round(score * 100 + 1e-9).toInt().coerceIn(1, 100)
 }

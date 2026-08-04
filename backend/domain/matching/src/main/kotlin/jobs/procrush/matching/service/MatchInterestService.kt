@@ -3,15 +3,18 @@ package jobs.procrush.matching.service
 import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.cache.CachedMatchingService
+import jobs.procrush.matching.dto.CandidateCardDto
 import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.EmployerContactDto
 import jobs.procrush.matching.dto.EmployerInterestsResponseDto
 import jobs.procrush.matching.dto.InterestStatus
 import jobs.procrush.matching.dto.InterestStatusCalculator
+import jobs.procrush.matching.dto.JobCardDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.dto.MatchInterestCountDto
 import jobs.procrush.matching.dto.MatchInterestEventDto
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
+import jobs.procrush.matching.dto.toCard
 import jobs.procrush.matching.model.MatchInterestRecord
 import jobs.procrush.matching.repository.MatchInterestRepository
 import jobs.procrush.matching.repository.MatchingRepository
@@ -31,31 +34,31 @@ class MatchInterestService(
     private val surveyService: SurveyService,
     private val notifier: RedisMatchInterestNotifier,
 ) {
-    fun seekerRespond(userId: UUID, jobProfileId: Long): JobRecommendationDto {
+    fun seekerRespond(userId: UUID, jobProfileId: Long): JobCardDto {
         val seekerId = requireSeekerEligibleForJob(userId, jobProfileId)
         val (interest, isNewResponse) = matchInterestRepository.recordSeekerResponse(seekerId, jobProfileId)
         if (isNewResponse) {
             notifyEmployerOfSeekerResponse(seekerId, jobProfileId, interest)
         }
-        val recommendation =
-            matchingService.jobRecommendationForSeeker(seekerId, jobProfileId)
-                ?: matchingService.jobRecommendationDisplay(jobProfileId)
+        val card =
+            matchingService.jobRecommendationForSeeker(seekerId, jobProfileId)?.toCard()
+                ?: matchingService.jobCard(jobProfileId)
                 ?: throw ResourceNotFoundException(ErrorCode.JOB_NOT_FOUND)
-        return enrichJobRecommendation(seekerId, recommendation, interest)
+        return enrichJobCard(seekerId, card, interest)
     }
 
-    fun employerRespond(userId: UUID, jobProfileId: Long, seekerId: Long): CandidateRecommendationDto {
+    fun employerRespond(userId: UUID, jobProfileId: Long, seekerId: Long): CandidateCardDto {
         requireEmployerOwnsJobProfile(userId, jobProfileId)
         requireSeekerEligibleForOccupation(seekerId, jobProfileId)
         val (interest, isNewResponse) = matchInterestRepository.recordEmployerResponse(seekerId, jobProfileId)
         if (isNewResponse) {
             notifySeekerOfEmployerResponse(seekerId, jobProfileId, interest)
         }
-        val recommendation =
-            matchingService.candidateRecommendationForJob(seekerId, jobProfileId)
-                ?: matchingService.candidateRecommendationDisplay(seekerId, jobProfileId)
+        val card =
+            matchingService.candidateRecommendationForJob(seekerId, jobProfileId)?.toCard()
+                ?: matchingService.candidateCard(seekerId, jobProfileId)
                 ?: throw ResourceNotFoundException(ErrorCode.CANDIDATE_NOT_FOUND)
-        return enrichCandidateRecommendation(jobProfileId, recommendation, interest)
+        return enrichCandidateCard(jobProfileId, card, interest)
     }
 
     fun actionableCountForSeeker(userId: UUID): MatchInterestCountDto {
@@ -128,15 +131,12 @@ class MatchInterestService(
                 .listBySeeker(seeker.id)
                 .filter { it.jobProfileId !in currentRecommendationIds }
 
-        val respondedOutside = mutableListOf<JobRecommendationDto>()
-        val mutualOutside = mutableListOf<JobRecommendationDto>()
+        val respondedOutside = mutableListOf<JobCardDto>()
+        val mutualOutside = mutableListOf<JobCardDto>()
 
         for (interest in outside) {
-            val base =
-                matchingService.jobRecommendationForSeeker(seeker.id, interest.jobProfileId)
-                    ?: matchingService.jobRecommendationDisplay(interest.jobProfileId)
-                    ?: continue
-            val enriched = enrichJobRecommendation(seeker.id, base, interest)
+            val base = matchingService.jobCard(interest.jobProfileId) ?: continue
+            val enriched = enrichJobCard(seeker.id, base, interest)
             if (enriched.interestStatus == InterestStatus.MUTUAL) {
                 mutualOutside.add(enriched)
             } else if (enriched.interestStatus == InterestStatus.RESPONDED ||
@@ -169,15 +169,12 @@ class MatchInterestService(
                 .listByJobProfile(jobProfileId)
                 .filter { it.seekerId !in currentRecommendationIds }
 
-        val respondedOutside = mutableListOf<CandidateRecommendationDto>()
-        val mutualOutside = mutableListOf<CandidateRecommendationDto>()
+        val respondedOutside = mutableListOf<CandidateCardDto>()
+        val mutualOutside = mutableListOf<CandidateCardDto>()
 
         for (interest in outside) {
-            val base =
-                matchingService.candidateRecommendationForJob(interest.seekerId, jobProfileId)
-                    ?: matchingService.candidateRecommendationDisplay(interest.seekerId, jobProfileId)
-                    ?: continue
-            val enriched = enrichCandidateRecommendation(jobProfileId, base, interest)
+            val base = matchingService.candidateCard(interest.seekerId, jobProfileId) ?: continue
+            val enriched = enrichCandidateCard(jobProfileId, base, interest)
             if (enriched.interestStatus == InterestStatus.MUTUAL) {
                 mutualOutside.add(enriched)
             } else if (enriched.interestStatus == InterestStatus.RESPONDED ||
@@ -208,10 +205,10 @@ class MatchInterestService(
         if (status != InterestStatus.INCOMING && status != InterestStatus.MUTUAL) return
 
         val base =
-            matchingService.candidateRecommendationForJob(seekerId, jobProfileId)
-                ?: matchingService.candidateRecommendationDisplay(seekerId, jobProfileId)
+            matchingService.candidateRecommendationForJob(seekerId, jobProfileId)?.toCard()
+                ?: matchingService.candidateCard(seekerId, jobProfileId)
                 ?: return
-        val enriched = enrichCandidateRecommendation(jobProfileId, base, interest)
+        val enriched = enrichCandidateCard(jobProfileId, base, interest)
         notifier.notify(
             employerUserId,
             MatchInterestEventDto(
@@ -237,10 +234,10 @@ class MatchInterestService(
         if (status != InterestStatus.INCOMING && status != InterestStatus.MUTUAL) return
 
         val base =
-            matchingService.jobRecommendationForSeeker(seekerId, jobProfileId)
-                ?: matchingService.jobRecommendationDisplay(jobProfileId)
+            matchingService.jobRecommendationForSeeker(seekerId, jobProfileId)?.toCard()
+                ?: matchingService.jobCard(jobProfileId)
                 ?: return
-        val enriched = enrichJobRecommendation(seekerId, base, interest)
+        val enriched = enrichJobCard(seekerId, base, interest)
         notifier.notify(
             seekerUserId,
             MatchInterestEventDto(
@@ -257,10 +254,28 @@ class MatchInterestService(
         recommendation: JobRecommendationDto,
         interest: MatchInterestRecord? = null,
     ): JobRecommendationDto {
+        val (status, contactInfo) = resolveJobInterest(seekerId, recommendation.id, interest)
+        return recommendation.copy(interestStatus = status, contactInfo = contactInfo)
+    }
+
+    private fun enrichJobCard(
+        seekerId: Long,
+        card: JobCardDto,
+        interest: MatchInterestRecord? = null,
+    ): JobCardDto {
+        val (status, contactInfo) = resolveJobInterest(seekerId, card.id, interest)
+        return card.copy(interestStatus = status, contactInfo = contactInfo)
+    }
+
+    private fun resolveJobInterest(
+        seekerId: Long,
+        jobProfileId: Long,
+        interest: MatchInterestRecord?,
+    ): Pair<InterestStatus, EmployerContactDto?> {
         val resolvedInterest =
             interest
                 ?: matchInterestRepository
-                    .findBySeekerAndJobProfiles(seekerId, listOf(recommendation.id))
+                    .findBySeekerAndJobProfiles(seekerId, listOf(jobProfileId))
                     .values
                     .firstOrNull()
         val status =
@@ -274,11 +289,11 @@ class MatchInterestService(
             }
         val contactInfo =
             if (status == InterestStatus.MUTUAL) {
-                loadEmployerContactForJob(recommendation.id)
+                loadEmployerContactForJob(jobProfileId)
             } else {
                 null
             }
-        return recommendation.copy(interestStatus = status, contactInfo = contactInfo)
+        return status to contactInfo
     }
 
     private fun enrichCandidateRecommendation(
@@ -286,10 +301,28 @@ class MatchInterestService(
         recommendation: CandidateRecommendationDto,
         interest: MatchInterestRecord? = null,
     ): CandidateRecommendationDto {
+        val (status, contactInfo) = resolveCandidateInterest(jobProfileId, recommendation.id, interest)
+        return recommendation.copy(interestStatus = status, contactInfo = contactInfo)
+    }
+
+    private fun enrichCandidateCard(
+        jobProfileId: Long,
+        card: CandidateCardDto,
+        interest: MatchInterestRecord? = null,
+    ): CandidateCardDto {
+        val (status, contactInfo) = resolveCandidateInterest(jobProfileId, card.id, interest)
+        return card.copy(interestStatus = status, contactInfo = contactInfo)
+    }
+
+    private fun resolveCandidateInterest(
+        jobProfileId: Long,
+        seekerId: Long,
+        interest: MatchInterestRecord?,
+    ): Pair<InterestStatus, jobs.procrush.matching.dto.SeekerContactDto?> {
         val resolvedInterest =
             interest
                 ?: matchInterestRepository
-                    .findByJobProfileAndSeekers(jobProfileId, listOf(recommendation.id))
+                    .findByJobProfileAndSeekers(jobProfileId, listOf(seekerId))
                     .values
                     .firstOrNull()
         val status =
@@ -303,11 +336,11 @@ class MatchInterestService(
             }
         val contactInfo =
             if (status == InterestStatus.MUTUAL) {
-                matchInterestRepository.findSeekerContact(recommendation.id)
+                matchInterestRepository.findSeekerContact(seekerId)
             } else {
                 null
             }
-        return recommendation.copy(interestStatus = status, contactInfo = contactInfo)
+        return status to contactInfo
     }
 
     private fun loadEmployerContactForJob(jobProfileId: Long): EmployerContactDto? {

@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {fetchPositionsOverview, fetchSeekerInterests, respondToJob, updateDesiredPositions} from '../../api/seekerApi'
 import type {
+  JobCardDto,
   JobRecommendationDto,
   MatchInterestEventDto,
   OccupationDto,
@@ -24,6 +25,8 @@ import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
 import {subscribeSeekerRecommendationsUpdated} from '../../api/recommendationsApi'
 import {resolveError} from '../../i18n/resolveApiError'
 
+type JobCardModel = JobCardDto & {matchScore?: number}
+
 function patchSeekerJobFromEvent(
   job: JobRecommendationDto,
   event: MatchInterestEventDto,
@@ -36,13 +39,13 @@ function patchSeekerJobFromEvent(
   }
 }
 
-function JobRecommendationCard({
+function JobCardView({
   job,
   respondingId,
   highlighted,
   onRespond,
 }: {
-  job: JobRecommendationDto
+  job: JobCardModel
   respondingId: number | null
   highlighted?: boolean
   onRespond: (jobProfileId: number) => void
@@ -65,7 +68,7 @@ function JobRecommendationCard({
               <p className="mt-2 text-sm leading-relaxed text-muted">{job.description}</p>
             )}
           </div>
-          <MatchScoreBadge score={job.matchScoreDisplay} />
+          {job.matchScore != null && <MatchScoreBadge score={job.matchScore} />}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-4">
@@ -159,7 +162,13 @@ export function SeekerPositionsPage() {
     setRespondingId(jobProfileId)
     try {
       const updated = await respondToJob(jobProfileId)
-      setRecommendations((prev) => prev.map((job) => (job.id === jobProfileId ? updated : job)))
+      setRecommendations((prev) =>
+        prev.map((job) =>
+          job.id === jobProfileId
+            ? {...job, interestStatus: updated.interestStatus, contactInfo: updated.contactInfo}
+            : job,
+        ),
+      )
       const outside = await fetchSeekerInterests()
       setInterests(outside)
       setMessage(
@@ -226,7 +235,7 @@ export function SeekerPositionsPage() {
         ) : (
           <div className="flex flex-col gap-4">
             {recommendations.map((job) => (
-              <JobRecommendationCard
+              <JobCardView
                 key={job.id}
                 job={job}
                 respondingId={respondingId}
@@ -247,7 +256,7 @@ export function SeekerPositionsPage() {
             >
               <div className="flex flex-col gap-4">
                 {interests.respondedOutside.map((job) => (
-                  <JobRecommendationCard
+                  <JobCardView
                     key={`responded-${job.id}`}
                     job={job}
                     respondingId={respondingId}
@@ -265,7 +274,7 @@ export function SeekerPositionsPage() {
             >
               <div className="flex flex-col gap-4">
                 {interests.mutualOutside.map((job) => (
-                  <JobRecommendationCard
+                  <JobCardView
                     key={`mutual-${job.id}`}
                     job={job}
                     respondingId={respondingId}

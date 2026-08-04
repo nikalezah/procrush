@@ -1,5 +1,6 @@
 import {apiFetch} from './client'
 import type {
+    CandidateCardDto,
     CandidateRecommendationDto,
     CreateJobProfileRequest,
     EmployerCandidatesOverviewDto,
@@ -63,7 +64,7 @@ export function fetchCandidatesOverview(jobProfileId: number): Promise<EmployerC
 export function respondToCandidate(
   jobProfileId: number,
   seekerId: number,
-): Promise<CandidateRecommendationDto> {
+): Promise<CandidateCardDto> {
   return apiFetch(`/api/employer/job-profiles/${jobProfileId}/candidates/${seekerId}/respond`, {
     method: 'POST',
   })

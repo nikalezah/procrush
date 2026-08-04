@@ -358,7 +358,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './matching_models.yaml#/components/schemas/CandidateRecommendationDto'
+                $ref: './matching_models.yaml#/components/schemas/CandidateCardDto'
         '401':
           description: Not authenticated
           content:

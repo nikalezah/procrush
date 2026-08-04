@@ -109,7 +109,6 @@ class MatchResultsRepository {
             it[MatchResultsTable.seekerId] = result.seekerId
             it[MatchResultsTable.jobProfileId] = result.jobProfileId
             it[MatchResultsTable.matchScore] = result.matchScore
-            it[MatchResultsTable.matchScoreDisplay] = result.matchScoreDisplay
             it[MatchResultsTable.personalityIncluded] = result.personalityIncluded
             it[MatchResultsTable.computedAt] = result.computedAt
         }
@@ -120,7 +119,6 @@ class MatchResultsRepository {
             seekerId = this[MatchResultsTable.seekerId],
             jobProfileId = this[MatchResultsTable.jobProfileId],
             matchScore = this[MatchResultsTable.matchScore],
-            matchScoreDisplay = this[MatchResultsTable.matchScoreDisplay],
             personalityIncluded = this[MatchResultsTable.personalityIncluded],
             computedAt = this[MatchResultsTable.computedAt],
         )

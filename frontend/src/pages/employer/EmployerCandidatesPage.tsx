@@ -2,7 +2,12 @@ import {useParams} from 'react-router-dom'
 import {useEffect, useRef, useState} from 'react'
 import {useTranslation} from 'react-i18next'
 import {fetchCandidatesOverview, fetchEmployerInterests, respondToCandidate} from '../../api/employerApi'
-import type {CandidateRecommendationDto, EmployerInterestsResponseDto, MatchInterestEventDto} from '../../api/types'
+import type {
+  CandidateCardDto,
+  CandidateRecommendationDto,
+  EmployerInterestsResponseDto,
+  MatchInterestEventDto,
+} from '../../api/types'
 import {ContactInfoPanel} from '../../components/ContactInfoPanel'
 import {EmptyState} from '../../components/EmptyState'
 import {FormSection} from '../../components/FormSection'
@@ -18,6 +23,8 @@ import {useMatchInterestEvents} from '../../hooks/useMatchInterestEvents'
 import {subscribeEmployerRecommendationsUpdated} from '../../api/recommendationsApi'
 import {resolveError} from '../../i18n/resolveApiError'
 
+type CandidateCardModel = CandidateCardDto & {matchScore?: number}
+
 function patchEmployerCandidateFromEvent(
   candidate: CandidateRecommendationDto,
   event: MatchInterestEventDto,
@@ -30,13 +37,13 @@ function patchEmployerCandidateFromEvent(
   }
 }
 
-function CandidateRecommendationCard({
+function CandidateCardView({
   candidate,
   respondingId,
   highlighted,
   onRespond,
 }: {
-  candidate: CandidateRecommendationDto
+  candidate: CandidateCardModel
   respondingId: number | null
   highlighted?: boolean
   onRespond: (seekerId: number) => void
@@ -66,7 +73,7 @@ function CandidateRecommendationCard({
               ))}
             </div>
           </div>
-          <MatchScoreBadge score={candidate.matchScoreDisplay} />
+          {candidate.matchScore != null && <MatchScoreBadge score={candidate.matchScore} />}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-4">
@@ -148,7 +155,15 @@ export function EmployerCandidatesPage() {
     try {
       const updated = await respondToCandidate(profileId, seekerId)
       setCandidates((prev) =>
-        prev.map((candidate) => (candidate.id === seekerId ? updated : candidate)),
+        prev.map((candidate) =>
+          candidate.id === seekerId
+            ? {
+                ...candidate,
+                interestStatus: updated.interestStatus,
+                contactInfo: updated.contactInfo,
+              }
+            : candidate,
+        ),
       )
       const outside = await fetchEmployerInterests(profileId)
       setInterests(outside)
@@ -194,7 +209,7 @@ export function EmployerCandidatesPage() {
         <ul className="flex flex-col gap-4">
           {candidates.map((candidate) => (
             <li key={candidate.id}>
-              <CandidateRecommendationCard
+              <CandidateCardView
                 candidate={candidate}
                 respondingId={respondingId}
                 highlighted={highlightedId === candidate.id}
@@ -215,7 +230,7 @@ export function EmployerCandidatesPage() {
               <ul className="flex flex-col gap-4">
                 {interests.respondedOutside.map((candidate) => (
                   <li key={`responded-${candidate.id}`}>
-                    <CandidateRecommendationCard
+                    <CandidateCardView
                       candidate={candidate}
                       respondingId={respondingId}
                       onRespond={(seekerId) => void handleRespond(seekerId)}
@@ -234,7 +249,7 @@ export function EmployerCandidatesPage() {
               <ul className="flex flex-col gap-4">
                 {interests.mutualOutside.map((candidate) => (
                   <li key={`mutual-${candidate.id}`}>
-                    <CandidateRecommendationCard
+                    <CandidateCardView
                       candidate={candidate}
                       respondingId={respondingId}
                       onRespond={(seekerId) => void handleRespond(seekerId)}

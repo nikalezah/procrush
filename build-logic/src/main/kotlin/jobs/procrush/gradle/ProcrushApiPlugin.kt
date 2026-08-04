@@ -7,12 +7,14 @@ import org.gradle.api.Project
 class ProcrushApiPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val generatedDir = target.layout.buildDirectory.dir("spektor-generated/kotlin")
+        val normalizedDir = target.layout.buildDirectory.dir("spektor-normalized/kotlin")
 
         val normalize = target.tasks.register(
             "normalizeSpektorPackages",
             NormalizeSpektorPackagesTask::class.java,
         ) {
-            this.generatedDir.set(generatedDir)
+            sourceDir.set(generatedDir)
+            outputDir.set(normalizedDir)
         }
 
         target.pluginManager.withPlugin("io.github.vooft.spektor") {
@@ -24,6 +26,11 @@ class ProcrushApiPlugin : Plugin<Project> {
             }
             target.tasks.named("compileKotlin") {
                 dependsOn(normalize)
+            }
+            target.extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+                sourceSets.named("main") {
+                    kotlin.srcDir(normalizedDir)
+                }
             }
         }
     }

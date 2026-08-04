@@ -16,14 +16,8 @@ spektor {
     routesSuffix = "Routes"
 }
 
-val spektorGeneratedDir = layout.buildDirectory.dir("spektor-generated/kotlin")
-
-kotlin.sourceSets.named("main") {
-    kotlin.srcDir(spektorGeneratedDir)
-}
-
 tasks.named<KotlinCompile>("compileKotlin") {
-    dependsOn("spektorGenerate")
+    dependsOn("normalizeSpektorPackages")
 }
 
 group = "jobs.procrush"

@@ -1,22 +1,23 @@
 import {apiFetch} from './client'
 import type {
-    CompleteSurveyResponseDto,
-    CreateSeekerEducationRequest,
-    CreateSeekerExperienceRequest,
-    JobRecommendationDto,
-    PersonalityPreviewDto,
-    PersonalityProfileStatus,
-    SeekerDashboardDto,
-    SeekerDesiredPositionsResponse,
-    SeekerEducationDto,
-    SeekerExperienceDto,
-    SeekerInterestsResponseDto,
-    SeekerPositionsOverviewDto,
-    SeekerProfileDto,
-    SeekerSkillsResponse,
-    SurveyDetailDto,
-    SurveyGroupsResponseDto,
-    UpdateSeekerProfileRequest,
+  CompleteSurveyResponseDto,
+  CreateSeekerEducationRequest,
+  CreateSeekerExperienceRequest,
+  JobCardDto,
+  JobRecommendationDto,
+  PersonalityPreviewDto,
+  PersonalityProfileStatus,
+  SeekerDashboardDto,
+  SeekerDesiredPositionsResponse,
+  SeekerEducationDto,
+  SeekerExperienceDto,
+  SeekerInterestsResponseDto,
+  SeekerPositionsOverviewDto,
+  SeekerProfileDto,
+  SeekerSkillsResponse,
+  SurveyDetailDto,
+  SurveyGroupsResponseDto,
+  UpdateSeekerProfileRequest,
 } from './types'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
@@ -153,7 +154,7 @@ export function fetchRecommendations(): Promise<JobRecommendationDto[]> {
   return apiFetch('/api/seeker/recommendations')
 }
 
-export function respondToJob(jobProfileId: number): Promise<JobRecommendationDto> {
+export function respondToJob(jobProfileId: number): Promise<JobCardDto> {
   return apiFetch(`/api/seeker/recommendations/${jobProfileId}/respond`, { method: 'POST' })
 }
 

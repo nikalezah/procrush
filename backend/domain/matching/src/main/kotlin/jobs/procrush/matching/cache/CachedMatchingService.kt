@@ -2,7 +2,9 @@ package jobs.procrush.matching.cache
 
 import jobs.procrush.bootstrap.config.RedisConfig
 import jobs.procrush.bootstrap.redis.RedisClient
+import jobs.procrush.matching.dto.CandidateCardDto
 import jobs.procrush.matching.dto.CandidateRecommendationDto
+import jobs.procrush.matching.dto.JobCardDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.service.MatchingQueries
 import jobs.procrush.observability.AppMetrics
@@ -73,11 +75,10 @@ class CachedMatchingService(
     fun candidateRecommendationForJob(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? =
         delegate.candidateRecommendationForJob(seekerId, jobProfileId)
 
-    fun jobRecommendationDisplay(jobProfileId: Long): JobRecommendationDto? =
-        delegate.jobRecommendationDisplay(jobProfileId)
+    fun jobCard(jobProfileId: Long): JobCardDto? = delegate.jobCard(jobProfileId)
 
-    fun candidateRecommendationDisplay(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto? =
-        delegate.candidateRecommendationDisplay(seekerId, jobProfileId)
+    fun candidateCard(seekerId: Long, jobProfileId: Long): CandidateCardDto? =
+        delegate.candidateCard(seekerId, jobProfileId)
 
     fun countMatchedCandidatesForOccupation(occupationId: Long): Int =
         delegate.countMatchedCandidatesForOccupation(occupationId)

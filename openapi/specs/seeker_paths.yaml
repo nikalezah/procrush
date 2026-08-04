@@ -610,7 +610,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './matching_models.yaml#/components/schemas/JobRecommendationDto'
+                $ref: './matching_models.yaml#/components/schemas/JobCardDto'
         '401':
           description: Not authenticated
           content:

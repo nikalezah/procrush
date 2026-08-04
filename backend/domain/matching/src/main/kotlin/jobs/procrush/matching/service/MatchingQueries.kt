@@ -1,6 +1,8 @@
 package jobs.procrush.matching.service
 
+import jobs.procrush.matching.dto.CandidateCardDto
 import jobs.procrush.matching.dto.CandidateRecommendationDto
+import jobs.procrush.matching.dto.JobCardDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import java.util.UUID
 
@@ -16,9 +18,9 @@ interface MatchingQueries {
 
     fun candidateRecommendationForJob(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto?
 
-    fun jobRecommendationDisplay(jobProfileId: Long): JobRecommendationDto?
+    fun jobCard(jobProfileId: Long): JobCardDto?
 
-    fun candidateRecommendationDisplay(seekerId: Long, jobProfileId: Long): CandidateRecommendationDto?
+    fun candidateCard(seekerId: Long, jobProfileId: Long): CandidateCardDto?
 
     fun countMatchedCandidatesForOccupation(occupationId: Long): Int
 

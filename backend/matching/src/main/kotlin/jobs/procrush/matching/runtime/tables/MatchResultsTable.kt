@@ -7,7 +7,6 @@ object MatchResultsTable : Table("match_results") {
     val seekerId = long("seeker_id")
     val jobProfileId = long("job_profile_id")
     val matchScore = double("match_score")
-    val matchScoreDisplay = integer("match_score_display")
     val personalityIncluded = bool("personality_included")
     val computedAt = timestampWithTimeZone("computed_at")
 

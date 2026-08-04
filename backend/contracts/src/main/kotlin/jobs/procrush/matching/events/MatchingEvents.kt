@@ -66,7 +66,6 @@ data class MatchScorePairDto(
     val seekerId: Long,
     val jobProfileId: Long,
     val matchScore: Double,
-    val matchScoreDisplay: Int,
     val personalityIncluded: Boolean,
 )
 

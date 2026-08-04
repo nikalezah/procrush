@@ -6,7 +6,6 @@ data class StoredMatchScore(
     val seekerId: Long,
     val jobProfileId: Long,
     val matchScore: Double,
-    val matchScoreDisplay: Int,
     val personalityIncluded: Boolean,
     val computedAt: OffsetDateTime,
 )

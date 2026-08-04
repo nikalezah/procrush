@@ -128,7 +128,7 @@ export function SeekerDashboardPage() {
                     )}
                   </div>
                 </div>
-                <MatchScoreBadge score={job.matchScoreDisplay} size="sm" />
+                <MatchScoreBadge score={job.matchScore} size="sm" />
               </Card>
             ))}
           </div>

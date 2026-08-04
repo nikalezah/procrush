@@ -37,7 +37,7 @@ class MatchingEventProcessor(
         val jobs = projectionRepository.findMatchableJobProfiles(payload.desiredOccupationIds)
         val results =
             jobs.mapNotNull { job ->
-                scorePair(payload, job)?.takeIf { job.isActive }
+                scorePair(payload, job)?.takeIf { job.isActive && it.matchScore > 0.0 }
             }
         matchResultsRepository.upsertAll(results)
         matchResultsRepository.deleteForSeekerExceptJobs(
@@ -71,8 +71,8 @@ class MatchingEventProcessor(
         val job = payload.toJobCandidate()
         val seekers = projectionRepository.findMatchableSeekers(payload.occupationId)
         val results =
-            seekers.map { seeker ->
-                scorePair(seeker, job)
+            seekers.mapNotNull { seeker ->
+                scorePair(seeker, job)?.takeIf { it.matchScore > 0.0 }
             }
         matchResultsRepository.upsertAll(results)
         matchResultsRepository.deleteForJobExceptSeekers(
@@ -138,7 +138,6 @@ class MatchingEventProcessor(
             seekerId = seekerId,
             jobProfileId = jobProfileId,
             matchScore = matchScore,
-            matchScoreDisplay = matchScoreDisplay,
             personalityIncluded = personalityIncluded,
         )
 
@@ -162,7 +161,6 @@ class MatchingEventProcessor(
             seekerId = seeker.seekerId,
             jobProfileId = job.jobProfileId,
             matchScore = matchScore,
-            matchScoreDisplay = MatchScoringService.toDisplayScore(matchScore),
             personalityIncluded = personalityIncluded,
             computedAt = OffsetDateTime.now(),
         )
@@ -171,7 +169,7 @@ class MatchingEventProcessor(
     private fun scorePair(
         seeker: SeekerMatchCandidate,
         job: JobMatchCandidate,
-    ): StoredMatchResult {
+    ): StoredMatchResult? {
         val skills = MatchScoringService.skillsScore(seeker.skillIds, job.skillIds)
         val personalityAxes = seeker.personalityAxes
         val personality =
@@ -187,7 +185,6 @@ class MatchingEventProcessor(
             seekerId = seeker.seekerId,
             jobProfileId = job.jobProfileId,
             matchScore = matchScore,
-            matchScoreDisplay = MatchScoringService.toDisplayScore(matchScore),
             personalityIncluded = personalityIncluded,
             computedAt = OffsetDateTime.now(),
         )

@@ -26,6 +26,8 @@ class MatchScoreRepository {
             val seekerId = payload.seekerId
             val jobProfileId = payload.jobProfileId
 
+            val pairs = payload.pairs.filter { it.matchScore > 0.0 }
+
             when {
                 seekerId != null -> {
                     val previousJobs =
@@ -33,10 +35,10 @@ class MatchScoreRepository {
                             .selectAll()
                             .where { MatchScoresTable.seekerId eq seekerId }
                             .map { it[MatchScoresTable.jobProfileId] }
-                    replaceForSeeker(seekerId, payload.pairs, computedAt)
+                    replaceForSeeker(seekerId, pairs, computedAt)
                     affectedSeekers.add(seekerId)
                     affectedJobs.addAll(previousJobs)
-                    affectedJobs.addAll(payload.pairs.map { it.jobProfileId })
+                    affectedJobs.addAll(pairs.map { it.jobProfileId })
                 }
                 jobProfileId != null -> {
                     val previousSeekers =
@@ -44,10 +46,10 @@ class MatchScoreRepository {
                             .selectAll()
                             .where { MatchScoresTable.jobProfileId eq jobProfileId }
                             .map { it[MatchScoresTable.seekerId] }
-                    replaceForJob(jobProfileId, payload.pairs, computedAt)
+                    replaceForJob(jobProfileId, pairs, computedAt)
                     affectedJobs.add(jobProfileId)
                     affectedSeekers.addAll(previousSeekers)
-                    affectedSeekers.addAll(payload.pairs.map { it.seekerId })
+                    affectedSeekers.addAll(pairs.map { it.seekerId })
                 }
                 else -> error("match.results_updated requires seekerId or jobProfileId")
             }
@@ -136,7 +138,6 @@ class MatchScoreRepository {
             it[seekerId] = pair.seekerId
             it[jobProfileId] = pair.jobProfileId
             it[matchScore] = pair.matchScore
-            it[matchScoreDisplay] = pair.matchScoreDisplay
             it[personalityIncluded] = pair.personalityIncluded
             it[MatchScoresTable.computedAt] = computedAt
         }
@@ -147,7 +148,6 @@ class MatchScoreRepository {
             seekerId = this[MatchScoresTable.seekerId],
             jobProfileId = this[MatchScoresTable.jobProfileId],
             matchScore = this[MatchScoresTable.matchScore],
-            matchScoreDisplay = this[MatchScoresTable.matchScoreDisplay],
             personalityIncluded = this[MatchScoresTable.personalityIncluded],
             computedAt = this[MatchScoresTable.computedAt],
         )
