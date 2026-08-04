@@ -12,7 +12,8 @@ Kotlin backend: Ktor HTTP API, background workers, and domain logic. Three deplo
 | [`domain/`](./domain) | `:backend:domain:*` | Bounded contexts: auth, seeker, employer, survey, matching, personality |
 | [`api/`](./api/src/main/kotlin) | `:backend:api` | Ktor HTTP API, Spektor-generated routes/DTOs in `build/`, handlers, composition root |
 | [`personality/`](./personality) | `:backend:personality` | Deployable compute app: RabbitMQ command → LLM → result |
-| [`domain/personality/`](./domain/personality) | `:backend:domain:personality-lib` | Domain library (coordinator, command/result messaging, apply) |
+| [`domain/personality-messaging/`](./domain/personality-messaging) | `:backend:domain:personality-messaging` | Thin RabbitMQ command/result publishers shared by API and worker |
+| [`domain/personality-lib/`](./domain/personality-lib) | `:backend:domain:personality-lib` | API-side personality library (coordinator, result consumer, apply, Redis SSE/lock) |
 | [`matching/`](./matching) | `:backend:matching` | Kafka consumer + score publisher, separate matching DB |
 
 ## Deployable applications

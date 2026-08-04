@@ -17,7 +17,7 @@ dependencies {
     implementation(projects.backend.platform.llm)
     implementation(projects.backend.platform.observability)
     implementation(projects.backend.contracts)
-    implementation(projects.backend.domain.personalityLib)
+    implementation(projects.backend.domain.personalityMessaging)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)
