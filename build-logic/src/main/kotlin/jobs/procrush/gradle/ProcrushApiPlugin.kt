@@ -32,6 +32,23 @@ class ProcrushApiPlugin : Plugin<Project> {
                     kotlin.srcDir(normalizedDir)
                 }
             }
+            // The Spektor plugin registers its raw output (`spektor-generated`) as a
+            // Kotlin source directory. We compile the normalized copy instead. On
+            // Windows the raw packages carry a leading underscore, so the two trees
+            // differ; on Linux they are identical and compiling both yields
+            // "Redeclaration" errors. Drop the raw tree so only the normalized copy
+            // is compiled on every platform.
+            target.afterEvaluate {
+                target.extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+                    sourceSets.named("main") {
+                        val kept =
+                            kotlin.srcDirs.filterNot { dir ->
+                                dir.path.replace('\\', '/').contains("/spektor-generated")
+                            }
+                        kotlin.setSrcDirs(kept)
+                    }
+                }
+            }
         }
     }
 }
