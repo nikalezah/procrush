@@ -1,0 +1,152 @@
+# ProCrush — Render Blueprint (image-backed apps)
+# Docs: https://render.com/docs/blueprint-spec
+#
+# App images are built on GitHub Actions and pushed to GHCR.
+# RabbitMQ/Kafka use stock public images (not built by ProCrush CI).
+#
+# Apply from the Render Dashboard → New → Blueprint, or sync this file
+# (copy/rename to render.yaml at repo root if you use Render’s default path).
+
+databases:
+  - name: postgres
+    plan: basic-256mb
+    databaseName: procrush
+    user: procrush
+    ipAllowList: []
+
+  - name: matching-postgres
+    plan: basic-256mb
+    databaseName: procrush_matching
+    user: procrush
+    ipAllowList: []
+
+services:
+  - type: keyvalue
+    name: redis
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+  # Stock broker — configure credentials in the dashboard / env below.
+  - type: pserv
+    name: rabbitmq
+    runtime: image
+    plan: starter
+    image:
+      url: docker.io/library/rabbitmq:3-management
+    envVars:
+      - key: RABBITMQ_DEFAULT_USER
+        sync: false
+      - key: RABBITMQ_DEFAULT_PASS
+        sync: false
+
+  # Stock Kafka — adjust advertised listeners for Render private networking as needed.
+  - type: pserv
+    name: kafka
+    runtime: image
+    plan: starter
+    image:
+      url: docker.io/apache/kafka:3.9.0
+    envVars:
+      - key: KAFKA_NODE_ID
+        value: "1"
+      - key: KAFKA_PROCESS_ROLES
+        value: broker,controller
+      - key: KAFKA_LISTENERS
+        value: PLAINTEXT://:9092,CONTROLLER://:9093
+      - key: KAFKA_ADVERTISED_LISTENERS
+        value: PLAINTEXT://kafka:9092
+      - key: KAFKA_CONTROLLER_LISTENER_NAMES
+        value: CONTROLLER
+      - key: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+        value: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - key: KAFKA_CONTROLLER_QUORUM_VOTERS
+        value: 1@kafka:9093
+      - key: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+        value: "1"
+      - key: CLUSTER_ID
+        sync: false
+
+  - type: web
+    name: api
+    runtime: image
+    plan: starter
+    healthCheckPath: /health
+    image:
+      url: ghcr.io/nikalezah/procrush-api:master
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: keyvalue
+          property: connectionString
+      - key: RABBITMQ_URL
+        sync: false
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: AUTH_DEV_MODE
+        value: "false"
+      - key: KAFKA_MATCHING_RESULTS_TOPIC
+        value: procrush.matching.results
+      - key: KAFKA_MATCHING_RESULTS_CONSUMER_GROUP
+        value: api-matching-results
+
+  - type: worker
+    name: personality
+    runtime: image
+    plan: starter
+    image:
+      url: ghcr.io/nikalezah/procrush-personality:master
+    envVars:
+      - key: RABBITMQ_URL
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: LLM_MODEL
+        value: gemini-3.1-flash-lite
+      - key: LLM_API_KEY
+        sync: false
+      - key: WORKER_HEALTH_PORT
+        value: "8091"
+
+  - type: worker
+    name: matching
+    runtime: image
+    plan: starter
+    image:
+      url: ghcr.io/nikalezah/procrush-matching:master
+    envVars:
+      - key: MATCHING_DATABASE_URL
+        fromDatabase:
+          name: matching-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: keyvalue
+          property: connectionString
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false
+      - key: MATCHING_SERVICE_PORT
+        value: "8092"
+
+  - type: web
+    name: frontend
+    runtime: image
+    plan: starter
+    image:
+      url: ghcr.io/nikalezah/procrush-frontend:master
+    envVars:
+      - key: BACKEND_UPSTREAM
+        fromService:
+          name: api
+          type: web
+          property: hostport

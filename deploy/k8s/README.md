@@ -26,7 +26,7 @@ Recommended local development setup. Cloud deployment — in [deploy/README.md](
    `kindUp`:
    - creates cluster `procrush` (if missing), or starts stopped kind node containers (e.g. after Docker quit) and waits for the API;
    - installs ingress-nginx (if not ready);
-   - builds thin app images (`deploy/Dockerfile.*.dev`) only when artifacts changed, loads them into kind;
+   - builds thin app images (`deploy/docker/Dockerfile.*`) only when artifacts changed, loads them into kind;
    - applies manifests when the namespace is missing or kustomize sources changed: `kubectl apply -k deploy/k8s/overlays/kind`;
    - restarts a Deployment only if its image was rebuilt **and** the Deployment already existed (first apply does not restart).
 
@@ -162,7 +162,7 @@ Use the same entry point after the first bootstrap:
 ./gradlew kindUp
 ```
 
-Local Gradle/npm builds feed thin `deploy/Dockerfile.*.dev` images. Hash gates skip docker build, `kind load`, and rollout when packaged artifacts are unchanged. Manifest apply runs only when kustomize sources change (or the namespace is missing). Rollout restart runs only when an image was rebuilt and the Deployment already existed.
+Local Gradle/npm builds feed thin `deploy/docker/Dockerfile.*` images. Hash gates skip docker build, `kind load`, and rollout when packaged artifacts are unchanged. Manifest apply runs only when kustomize sources change (or the namespace is missing). Rollout restart runs only when an image was rebuilt and the Deployment already existed.
 
 | Change | What redeploys |
 |--------|----------------|
@@ -237,6 +237,8 @@ More on backend modules — [backend/README.md](../../backend/README.md).
 
 ## Related documentation
 
-- [deploy/README.md](../README.md) — Railway deployment
+- [deploy/README.md](../README.md) — thin images, GHCR, Render / Railway
+- [deploy/render/README.md](../render/README.md) — Render Blueprint
+- [deploy/railway/README.md](../railway/README.md) — Railway image-backed services
 - [backend/README.md](../../backend/README.md) — backend and infrastructure dependencies
 - [frontend/README.md](../../frontend/README.md) — web client

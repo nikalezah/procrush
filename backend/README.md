@@ -133,7 +133,7 @@ Full REST endpoint list — in [openapi/README.md](../openapi/README.md).
 
 ## Local development (hot-reload)
 
-**Requirements:** JDK 25 (Gradle toolchain; matches `deploy/Dockerfile.*`), infrastructure from kind (see [deploy/k8s/README.md](../deploy/k8s/README.md)).
+**Requirements:** JDK 25 (Gradle toolchain; matches `deploy/docker/Dockerfile.*`), infrastructure from kind (see [deploy/k8s/README.md](../deploy/k8s/README.md)).
 
 Environment variables — in [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/base/configmap.yaml) and local `secret.yaml` (template: [`secret.yaml.example`](../deploy/k8s/base/secret.yaml.example)).
 
