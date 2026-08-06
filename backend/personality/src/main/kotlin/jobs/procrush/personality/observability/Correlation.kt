@@ -9,6 +9,9 @@ object Correlation {
 
     fun currentRequestId(): String? = get(CorrelationIds.REQUEST_ID)
 
+    /** Isolated JVM island (alongside ThreadLocal) so Logger avoids direct Thread APIs. */
+    fun currentThreadName(): String = Thread.currentThread().name
+
     fun put(
         key: String,
         value: String?,

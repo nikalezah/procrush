@@ -1,20 +1,24 @@
 package jobs.procrush.bootstrap.config
 
-import java.nio.file.Files
-import java.nio.file.Path
-
 object DotEnv {
     fun load(): Map<String, String> {
-        var dir = Path.of(System.getProperty("user.dir"))
+        var dir = PlatformEnv.workingDirectory()
         while (true) {
-            val envFile = dir.resolve(".env")
-            if (Files.exists(envFile)) {
-                return Files.readAllLines(envFile).mapNotNull { parseLine(it) }.toMap()
+            val envFile = joinPath(dir, ".env")
+            val lines = PlatformEnv.readLinesIfExists(envFile)
+            if (lines != null) {
+                return lines.mapNotNull { parseLine(it) }.toMap()
             }
-            dir = dir.parent ?: break
+            dir = PlatformEnv.parentDirectory(dir) ?: break
         }
         return emptyMap()
     }
+
+    private fun joinPath(dir: String, name: String): String =
+        when {
+            dir.endsWith("/") || dir.endsWith("\\") -> dir + name
+            else -> "$dir/$name"
+        }
 
     private fun parseLine(line: String): Pair<String, String>? {
         val trimmed = line.trim()

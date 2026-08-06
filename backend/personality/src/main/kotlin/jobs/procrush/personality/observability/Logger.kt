@@ -2,9 +2,11 @@ package jobs.procrush.personality.observability
 
 import jobs.procrush.bootstrap.config.LogFormat
 import jobs.procrush.shared.CorrelationIds
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.reflect.KClass
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 class Logger private constructor(
     private val name: String,
@@ -65,8 +67,8 @@ class Logger private constructor(
             }
         synchronized(stdoutLock) {
             println(line)
-            if (config.logFormat == LogFormat.TEXT) {
-                throwable?.printStackTrace(System.out)
+            if (config.logFormat == LogFormat.TEXT && throwable != null) {
+                println(throwable.stackTraceToString())
             }
         }
     }
@@ -76,10 +78,10 @@ class Logger private constructor(
         message: String,
         throwable: Throwable?,
     ): String {
-        val timestamp = TEXT_TIMESTAMP.format(Instant.now().atOffset(ZoneOffset.UTC))
+        val timestamp = formatTextTimestamp(Clock.System.now())
         val requestId = Correlation.currentRequestId().orEmpty()
         val suffix = if (throwable != null) "" else ""
-        return "$timestamp [${Thread.currentThread().name}] $level $name [$requestId] - $message$suffix"
+        return "$timestamp [${Correlation.currentThreadName()}] $level $name [$requestId] - $message$suffix"
     }
 
     private fun formatJson(
@@ -89,13 +91,13 @@ class Logger private constructor(
         config: WorkerLogConfig,
     ): String {
         val fields = linkedMapOf<String, Any?>(
-            "@timestamp" to Instant.now().toString(),
+            "@timestamp" to Clock.System.now().toString(),
             "level" to level,
             "logger_name" to name,
             "message" to message,
             "service" to config.serviceName,
             "environment" to config.environment,
-            "thread_name" to Thread.currentThread().name,
+            "thread_name" to Correlation.currentThreadName(),
         )
         val correlation = Correlation.snapshot()
         listOf(
@@ -119,14 +121,29 @@ class Logger private constructor(
 
     companion object {
         private val stdoutLock = Any()
-        private val TEXT_TIMESTAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC)
 
-        fun get(name: String): Logger = Logger(name)
+        fun get(kClass: KClass<*>): Logger =
+            Logger(kClass.qualifiedName ?: kClass.simpleName!!)
 
-        fun get(clazz: Class<*>): Logger = Logger(clazz.name)
-
-        inline fun <reified T> get(): Logger = get(T::class.java)
+        private fun formatTextTimestamp(instant: Instant): String {
+            val local = instant.toLocalDateTime(TimeZone.UTC)
+            val millis = (instant.toEpochMilliseconds() % 1000).let { if (it < 0) it + 1000 else it }
+            return buildString {
+                append(local.year.toString().padStart(4, '0'))
+                append('-')
+                append(local.monthNumber.toString().padStart(2, '0'))
+                append('-')
+                append(local.dayOfMonth.toString().padStart(2, '0'))
+                append(' ')
+                append(local.hour.toString().padStart(2, '0'))
+                append(':')
+                append(local.minute.toString().padStart(2, '0'))
+                append(':')
+                append(local.second.toString().padStart(2, '0'))
+                append('.')
+                append(millis.toString().padStart(3, '0'))
+            }
+        }
 
         private fun formatMessage(
             format: String,

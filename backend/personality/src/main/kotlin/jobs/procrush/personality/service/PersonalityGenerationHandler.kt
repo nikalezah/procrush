@@ -19,7 +19,7 @@ class PersonalityGenerationHandler(
     private val promptBuilder: PersonalityPromptBuilder,
     private val validator: PersonalityProfileValidator,
 ) {
-    private val logger = Logger.get(PersonalityGenerationHandler::class.java)
+    private val logger = Logger.get(PersonalityGenerationHandler::class)
 
     suspend fun generate(command: PersonalityGenerationCommand): PersonalityGenerationResult {
         llmConfig.validateForGeneration()

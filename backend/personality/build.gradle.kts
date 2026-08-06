@@ -19,9 +19,10 @@ dependencies {
     implementation(projects.backend.contracts)
     implementation(projects.backend.domain.personalityMessaging)
     implementation(libs.ktor.serverCore)
-    implementation(libs.ktor.serverNetty)
+    implementation(libs.ktor.serverCio)
     implementation(libs.ktor.client.cio)
     implementation(libs.amqp.client)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.datetime)
 }
