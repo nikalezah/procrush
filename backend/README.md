@@ -59,7 +59,9 @@ Health: `GET /health` (default port `8092`).
 
 ## Observability
 
-Shared module: [`platform/observability`](./platform/observability). Three deployable apps expose the same endpoints.
+API and matching use the shared module [`platform/observability`](./platform/observability) (Logback JSON/text, Micrometer, OpenTelemetry). Personality uses a thin in-process layer under [`personality/.../observability`](./personality/src/main/kotlin/jobs/procrush/personality/observability) — no OTel/Tempo spans, no Logback/Micrometer. `OTEL_*` in the shared configmap is a no-op for personality.
+
+All three apps expose the same HTTP endpoints:
 
 | Endpoint | Purpose |
 |----------|---------|
@@ -73,15 +75,15 @@ Shared module: [`platform/observability`](./platform/observability). Three deplo
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SERVICE_NAME` | per app | `api`, `personality`, or `matching` |
-| `LOG_FORMAT` | `text` | `text` or `json` (JSON adds MDC fields) |
-| `OTEL_ENABLED` | `false` | Enable OpenTelemetry OTLP export |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | Tempo/OTLP collector gRPC endpoint |
+| `LOG_FORMAT` | `text` | `text` or `json` (JSON includes correlation fields) |
+| `OTEL_ENABLED` | `false` | Enable OpenTelemetry OTLP export (api/matching only; ignored by personality) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | Tempo/OTLP collector gRPC endpoint (api/matching only) |
 | `ENVIRONMENT` | `local` | Common metric label |
 | `APP_VERSION` / `GIT_SHA` | `dev` | Reported in health responses |
 
 ### Correlation
 
-HTTP requests accept/propagate `X-Request-Id`. The same ID flows through RabbitMQ personality commands/results and Kafka matching events (`correlationId` in envelope).
+HTTP requests accept/propagate `X-Request-Id`. The same ID flows through RabbitMQ personality commands/results (`X-Request-Id` header + `correlationId` on the payload) and Kafka matching events (`correlationId` in envelope). Personality diagnostics are logs by `requestId` plus Prometheus metrics — not Tempo traces.
 
 ### Local kind stack
 
@@ -89,7 +91,7 @@ With `LOG_FORMAT=json`, `OTEL_ENABLED=true` in [`deploy/k8s/base/configmap.yaml`
 
 - Grafana: http://127.10.0.16:3000 (`admin` / `admin`)
 - Prometheus: http://127.10.0.17:9090
-- Tempo OTLP: `tempo:4317` inside cluster
+- Tempo OTLP: `tempo:4317` inside cluster (api/matching traces only)
 
 See [deploy/k8s/README.md](../deploy/k8s/README.md) for alert rules and port-forward options.
 

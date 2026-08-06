@@ -4,7 +4,7 @@ import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.Channel
 import jobs.procrush.bootstrap.config.RabbitMqConfig
-import jobs.procrush.observability.CorrelationIds
+import jobs.procrush.shared.CorrelationIds
 
 object RabbitMqTopology {
     fun declare(channel: Channel, config: RabbitMqConfig) {

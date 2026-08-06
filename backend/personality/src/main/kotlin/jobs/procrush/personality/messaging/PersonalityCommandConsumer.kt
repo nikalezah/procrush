@@ -5,15 +5,13 @@ import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
-import jobs.procrush.observability.AppMetrics
-import jobs.procrush.observability.CorrelationIds
-import jobs.procrush.observability.MdcContext
-import jobs.procrush.observability.ObservabilityHolder
-import jobs.procrush.observability.TracePropagation
+import jobs.procrush.personality.observability.Correlation
+import jobs.procrush.personality.observability.Logger
+import jobs.procrush.personality.observability.Metrics
 import jobs.procrush.personality.service.PersonalityGenerationHandler
+import jobs.procrush.shared.CorrelationIds
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.util.UUID
 
@@ -25,7 +23,7 @@ class PersonalityCommandConsumer(
     private val rabbitMqConfig: RabbitMqConfig,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
-    private val logger = LoggerFactory.getLogger(PersonalityCommandConsumer::class.java)
+    private val logger = Logger.get(PersonalityCommandConsumer::class.java)
     private var consumerTag: String? = null
     private var consumerChannel: com.rabbitmq.client.Channel? = null
 
@@ -48,7 +46,7 @@ class PersonalityCommandConsumer(
                     }
                 },
             )
-        AppMetrics.setPersonalityConsumerRunning(true)
+        Metrics.setPersonalityConsumerRunning(true)
         logger.info("Personality command consumer started on queue {}", rabbitMqConfig.queue)
     }
 
@@ -58,7 +56,7 @@ class PersonalityCommandConsumer(
         runCatching { channel.close() }
         consumerTag = null
         consumerChannel = null
-        AppMetrics.setPersonalityConsumerRunning(false)
+        Metrics.setPersonalityConsumerRunning(false)
         logger.info("Personality command consumer stopped")
     }
 
@@ -72,16 +70,14 @@ class PersonalityCommandConsumer(
     ) {
         val messageId = properties.messageId ?: UUID.randomUUID().toString()
         val headers = properties.headers.orEmpty()
-        val correlationId = TracePropagation.requestIdFromMap(headers) ?: messageId
-        MdcContext.runWith(
+        val correlationId = Correlation.requestIdFromHeaders(headers) ?: messageId
+        Correlation.runWith(
             mapOf(
                 CorrelationIds.REQUEST_ID to correlationId,
                 CorrelationIds.MESSAGE_ID to messageId,
             ),
         ) {
-            ObservabilityHolder.tracing.withPropagatedHeaders(headers, "personality.generate") {
-                processDeliveryInternal(channel, deliveryTag, body, messageId, correlationId)
-            }
+            processDeliveryInternal(channel, deliveryTag, body, messageId, correlationId)
         }
     }
 
@@ -101,9 +97,9 @@ class PersonalityCommandConsumer(
                 return
             }
 
-        MdcContext.put(CorrelationIds.SEEKER_ID, command.seekerId.toString())
-        MdcContext.put(CorrelationIds.USER_ID, command.userId)
-        MdcContext.put(CorrelationIds.REQUEST_ID, command.correlationId ?: correlationId)
+        Correlation.put(CorrelationIds.SEEKER_ID, command.seekerId.toString())
+        Correlation.put(CorrelationIds.USER_ID, command.userId)
+        Correlation.put(CorrelationIds.REQUEST_ID, command.correlationId ?: correlationId)
 
         try {
             val result =
@@ -112,7 +108,7 @@ class PersonalityCommandConsumer(
                 }.copy(commandMessageId = messageId)
             resultPublisher.publish(result, correlationId = command.correlationId ?: correlationId)
             channel.basicAck(deliveryTag, false)
-            AppMetrics.personalityJobProcessed("success")
+            Metrics.personalityJobProcessed("success")
         } catch (error: Exception) {
             logger.error(
                 "Personality profile generation failed seekerId={} attempt={}",
@@ -126,15 +122,15 @@ class PersonalityCommandConsumer(
                     correlationId = command.correlationId ?: correlationId,
                 )
                 channel.basicAck(deliveryTag, false)
-                AppMetrics.personalityJobProcessed("retry")
+                Metrics.personalityJobProcessed("retry")
             } else {
                 resultPublisher.publish(
                     handler.failureResult(command, error, messageId),
                     correlationId = command.correlationId ?: correlationId,
                 )
                 channel.basicNack(deliveryTag, false, false)
-                AppMetrics.personalityJobDlq()
-                AppMetrics.personalityJobProcessed("dlq")
+                Metrics.personalityJobDlq()
+                Metrics.personalityJobProcessed("dlq")
             }
         }
     }

@@ -3,6 +3,7 @@ package jobs.procrush.personality.service
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
+import jobs.procrush.observability.MdcContext
 import jobs.procrush.personality.dto.PersonalityProfileStatus
 import jobs.procrush.personality.messaging.PersonalityCommandPublisher
 import jobs.procrush.personality.port.PersonalitySurveyCoordinator
@@ -88,6 +89,7 @@ class PersonalityGenerationCoordinator(
                 userId = userId,
                 surveyContext = surveyContext,
                 catalog = catalog,
+                correlationId = MdcContext.currentRequestId(),
             )
         } catch (error: Exception) {
             lockGuard.release(seekerId)

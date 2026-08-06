@@ -1,4 +1,4 @@
-package jobs.procrush.observability
+package jobs.procrush.shared
 
 object CorrelationIds {
     const val REQUEST_ID = "requestId"

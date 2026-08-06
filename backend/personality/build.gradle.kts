@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlinJvm)
+    alias(libs.plugins.kotlinSerialization)
     application
 }
 
@@ -15,10 +16,8 @@ dependencies {
     implementation(projects.backend.config)
     implementation(projects.backend.platform.rabbit)
     implementation(projects.backend.platform.llm)
-    implementation(projects.backend.platform.observability)
     implementation(projects.backend.contracts)
     implementation(projects.backend.domain.personalityMessaging)
-    implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)
     implementation(libs.ktor.client.cio)

@@ -5,7 +5,7 @@ import io.ktor.server.application.install
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
-import jobs.procrush.observability.CorrelationIds
+import jobs.procrush.shared.CorrelationIds
 import jobs.procrush.observability.MdcContext
 import org.slf4j.event.Level
 
