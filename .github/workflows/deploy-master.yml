@@ -143,6 +143,14 @@ jobs:
             frontend/package-lock.json
             i18n/package-lock.json
 
+      - name: Install i18n npm deps
+        if: contains(needs.detect.outputs.services, 'api') || contains(needs.detect.outputs.services, 'personality') || contains(needs.detect.outputs.services, 'matching') || contains(needs.detect.outputs.services, 'frontend')
+        run: npm ci --prefix i18n
+
+      - name: Install frontend npm deps
+        if: contains(needs.detect.outputs.services, 'frontend')
+        run: npm ci --prefix frontend
+
       - name: Build selected Gradle services
         if: contains(needs.detect.outputs.services, 'api') || contains(needs.detect.outputs.services, 'personality') || contains(needs.detect.outputs.services, 'matching')
         shell: bash
