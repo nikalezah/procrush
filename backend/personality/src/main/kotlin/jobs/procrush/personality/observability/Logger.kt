@@ -65,7 +65,9 @@ class Logger private constructor(
             }
         synchronized(stdoutLock) {
             println(line)
-            throwable?.printStackTrace(System.out)
+            if (config.logFormat == LogFormat.TEXT) {
+                throwable?.printStackTrace(System.out)
+            }
         }
     }
 
