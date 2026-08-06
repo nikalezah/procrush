@@ -9,7 +9,7 @@ Recommended local development setup. Cloud deployment — in [deploy/README.md](
 - [Docker](https://docs.docker.com/get-docker/) — allocate **≥ 8 GB RAM** in Docker Desktop settings
 - [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- **JDK 25** and **Node.js 20+** — for `./gradlew kindUp` and optional hot-reload (`./gradlew run` / `npm run dev`)
+- **JDK 25** and **Node.js 24+** — for `./gradlew kindUp` and optional hot-reload (`./gradlew run` / `npm run dev`)
 
 ## Quick start
 

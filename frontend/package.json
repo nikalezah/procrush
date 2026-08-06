@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "bundle:openapi": "redocly bundle ../openapi/bundle.yaml -o ../openapi/dist/openapi.yaml",

@@ -3,6 +3,7 @@ name: Deploy master (GHCR → Render / Railway)
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,7 +25,7 @@ jobs:
       any: ${{ steps.select.outputs.any }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -34,78 +35,84 @@ jobs:
         run: |
           set -euo pipefail
 
-          before="${{ github.event.before }}"
-          if [[ -z "$before" || "$before" =~ ^0+$ ]]; then
-            echo "No usable previous SHA; selecting all services"
+          # Manual Run workflow always builds/deploys all services.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Manual workflow_dispatch; selecting all services"
             services='["api","personality","matching","frontend"]'
           else
-            mapfile -t changed < <(git diff --name-only "$before" "${{ github.sha }}" || true)
-            if [[ ${#changed[@]} -eq 0 ]]; then
-              echo "Empty diff; selecting all services"
+            before="${{ github.event.before }}"
+            if [[ -z "$before" || "$before" =~ ^0+$ ]]; then
+              echo "No usable previous SHA; selecting all services"
               services='["api","personality","matching","frontend"]'
             else
-              printf 'Changed files:\n'
-              printf '  %s\n' "${changed[@]}"
-
-              is_match() {
-                local path="$1"
-                shift
-                local pattern
-                for pattern in "$@"; do
-                  case "$path" in
-                    $pattern) return 0 ;;
-                  esac
-                done
-                return 1
-              }
-
-              gradle_paths=(
-                'gradle/*' 'gradlew' 'gradlew.bat'
-                'settings.gradle.kts' 'build.gradle.kts' 'gradle.properties'
-                'build-logic/*'
-              )
-              shared_backend=(
-                'backend/contracts/*' 'backend/config/*'
-                'backend/platform/*' 'backend/domain/*'
-              )
-
-              selected=()
-              for path in "${changed[@]}"; do
-                if is_match "$path" \
-                  'backend/api/*' "${shared_backend[@]}" \
-                  'openapi/*' 'i18n/*' "${gradle_paths[@]}" \
-                  'deploy/docker/Dockerfile.api'
-                then
-                  selected+=('api')
-                fi
-                if is_match "$path" \
-                  'backend/personality/*' "${shared_backend[@]}" \
-                  'i18n/*' "${gradle_paths[@]}" \
-                  'deploy/docker/Dockerfile.personality'
-                then
-                  selected+=('personality')
-                fi
-                if is_match "$path" \
-                  'backend/matching/*' \
-                  'backend/contracts/*' 'backend/config/*' 'backend/platform/*' \
-                  "${gradle_paths[@]}" \
-                  'deploy/docker/Dockerfile.matching'
-                then
-                  selected+=('matching')
-                fi
-                if is_match "$path" \
-                  'frontend/*' 'openapi/*' 'i18n/*' \
-                  'deploy/docker/Dockerfile.frontend'
-                then
-                  selected+=('frontend')
-                fi
-              done
-
-              if [[ ${#selected[@]} -eq 0 ]]; then
-                echo "No service paths matched; nothing to deploy"
-                services='[]'
+              mapfile -t changed < <(git diff --name-only "$before" "${{ github.sha }}" || true)
+              if [[ ${#changed[@]} -eq 0 ]]; then
+                echo "Empty diff; selecting all services"
+                services='["api","personality","matching","frontend"]'
               else
-                services="$(printf '%s\n' "${selected[@]}" | sort -u | jq -R . | jq -s -c .)"
+                printf 'Changed files:\n'
+                printf '  %s\n' "${changed[@]}"
+
+                is_match() {
+                  local path="$1"
+                  shift
+                  local pattern
+                  for pattern in "$@"; do
+                    case "$path" in
+                      $pattern) return 0 ;;
+                    esac
+                  done
+                  return 1
+                }
+
+                gradle_paths=(
+                  'gradle/*' 'gradlew' 'gradlew.bat'
+                  'settings.gradle.kts' 'build.gradle.kts' 'gradle.properties'
+                  'build-logic/*'
+                )
+                shared_backend=(
+                  'backend/contracts/*' 'backend/config/*'
+                  'backend/platform/*' 'backend/domain/*'
+                )
+
+                selected=()
+                for path in "${changed[@]}"; do
+                  if is_match "$path" \
+                    'backend/api/*' "${shared_backend[@]}" \
+                    'openapi/*' 'i18n/*' "${gradle_paths[@]}" \
+                    'deploy/docker/Dockerfile.api'
+                  then
+                    selected+=('api')
+                  fi
+                  if is_match "$path" \
+                    'backend/personality/*' "${shared_backend[@]}" \
+                    'i18n/*' "${gradle_paths[@]}" \
+                    'deploy/docker/Dockerfile.personality'
+                  then
+                    selected+=('personality')
+                  fi
+                  if is_match "$path" \
+                    'backend/matching/*' \
+                    'backend/contracts/*' 'backend/config/*' 'backend/platform/*' \
+                    "${gradle_paths[@]}" \
+                    'deploy/docker/Dockerfile.matching'
+                  then
+                    selected+=('matching')
+                  fi
+                  if is_match "$path" \
+                    'frontend/*' 'openapi/*' 'i18n/*' \
+                    'deploy/docker/Dockerfile.frontend'
+                  then
+                    selected+=('frontend')
+                  fi
+                done
+
+                if [[ ${#selected[@]} -eq 0 ]]; then
+                  echo "No service paths matched; nothing to deploy"
+                  services='[]'
+                else
+                  services="$(printf '%s\n' "${selected[@]}" | sort -u | jq -R . | jq -s -c .)"
+                fi
               fi
             fi
           fi
@@ -125,19 +132,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 25
         if: contains(needs.detect.outputs.services, 'api') || contains(needs.detect.outputs.services, 'personality') || contains(needs.detect.outputs.services, 'matching')
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
           cache-dependency-path: |
             frontend/package-lock.json
@@ -179,7 +186,7 @@ jobs:
 
       - name: Upload api artifact
         if: contains(needs.detect.outputs.services, 'api')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-api
           path: backend/api/build/install/api
@@ -187,7 +194,7 @@ jobs:
 
       - name: Upload personality artifact
         if: contains(needs.detect.outputs.services, 'personality')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-personality
           path: backend/personality/build/install/personality
@@ -195,7 +202,7 @@ jobs:
 
       - name: Upload matching artifact
         if: contains(needs.detect.outputs.services, 'matching')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-matching
           path: backend/matching/build/install/matching
@@ -212,7 +219,7 @@ jobs:
 
       - name: Upload frontend artifact
         if: contains(needs.detect.outputs.services, 'frontend')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: artifact-frontend
           path: /tmp/frontend-artifact
@@ -231,7 +238,7 @@ jobs:
       IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/procrush-${{ matrix.service }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Resolve paths
         id: paths
@@ -255,7 +262,7 @@ jobs:
           echo "dockerfile=deploy/docker/Dockerfile.${svc}" >> "$GITHUB_OUTPUT"
 
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: artifact-${{ matrix.service }}
           path: ${{ steps.paths.outputs.download_path }}
@@ -273,7 +280,7 @@ jobs:
 
       - name: Restore fingerprint cache
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .deploy-fp/${{ matrix.service }}
           key: deploy-fp-${{ matrix.service }}-${{ steps.fp.outputs.fingerprint }}

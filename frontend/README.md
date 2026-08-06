@@ -11,7 +11,7 @@ ProCrush web UI: React + Vite + Tailwind. Standalone application with independen
 
 ## Requirements
 
-- **Node.js 20+** (LTS 22 recommended)
+- **Node.js 24+** (Active LTS)
 - Running API: `./gradlew :backend:api:run` from the repository root
 - API environment variables: `AUTH_DEV_MODE=true`, `WEB_ORIGIN` including `http://localhost:8081` (full list — [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/base/configmap.yaml))
 
@@ -33,12 +33,12 @@ UI translations and error codes — in [i18n/](../i18n/README.md). Locale: auto 
 
 ### `Unexpected token '||='` when running `npm run dev`
 
-Your terminal is using an old Node.js (often v14). Vite 6 and Tailwind 4 need Node 20+.
+Your terminal is using an old Node.js (often v14). Vite 6 and Tailwind 4 need Node 24+.
 
 1. Check version: `node --version`
 2. Install LTS (Windows): `winget install OpenJS.NodeJS.LTS`
 3. **Close and reopen** the terminal (PATH must refresh)
-4. Confirm `node --version` shows v20+ or v22+, then run `npm run dev` again
+4. Confirm `node --version` shows v24+, then run `npm run dev` again
 
 If multiple Node versions are installed, ensure the LTS install comes first in `PATH` (`where node` on Windows).
 
