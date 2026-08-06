@@ -1,13 +1,14 @@
 package jobs.procrush.bootstrap.rabbitmq
 
-import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.Channel
 import jobs.procrush.bootstrap.config.RabbitMqConfig
-import jobs.procrush.shared.CorrelationIds
 
-object RabbitMqTopology {
-    fun declare(channel: Channel, config: RabbitMqConfig) {
+internal object RabbitMqTopology {
+    fun declare(
+        channel: Channel,
+        config: RabbitMqConfig,
+    ) {
         channel.exchangeDeclare(config.exchange, BuiltinExchangeType.DIRECT, true)
         channel.exchangeDeclare(config.deadLetterExchange, BuiltinExchangeType.DIRECT, true)
 
@@ -34,21 +35,5 @@ object RabbitMqTopology {
             config.deadLetterExchange,
             config.resultsDeadLetterRoutingKey,
         )
-    }
-
-    fun persistentJsonProperties(
-        messageId: String,
-        correlationId: String? = null,
-        traceHeaders: Map<String, String> = emptyMap(),
-    ): AMQP.BasicProperties {
-        val headers = mutableMapOf<String, Any>()
-        correlationId?.let { headers[CorrelationIds.HEADER_REQUEST_ID] = it }
-        traceHeaders.forEach { (key, value) -> headers[key] = value }
-        return AMQP.BasicProperties.Builder()
-            .contentType("application/json")
-            .deliveryMode(2)
-            .messageId(messageId)
-            .headers(headers.ifEmpty { null })
-            .build()
     }
 }

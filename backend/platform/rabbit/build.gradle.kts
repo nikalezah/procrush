@@ -7,6 +7,5 @@ version = "1.0.0"
 
 dependencies {
     implementation(projects.backend.config)
-    implementation(projects.backend.contracts)
     implementation(libs.amqp.client)
 }

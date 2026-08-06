@@ -67,7 +67,7 @@ data class PersonalityModule(
             val profileRepository = SeekerPersonalProfileRepository()
             val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
             val lockGuard = PersonalityGenerationLockGuard(redis.distributedLock, config.redis)
-            val publisher = PersonalityCommandPublisher(rabbitMq.publishChannel, rabbitMq.config)
+            val publisher = PersonalityCommandPublisher(rabbitMq.publisher, rabbitMq.config)
             val personalityStatusNotifier =
                 RedisPersonalityStatusNotifier(
                     redis = redis.client,
@@ -111,7 +111,7 @@ data class PersonalityModule(
                 )
             val resultConsumer =
                 PersonalityResultConsumer(
-                    rabbitMq = rabbitMq,
+                    messageConsumer = rabbitMq.createConsumer(),
                     applyService = applyService,
                     dedup =
                         PersonalityResultDedup(

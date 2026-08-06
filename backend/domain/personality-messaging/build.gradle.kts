@@ -10,6 +10,6 @@ dependencies {
     implementation(projects.backend.config)
     implementation(projects.backend.contracts)
     implementation(projects.backend.platform.rabbit)
-    implementation(libs.amqp.client)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.logback)
 }

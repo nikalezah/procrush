@@ -18,6 +18,5 @@ dependencies {
     implementation(projects.backend.domain.survey)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.amqp.client)
     implementation(libs.lettuce.core)
 }
