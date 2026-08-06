@@ -52,6 +52,5 @@ dependencies {
     implementation(libs.ktor.serverSse)
     implementation(libs.ktor.serialization.kotlinxJson)
     implementation(libs.kafka.clients)
-    implementation(libs.amqp.client)
     implementation(libs.kotlinx.coroutines.core)
 }

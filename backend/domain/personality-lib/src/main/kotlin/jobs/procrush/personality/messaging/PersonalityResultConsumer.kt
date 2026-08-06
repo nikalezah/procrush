@@ -1,10 +1,9 @@
 package jobs.procrush.personality.messaging
 
-import com.rabbitmq.client.AMQP
-import com.rabbitmq.client.DefaultConsumer
-import com.rabbitmq.client.Envelope
 import jobs.procrush.bootstrap.config.RabbitMqConfig
-import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
+import jobs.procrush.bootstrap.rabbitmq.DeliveryResult
+import jobs.procrush.bootstrap.rabbitmq.InboundMessage
+import jobs.procrush.bootstrap.rabbitmq.MessageConsumer
 import jobs.procrush.shared.CorrelationIds
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.ObservabilityHolder
@@ -15,84 +14,55 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 class PersonalityResultConsumer(
-    private val rabbitMq: RabbitMqModule,
+    private val messageConsumer: MessageConsumer,
     private val applyService: PersonalityResultApplyService,
     private val dedup: PersonalityResultDedup,
     private val rabbitMqConfig: RabbitMqConfig,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     private val logger = LoggerFactory.getLogger(PersonalityResultConsumer::class.java)
-    private var consumerTag: String? = null
-    private var consumerChannel: com.rabbitmq.client.Channel? = null
 
     fun start() {
-        if (consumerTag != null) return
-        val channel = rabbitMq.createConsumerChannel()
-        consumerChannel = channel
-        consumerTag =
-            channel.basicConsume(
-                rabbitMqConfig.resultsQueue,
-                false,
-                object : DefaultConsumer(channel) {
-                    override fun handleDelivery(
-                        consumerTag: String,
-                        envelope: Envelope,
-                        properties: AMQP.BasicProperties,
-                        body: ByteArray,
-                    ) {
-                        processDelivery(channel, envelope.deliveryTag, properties, body)
-                    }
-                },
-            )
+        if (messageConsumer.isRunning()) return
+        messageConsumer.start(rabbitMqConfig.resultsQueue) { inbound -> processDelivery(inbound) }
         logger.info("Personality result consumer started on queue {}", rabbitMqConfig.resultsQueue)
     }
 
     fun stop() {
-        val channel = consumerChannel ?: return
-        consumerTag?.let { channel.basicCancel(it) }
-        runCatching { channel.close() }
-        consumerTag = null
-        consumerChannel = null
+        if (!messageConsumer.isRunning()) return
+        messageConsumer.stop()
         logger.info("Personality result consumer stopped")
     }
 
-    fun isRunning(): Boolean = consumerTag != null
+    fun isRunning(): Boolean = messageConsumer.isRunning()
 
-    private fun processDelivery(
-        channel: com.rabbitmq.client.Channel,
-        deliveryTag: Long,
-        properties: AMQP.BasicProperties,
-        body: ByteArray,
-    ) {
-        val messageId = properties.messageId ?: UUID.randomUUID().toString()
-        val headers = properties.headers.orEmpty()
+    private fun processDelivery(inbound: InboundMessage): DeliveryResult {
+        val messageId = inbound.messageId ?: UUID.randomUUID().toString()
+        val headers = inbound.headers
         val correlationId = TracePropagation.requestIdFromMap(headers) ?: messageId
-        MdcContext.runWith(
+        return MdcContext.runWith(
             mapOf(
                 CorrelationIds.REQUEST_ID to correlationId,
                 CorrelationIds.MESSAGE_ID to messageId,
             ),
         ) {
             ObservabilityHolder.tracing.withPropagatedHeaders(headers, "personality.result.apply") {
-                processDeliveryInternal(channel, deliveryTag, body, messageId, correlationId)
+                processDeliveryInternal(inbound.body, messageId, correlationId)
             }
         }
     }
 
     private fun processDeliveryInternal(
-        channel: com.rabbitmq.client.Channel,
-        deliveryTag: Long,
         body: ByteArray,
         messageId: String,
         correlationId: String,
-    ) {
+    ): DeliveryResult {
         val result =
             runCatching {
                 json.decodeFromString(PersonalityGenerationResult.serializer(), String(body, Charsets.UTF_8))
             }.getOrElse { error ->
                 logger.error("Invalid personality result payload messageId={}", messageId, error)
-                channel.basicAck(deliveryTag, false)
-                return
+                return DeliveryResult.Ack
             }
 
         MdcContext.put(CorrelationIds.SEEKER_ID, result.seekerId.toString())
@@ -101,13 +71,12 @@ class PersonalityResultConsumer(
 
         if (!dedup.tryMarkProcessing(messageId)) {
             logger.info("Duplicate personality result messageId={}, acking", messageId)
-            channel.basicAck(deliveryTag, false)
-            return
+            return DeliveryResult.Ack
         }
 
-        try {
+        return try {
             applyService.apply(result)
-            channel.basicAck(deliveryTag, false)
+            DeliveryResult.Ack
         } catch (error: Exception) {
             logger.error(
                 "Failed to apply personality result seekerId={} messageId={}",
@@ -115,7 +84,7 @@ class PersonalityResultConsumer(
                 messageId,
                 error,
             )
-            channel.basicNack(deliveryTag, false, false)
+            DeliveryResult.NackToDlq
         } finally {
             dedup.release(messageId)
         }

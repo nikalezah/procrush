@@ -1,21 +1,16 @@
 package jobs.procrush.bootstrap.rabbitmq
 
-import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import jobs.procrush.bootstrap.config.RabbitMqConfig
 
 class RabbitMqModule private constructor(
     private val connection: Connection,
-    val publishChannel: Channel,
+    private val publishChannel: com.rabbitmq.client.Channel,
+    val publisher: MessagePublisher,
     val config: RabbitMqConfig,
 ) {
-    fun createConsumerChannel(): Channel {
-        val channel = connection.createChannel()
-        RabbitMqTopology.declare(channel, config)
-        channel.basicQos(config.prefetch)
-        return channel
-    }
+    fun createConsumer(): MessageConsumer = JvmMessageConsumer(connection, config)
 
     fun isConnected(): Boolean = connection.isOpen
 
@@ -31,7 +26,8 @@ class RabbitMqModule private constructor(
             val connection = factory.newConnection("procrush")
             val publishChannel = connection.createChannel()
             RabbitMqTopology.declare(publishChannel, config)
-            return RabbitMqModule(connection, publishChannel, config)
+            val publisher = JvmMessagePublisher(publishChannel)
+            return RabbitMqModule(connection, publishChannel, publisher, config)
         }
     }
 }

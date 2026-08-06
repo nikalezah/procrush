@@ -33,11 +33,11 @@ data class PersonalityWorkerModule(
                     promptBuilder = PersonalityPromptBuilder(),
                     validator = PersonalityProfileValidator(),
                 )
-            val commandPublisher = PersonalityCommandPublisher(rabbitMq.publishChannel, rabbitMq.config)
-            val resultPublisher = PersonalityResultPublisher(rabbitMq.publishChannel, rabbitMq.config)
+            val commandPublisher = PersonalityCommandPublisher(rabbitMq.publisher, rabbitMq.config)
+            val resultPublisher = PersonalityResultPublisher(rabbitMq.publisher, rabbitMq.config)
             val consumer =
                 PersonalityCommandConsumer(
-                    rabbitMq = rabbitMq,
+                    messageConsumer = rabbitMq.createConsumer(),
                     handler = handler,
                     commandPublisher = commandPublisher,
                     resultPublisher = resultPublisher,
