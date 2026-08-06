@@ -5,7 +5,9 @@
 #   - issue opened → kickoff once
 #   - label "agent" → re-kickoff (even if already kicked off)
 #
-# Cursor side: Cloud Agent picks up @cursor on the issue (no Automation required).
+# Cursor side: Cloud Agent picks up @cursoragent on the issue (no Automation required).
+# Put the mention first; HTML markers after — Cursor may ignore API comments where
+# @cursoragent is not at the start of the body.
 
 name: Agent kickoff from issue
 
@@ -58,8 +60,9 @@ jobs:
             exit 0
           fi
 
-          body="${MARKER}
-          @cursor Implement the changes described in this issue and open a PR."
+          # Mention must be first in the body (UI autocomplete identity is cursoragent).
+          body="@cursoragent Implement the changes described in this issue and open a PR.
+          ${MARKER}"
 
           gh api "repos/${REPO}/issues/${ISSUE}/comments" -f body="${body}"
-          echo "Posted kickoff @cursor comment on issue #${ISSUE}."
+          echo "Posted kickoff @cursoragent comment on issue #${ISSUE}."
