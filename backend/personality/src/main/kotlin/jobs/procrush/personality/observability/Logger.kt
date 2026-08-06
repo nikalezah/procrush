@@ -81,7 +81,7 @@ class Logger private constructor(
         val timestamp = formatTextTimestamp(Clock.System.now())
         val requestId = Correlation.currentRequestId().orEmpty()
         val suffix = if (throwable != null) "" else ""
-        return "$timestamp [${Thread.currentThread().name}] $level $name [$requestId] - $message$suffix"
+        return "$timestamp [${Correlation.currentThreadName()}] $level $name [$requestId] - $message$suffix"
     }
 
     private fun formatJson(
@@ -97,7 +97,7 @@ class Logger private constructor(
             "message" to message,
             "service" to config.serviceName,
             "environment" to config.environment,
-            "thread_name" to Thread.currentThread().name,
+            "thread_name" to Correlation.currentThreadName(),
         )
         val correlation = Correlation.snapshot()
         listOf(

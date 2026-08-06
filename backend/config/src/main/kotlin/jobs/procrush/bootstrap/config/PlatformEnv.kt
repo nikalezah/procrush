@@ -14,7 +14,7 @@ object PlatformEnv {
 
     fun readLinesIfExists(absolutePath: String): List<String>? {
         val path = Path.of(absolutePath)
-        if (!Files.exists(path) || !Files.isRegularFile(path)) return null
+        if (!Files.exists(path)) return null
         return Files.readAllLines(path)
     }
 

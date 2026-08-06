@@ -75,10 +75,7 @@ class DlqDepthPoller(
             val parts = parseAmqpUrl(amqpUrl)
             val host = parts.host.ifBlank { "localhost" }
             val port = if (parts.port > 0) parts.port + 10000 else 15672
-            val vhost =
-                parts.vhostPath
-                    .takeIf { it.isNotBlank() && it != "/" }
-                    ?: "%2F"
+            val vhost = encodeVhost(parts.vhostPath)
             val encodedQueue = queueName.replace("/", "%2F")
             return "http://$host:$port/api/queues/$vhost/$encodedQueue"
         }
@@ -86,6 +83,17 @@ class DlqDepthPoller(
         private fun parseCredentials(amqpUrl: String): Pair<String, String> {
             val parts = parseAmqpUrl(amqpUrl)
             return parts.user to parts.password
+        }
+
+        /**
+         * AMQP path is `/vhost` or `/%2F` (default). Management API wants the vhost
+         * segment encoded once with no leading slash: `%2F` or `custom`.
+         */
+        private fun encodeVhost(vhostPath: String): String {
+            val raw = vhostPath.trimStart('/')
+            if (raw.isEmpty()) return "%2F"
+            if ('%' in raw) return raw
+            return raw.replace("/", "%2F")
         }
 
         /**
