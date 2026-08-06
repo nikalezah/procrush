@@ -1,0 +1,72 @@
+# Bridge: cursor[bot] Request changes → human-authored PR comment.
+# Cursor Automations ignore bot reviews/comments; this comment is from your PAT user.
+#
+# Requires repo secret CURSOR_BRIDGE_PAT (issues:write + pull_requests:write).
+#
+# Cursor side (Fix PR Automation):
+#   Trigger: Comment added (PR)
+#   Keyword / filter: "Trigger Fix PR Automation"
+#   Instructions: push fixes to the same PR branch only.
+
+name: Agent fix bridge from review
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-fix-bridge-${{ github.event.pull_request.number }}-${{ github.event.review.id }}
+  cancel-in-progress: false
+
+jobs:
+  bridge:
+    name: Comment Trigger Fix PR Automation
+    if: >
+      github.event.review.state == 'changes_requested' &&
+      (
+        github.event.review.user.login == 'cursor[bot]' ||
+        github.event.review.user.login == 'cursor'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require CURSOR_BRIDGE_PAT
+        env:
+          CURSOR_BRIDGE_PAT: ${{ secrets.CURSOR_BRIDGE_PAT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CURSOR_BRIDGE_PAT:-}" ]]; then
+            echo "::error::Missing repo secret CURSOR_BRIDGE_PAT (user PAT with pull_requests:write / issues:write)."
+            exit 1
+          fi
+
+      - name: Post fix-bridge comment as user
+        env:
+          GH_TOKEN: ${{ secrets.CURSOR_BRIDGE_PAT }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          REVIEW_ID: ${{ github.event.review.id }}
+        run: |
+          set -euo pipefail
+
+          MARKER='<!-- cursor-bridge: fix -->'
+          KEYWORD='Trigger Fix PR Automation'
+
+          # Idempotent per review: do not double-post if this review was already bridged.
+          existing="$(
+            gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+              --jq "[.[] | select(.body | contains(\"${MARKER}\")) | select(.body | contains(\"review:${REVIEW_ID}\"))] | length"
+          )"
+          if [[ "${existing}" -gt 0 ]]; then
+            echo "Bridge comment for review ${REVIEW_ID} already exists on PR #${PR}; skipping."
+            exit 0
+          fi
+
+          body="${MARKER}
+          <!-- cursor-bridge review:${REVIEW_ID} -->
+          ${KEYWORD}"
+
+          gh api "repos/${REPO}/issues/${PR}/comments" -f body="${body}"
+          echo "Posted fix-bridge comment on PR #${PR} for review ${REVIEW_ID}."

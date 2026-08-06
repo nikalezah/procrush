@@ -1,0 +1,65 @@
+# Bridge: issue → human-authored @cursor comment (Cursor ignores bot comments).
+# Requires repo secret CURSOR_BRIDGE_PAT (fine-grained or classic PAT with issues:write).
+#
+# Triggers:
+#   - issue opened → kickoff once
+#   - label "agent" → re-kickoff (even if already kicked off)
+#
+# Cursor side: Cloud Agent picks up @cursor on the issue (no Automation required).
+
+name: Agent kickoff from issue
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-issue-kickoff-${{ github.event.issue.number }}-${{ github.event.action }}
+  cancel-in-progress: false
+
+jobs:
+  kickoff:
+    name: Comment @cursor on issue
+    if: >
+      github.event.action == 'opened' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'agent')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require CURSOR_BRIDGE_PAT
+        env:
+          CURSOR_BRIDGE_PAT: ${{ secrets.CURSOR_BRIDGE_PAT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CURSOR_BRIDGE_PAT:-}" ]]; then
+            echo "::error::Missing repo secret CURSOR_BRIDGE_PAT (user PAT with issues:write). Bot GITHUB_TOKEN comments are ignored by Cursor."
+            exit 1
+          fi
+
+      - name: Post kickoff comment as user
+        env:
+          GH_TOKEN: ${{ secrets.CURSOR_BRIDGE_PAT }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+
+          MARKER='<!-- cursor-bridge: kickoff -->'
+          existing="$(
+            gh api "repos/${REPO}/issues/${ISSUE}/comments" --paginate \
+              --jq "[.[] | select(.body | contains(\"${MARKER}\"))] | length"
+          )"
+
+          if [[ "${ACTION}" == "opened" && "${existing}" -gt 0 ]]; then
+            echo "Kickoff marker already present on issue #${ISSUE}; skipping."
+            exit 0
+          fi
+
+          body="${MARKER}
+          @cursor Implement the changes described in this issue and open a PR."
+
+          gh api "repos/${REPO}/issues/${ISSUE}/comments" -f body="${body}"
+          echo "Posted kickoff @cursor comment on issue #${ISSUE}."
