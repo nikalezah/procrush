@@ -4,15 +4,14 @@ import io.ktor.client.plugins.HttpRequestTimeoutException
 import jobs.procrush.bootstrap.config.LlmConfig
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.llm.LlmClient
-import jobs.procrush.observability.AppMetrics
-import jobs.procrush.observability.ObservabilityHolder
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
 import jobs.procrush.personality.messaging.PersonalityGenerationCommand
 import jobs.procrush.personality.messaging.PersonalityGenerationResult
 import jobs.procrush.personality.messaging.PersonalityGenerationResultStatus
+import jobs.procrush.personality.observability.Logger
+import jobs.procrush.personality.observability.Metrics
 import jobs.procrush.shared.raise
-import org.slf4j.LoggerFactory
 
 class PersonalityGenerationHandler(
     private val llmConfig: LlmConfig,
@@ -20,7 +19,7 @@ class PersonalityGenerationHandler(
     private val promptBuilder: PersonalityPromptBuilder,
     private val validator: PersonalityProfileValidator,
 ) {
-    private val logger = LoggerFactory.getLogger(PersonalityGenerationHandler::class.java)
+    private val logger = Logger.get(PersonalityGenerationHandler::class.java)
 
     suspend fun generate(command: PersonalityGenerationCommand): PersonalityGenerationResult {
         llmConfig.validateForGeneration()
@@ -31,10 +30,8 @@ class PersonalityGenerationHandler(
         val catalogNames = command.catalog.map { it.name }.toSet()
         val (systemPrompt, userPrompt) = promptBuilder.build(command.surveyContext, command.catalog)
         val rawResponse =
-            AppMetrics.recordPersonalityLlm {
-                ObservabilityHolder.tracing.suspendSpan("llm.chat") {
-                    llmClient.chat(systemPrompt, userPrompt)
-                }
+            Metrics.recordPersonalityLlm {
+                llmClient.chat(systemPrompt, userPrompt)
             }
         val output = validator.validateAndParse(rawResponse, catalogNames)
         logger.info(

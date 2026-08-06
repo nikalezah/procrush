@@ -9,7 +9,7 @@ import jobs.procrush.matching.events.SeekerPersonalityReadyPayload
 import jobs.procrush.matching.events.SeekerProfileChangedPayload
 import jobs.procrush.matching.runtime.service.MatchingEventProcessor
 import jobs.procrush.observability.AppMetrics
-import jobs.procrush.observability.CorrelationIds
+import jobs.procrush.shared.CorrelationIds
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.ObservabilityHolder
 import org.apache.kafka.clients.consumer.ConsumerConfig

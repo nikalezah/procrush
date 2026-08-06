@@ -1,5 +1,7 @@
 package jobs.procrush.observability
 
+import jobs.procrush.shared.CorrelationIds
+
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call

@@ -1,5 +1,7 @@
 package jobs.procrush.observability
 
+import jobs.procrush.shared.CorrelationIds
+
 import org.slf4j.MDC
 
 object MdcContext {

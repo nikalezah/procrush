@@ -5,7 +5,7 @@ import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
-import jobs.procrush.observability.CorrelationIds
+import jobs.procrush.shared.CorrelationIds
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.ObservabilityHolder
 import jobs.procrush.observability.TracePropagation

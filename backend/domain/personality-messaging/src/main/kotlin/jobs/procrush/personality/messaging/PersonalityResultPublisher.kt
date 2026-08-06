@@ -3,8 +3,6 @@ package jobs.procrush.personality.messaging
 import com.rabbitmq.client.Channel
 import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqTopology
-import jobs.procrush.observability.MdcContext
-import jobs.procrush.observability.TracePropagation
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -18,12 +16,10 @@ class PersonalityResultPublisher(
 
     fun publish(
         result: PersonalityGenerationResult,
-        correlationId: String? = result.correlationId ?: MdcContext.currentRequestId(),
+        correlationId: String? = result.correlationId,
     ) {
         val messageId = UUID.randomUUID().toString()
         val resolvedCorrelationId = correlationId ?: messageId
-        val traceHeaders = mutableMapOf<String, String>()
-        TracePropagation.injectIntoMap(traceHeaders)
         val body = json.encodeToString(result)
         channel.basicPublish(
             config.exchange,
@@ -31,7 +27,7 @@ class PersonalityResultPublisher(
             RabbitMqTopology.persistentJsonProperties(
                 messageId = messageId,
                 correlationId = resolvedCorrelationId,
-                traceHeaders = traceHeaders,
+                traceHeaders = emptyMap(),
             ),
             body.toByteArray(Charsets.UTF_8),
         )

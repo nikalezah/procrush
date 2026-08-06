@@ -3,8 +3,6 @@ package jobs.procrush.personality.messaging
 import com.rabbitmq.client.Channel
 import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.rabbitmq.RabbitMqTopology
-import jobs.procrush.observability.MdcContext
-import jobs.procrush.observability.TracePropagation
 import jobs.procrush.shared.dto.SuperpowerAndTalentDto
 import jobs.procrush.survey.dto.SurveyLlmContextDto
 import kotlinx.serialization.json.Json
@@ -25,12 +23,10 @@ class PersonalityCommandPublisher(
         surveyContext: SurveyLlmContextDto,
         catalog: List<SuperpowerAndTalentDto>,
         attempt: Int = 1,
-        correlationId: String? = MdcContext.currentRequestId(),
+        correlationId: String? = null,
     ) {
         val messageId = UUID.randomUUID().toString()
         val resolvedCorrelationId = correlationId ?: messageId
-        val traceHeaders = mutableMapOf<String, String>()
-        TracePropagation.injectIntoMap(traceHeaders)
         val command =
             PersonalityGenerationCommand(
                 seekerId = seekerId,
@@ -41,25 +37,22 @@ class PersonalityCommandPublisher(
                 attempt = attempt,
                 correlationId = resolvedCorrelationId,
             )
-        publish(command, messageId, resolvedCorrelationId, traceHeaders)
+        publish(command, messageId, resolvedCorrelationId)
     }
 
     fun enqueue(
         command: PersonalityGenerationCommand,
-        correlationId: String? = command.correlationId ?: MdcContext.currentRequestId(),
+        correlationId: String? = command.correlationId,
     ) {
         val messageId = UUID.randomUUID().toString()
         val resolvedCorrelationId = correlationId ?: messageId
-        val traceHeaders = mutableMapOf<String, String>()
-        TracePropagation.injectIntoMap(traceHeaders)
-        publish(command, messageId, resolvedCorrelationId, traceHeaders)
+        publish(command, messageId, resolvedCorrelationId)
     }
 
     private fun publish(
         command: PersonalityGenerationCommand,
         messageId: String,
         correlationId: String,
-        traceHeaders: Map<String, String>,
     ) {
         val body = json.encodeToString(command)
         channel.basicPublish(
@@ -68,7 +61,7 @@ class PersonalityCommandPublisher(
             RabbitMqTopology.persistentJsonProperties(
                 messageId = messageId,
                 correlationId = correlationId,
-                traceHeaders = traceHeaders,
+                traceHeaders = emptyMap(),
             ),
             body.toByteArray(Charsets.UTF_8),
         )

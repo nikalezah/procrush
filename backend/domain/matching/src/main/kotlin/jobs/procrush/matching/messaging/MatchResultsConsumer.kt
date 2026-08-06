@@ -6,7 +6,7 @@ import jobs.procrush.matching.events.MatchingEventEnvelope
 import jobs.procrush.matching.events.MatchingEventJson
 import jobs.procrush.matching.events.MatchingEventTypes
 import jobs.procrush.matching.service.MatchResultsApplyService
-import jobs.procrush.observability.CorrelationIds
+import jobs.procrush.shared.CorrelationIds
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.ObservabilityHolder
 import org.apache.kafka.clients.consumer.ConsumerConfig

@@ -1,5 +1,7 @@
 package jobs.procrush.observability
 
+import jobs.procrush.shared.CorrelationIds
+
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.propagation.ContextPropagators
