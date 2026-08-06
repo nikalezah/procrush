@@ -15,16 +15,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.net.URI
-import java.util.Base64
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 class DlqDepthPoller(
     private val rabbitMqUrl: String,
     private val queueName: String,
     private val intervalSeconds: Long = 30,
 ) {
-    private val logger = Logger.get(DlqDepthPoller::class.java)
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val logger = Logger.get(DlqDepthPoller::class)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var job: Job? = null
     private val httpClient = HttpClient(CIO) {
         expectSuccess = false
@@ -48,10 +48,11 @@ class DlqDepthPoller(
         httpClient.close()
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
     private fun pollOnce() {
         val managementUri = toManagementQueueUri(rabbitMqUrl, queueName)
         val credentials = parseCredentials(rabbitMqUrl)
-        val auth = Base64.getEncoder().encodeToString("${credentials.first}:${credentials.second}".toByteArray())
+        val auth = Base64.encode("${credentials.first}:${credentials.second}".encodeToByteArray())
         val body =
             runBlocking {
                 val response =
@@ -71,20 +72,82 @@ class DlqDepthPoller(
             amqpUrl: String,
             queueName: String,
         ): String {
-            val uri = URI(amqpUrl.replace("amqp://", "http://"))
-            val host = uri.host ?: "localhost"
-            val port = if (uri.port > 0) uri.port + 10000 else 15672
-            val vhost = uri.path.takeIf { it.isNotBlank() && it != "/" } ?: "%2F"
+            val parts = parseAmqpUrl(amqpUrl)
+            val host = parts.host.ifBlank { "localhost" }
+            val port = if (parts.port > 0) parts.port + 10000 else 15672
+            val vhost =
+                parts.vhostPath
+                    .takeIf { it.isNotBlank() && it != "/" }
+                    ?: "%2F"
             val encodedQueue = queueName.replace("/", "%2F")
             return "http://$host:$port/api/queues/$vhost/$encodedQueue"
         }
 
         private fun parseCredentials(amqpUrl: String): Pair<String, String> {
-            val uri = URI(amqpUrl)
-            val userInfo = uri.userInfo?.split(":") ?: return "guest" to "guest"
-            val user = userInfo.getOrElse(0) { "guest" }
-            val pass = userInfo.getOrElse(1) { "guest" }
-            return user to pass
+            val parts = parseAmqpUrl(amqpUrl)
+            return parts.user to parts.password
         }
+
+        /**
+         * Parses `amqp://user:pass@host:port/vhost` without `java.net.URI`.
+         * Preserves prior URI semantics for host/port/path/userInfo.
+         */
+        private fun parseAmqpUrl(amqpUrl: String): AmqpUrlParts {
+            val withoutScheme =
+                when {
+                    amqpUrl.startsWith("amqp://") -> amqpUrl.removePrefix("amqp://")
+                    amqpUrl.startsWith("amqps://") -> amqpUrl.removePrefix("amqps://")
+                    else -> amqpUrl
+                }
+            val (userInfo, hostAndPath) =
+                if ('@' in withoutScheme) {
+                    val at = withoutScheme.indexOf('@')
+                    withoutScheme.substring(0, at) to withoutScheme.substring(at + 1)
+                } else {
+                    null to withoutScheme
+                }
+            val user = userInfo?.substringBefore(':')?.takeIf { it.isNotEmpty() } ?: "guest"
+            val password =
+                if (userInfo != null && ':' in userInfo) {
+                    userInfo.substringAfter(':')
+                } else {
+                    "guest"
+                }
+
+            val slash = hostAndPath.indexOf('/')
+            val hostPort = if (slash >= 0) hostAndPath.substring(0, slash) else hostAndPath
+            val vhostPath = if (slash >= 0) hostAndPath.substring(slash) else ""
+
+            val host =
+                when {
+                    hostPort.startsWith("[") && "]" in hostPort ->
+                        hostPort.substring(1, hostPort.indexOf(']'))
+                    else -> hostPort.substringBefore(':')
+                }
+            val port =
+                when {
+                    hostPort.startsWith("[") && "]:" in hostPort ->
+                        hostPort.substringAfter("]:").toIntOrNull() ?: -1
+                    !hostPort.startsWith("[") && ':' in hostPort ->
+                        hostPort.substringAfter(':').toIntOrNull() ?: -1
+                    else -> -1
+                }
+
+            return AmqpUrlParts(
+                user = user,
+                password = password,
+                host = host,
+                port = port,
+                vhostPath = vhostPath,
+            )
+        }
+
+        private data class AmqpUrlParts(
+            val user: String,
+            val password: String,
+            val host: String,
+            val port: Int,
+            val vhostPath: String,
+        )
     }
 }

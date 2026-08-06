@@ -12,8 +12,9 @@ import jobs.procrush.personality.service.PersonalityGenerationHandler
 import jobs.procrush.shared.CorrelationIds
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import java.io.IOException
-import java.util.UUID
+import kotlin.reflect.KClass
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class PersonalityCommandConsumer(
     private val rabbitMq: RabbitMqModule,
@@ -23,7 +24,7 @@ class PersonalityCommandConsumer(
     private val rabbitMqConfig: RabbitMqConfig,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
-    private val logger = Logger.get(PersonalityCommandConsumer::class.java)
+    private val logger = Logger.get(PersonalityCommandConsumer::class)
     private var consumerTag: String? = null
     private var consumerChannel: com.rabbitmq.client.Channel? = null
 
@@ -62,13 +63,14 @@ class PersonalityCommandConsumer(
 
     fun isRunning(): Boolean = consumerTag != null
 
+    @OptIn(ExperimentalUuidApi::class)
     private fun processDelivery(
         channel: com.rabbitmq.client.Channel,
         deliveryTag: Long,
         properties: AMQP.BasicProperties,
         body: ByteArray,
     ) {
-        val messageId = properties.messageId ?: UUID.randomUUID().toString()
+        val messageId = properties.messageId ?: Uuid.random().toString()
         val headers = properties.headers.orEmpty()
         val correlationId = Correlation.requestIdFromHeaders(headers) ?: messageId
         Correlation.runWith(
@@ -136,7 +138,19 @@ class PersonalityCommandConsumer(
     }
 
     private fun isTransient(error: Throwable): Boolean =
-        error is IOException ||
-            error is io.ktor.client.plugins.HttpRequestTimeoutException ||
+        error is io.ktor.client.plugins.HttpRequestTimeoutException ||
+            isIoException(error) ||
             error.cause?.let { isTransient(it) } == true
+
+    private fun isIoException(error: Throwable): Boolean {
+        var classifier: KClass<*>? = error::class
+        while (classifier != null) {
+            if (classifier.simpleName == "IOException") return true
+            classifier =
+                classifier.supertypes
+                    .mapNotNull { it.classifier as? KClass<*> }
+                    .firstOrNull { it != classifier }
+        }
+        return false
+    }
 }

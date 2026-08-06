@@ -8,7 +8,10 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.time.Duration
+import kotlin.time.Clock
+import kotlin.time.Instant
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 @Serializable
 data class HealthCheckResultDto(
@@ -73,7 +76,7 @@ fun Application.configureHealthRoutes(
     config: WorkerLogConfig,
     readinessChecks: List<HealthCheck>,
 ) {
-    val startedAt = System.currentTimeMillis()
+    val startedAt = Clock.System.now()
 
     routing {
         get("/health/live") {
@@ -133,7 +136,7 @@ fun Application.configureHealthRoutes(
 
 private fun buildHealthReport(
     config: WorkerLogConfig,
-    startedAt: Long,
+    startedAt: Instant,
     readinessChecks: List<HealthCheck>,
 ): HealthReport {
     val checks = readinessChecks.map { it.run() }
@@ -146,26 +149,27 @@ private fun buildHealthReport(
     )
 }
 
-private fun uptimeSeconds(startedAt: Long): Long = (System.currentTimeMillis() - startedAt) / 1000
+private fun uptimeSeconds(startedAt: Instant): Long =
+    (Clock.System.now() - startedAt).inWholeSeconds
 
 fun ok(
     name: String,
-    startedNanos: Long,
+    started: TimeMark,
 ): HealthCheckResult =
     HealthCheckResult(
         name = name,
         status = "ok",
-        latencyMs = elapsedMs(startedNanos),
+        latencyMs = started.elapsedNow().inWholeMilliseconds,
     )
 
 fun down(
     name: String,
-    startedNanos: Long,
+    started: TimeMark,
 ): HealthCheckResult =
     HealthCheckResult(
         name = name,
         status = "down",
-        latencyMs = elapsedMs(startedNanos),
+        latencyMs = started.elapsedNow().inWholeMilliseconds,
     )
 
 fun simpleCheck(
@@ -173,8 +177,6 @@ fun simpleCheck(
     probe: () -> Boolean,
 ): HealthCheck =
     HealthCheck {
-        val started = System.nanoTime()
+        val started = TimeSource.Monotonic.markNow()
         if (probe()) ok(name, started) else down(name, started)
     }
-
-private fun elapsedMs(startedNanos: Long): Long = Duration.ofNanos(System.nanoTime() - startedNanos).toMillis()

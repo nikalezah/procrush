@@ -1,7 +1,7 @@
 package jobs.procrush.personality.app
 
+import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
 import jobs.procrush.bootstrap.config.WorkerAppConfig
 import jobs.procrush.personality.bootstrap.WorkerContext
 import jobs.procrush.personality.observability.DlqDepthPoller
@@ -19,7 +19,7 @@ fun main() {
             queueName = config.rabbitMq.deadLetterQueue,
         ).also { it.start() }
     val server =
-        embeddedServer(Netty, port = config.workerHealthPort, host = "::") {
+        embeddedServer(CIO, port = config.workerHealthPort, host = "::") {
             configureHealthRoutes(
                 config = observability,
                 readinessChecks =
