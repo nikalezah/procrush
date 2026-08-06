@@ -1,0 +1,40 @@
+# Cursor Automations can Approve but cannot mark a draft PR Ready for review.
+# When cursor[bot] Approves a draft PR, flip it to ready via gh.
+#
+# Uses GITHUB_TOKEN (pull-requests: write). No CURSOR_BRIDGE_PAT required.
+
+name: PR Ready on Approve
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-ready-on-approve-${{ github.event.pull_request.number }}-${{ github.event.review.id }}
+  cancel-in-progress: false
+
+jobs:
+  ready:
+    name: Mark PR Ready for review
+    if: >
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.draft == true &&
+      (
+        github.event.review.user.login == 'cursor[bot]' ||
+        github.event.review.user.login == 'cursor'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: gh pr ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh pr ready "${PR}" --repo "${REPO}"
+          echo "Marked PR #${PR} Ready for review."
