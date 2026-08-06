@@ -1,0 +1,355 @@
+name: Deploy master (GHCR → Render / Railway)
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-master
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  detect:
+    name: Detect changed services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.select.outputs.services }}
+      any: ${{ steps.select.outputs.any }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select services from path diff
+        id: select
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          before="${{ github.event.before }}"
+          if [[ -z "$before" || "$before" =~ ^0+$ ]]; then
+            echo "No usable previous SHA; selecting all services"
+            services='["api","personality","matching","frontend"]'
+          else
+            mapfile -t changed < <(git diff --name-only "$before" "${{ github.sha }}" || true)
+            if [[ ${#changed[@]} -eq 0 ]]; then
+              echo "Empty diff; selecting all services"
+              services='["api","personality","matching","frontend"]'
+            else
+              printf 'Changed files:\n'
+              printf '  %s\n' "${changed[@]}"
+
+              is_match() {
+                local path="$1"
+                shift
+                local pattern
+                for pattern in "$@"; do
+                  case "$path" in
+                    $pattern) return 0 ;;
+                  esac
+                done
+                return 1
+              }
+
+              gradle_paths=(
+                'gradle/*' 'gradlew' 'gradlew.bat'
+                'settings.gradle.kts' 'build.gradle.kts' 'gradle.properties'
+                'build-logic/*'
+              )
+              shared_backend=(
+                'backend/contracts/*' 'backend/config/*'
+                'backend/platform/*' 'backend/domain/*'
+              )
+
+              selected=()
+              for path in "${changed[@]}"; do
+                if is_match "$path" \
+                  'backend/api/*' "${shared_backend[@]}" \
+                  'openapi/*' 'i18n/*' "${gradle_paths[@]}" \
+                  'deploy/docker/Dockerfile.api'
+                then
+                  selected+=('api')
+                fi
+                if is_match "$path" \
+                  'backend/personality/*' "${shared_backend[@]}" \
+                  'i18n/*' "${gradle_paths[@]}" \
+                  'deploy/docker/Dockerfile.personality'
+                then
+                  selected+=('personality')
+                fi
+                if is_match "$path" \
+                  'backend/matching/*' \
+                  'backend/contracts/*' 'backend/config/*' 'backend/platform/*' \
+                  "${gradle_paths[@]}" \
+                  'deploy/docker/Dockerfile.matching'
+                then
+                  selected+=('matching')
+                fi
+                if is_match "$path" \
+                  'frontend/*' 'openapi/*' 'i18n/*' \
+                  'deploy/docker/Dockerfile.frontend'
+                then
+                  selected+=('frontend')
+                fi
+              done
+
+              if [[ ${#selected[@]} -eq 0 ]]; then
+                echo "No service paths matched; nothing to deploy"
+                services='[]'
+              else
+                services="$(printf '%s\n' "${selected[@]}" | sort -u | jq -R . | jq -s -c .)"
+              fi
+            fi
+          fi
+
+          echo "services=$services" >> "$GITHUB_OUTPUT"
+          if [[ "$services" == '[]' ]]; then
+            echo "any=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Selected services: $services"
+
+  build:
+    name: Build artifacts
+    needs: detect
+    if: needs.detect.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        if: contains(needs.detect.outputs.services, 'api') || contains(needs.detect.outputs.services, 'personality') || contains(needs.detect.outputs.services, 'matching')
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            i18n/package-lock.json
+
+      - name: Build selected Gradle services
+        if: contains(needs.detect.outputs.services, 'api') || contains(needs.detect.outputs.services, 'personality') || contains(needs.detect.outputs.services, 'matching')
+        shell: bash
+        run: |
+          set -euo pipefail
+          tasks=()
+          while read -r svc; do
+            case "$svc" in
+              api) tasks+=(':backend:api:installDist') ;;
+              personality) tasks+=(':backend:personality:installDist') ;;
+              matching) tasks+=(':backend:matching:installDist') ;;
+            esac
+          done < <(echo '${{ needs.detect.outputs.services }}' | jq -r '.[]')
+          if [[ ${#tasks[@]} -gt 0 ]]; then
+            chmod +x gradlew
+            ./gradlew --no-daemon "${tasks[@]}"
+          fi
+
+      - name: Build frontend
+        if: contains(needs.detect.outputs.services, 'frontend')
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon frontendBuild
+
+      - name: Upload api artifact
+        if: contains(needs.detect.outputs.services, 'api')
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-api
+          path: backend/api/build/install/api
+          retention-days: 1
+
+      - name: Upload personality artifact
+        if: contains(needs.detect.outputs.services, 'personality')
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-personality
+          path: backend/personality/build/install/personality
+          retention-days: 1
+
+      - name: Upload matching artifact
+        if: contains(needs.detect.outputs.services, 'matching')
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-matching
+          path: backend/matching/build/install/matching
+          retention-days: 1
+
+      - name: Stage frontend artifact
+        if: contains(needs.detect.outputs.services, 'frontend')
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/frontend-artifact
+          cp -a frontend/dist /tmp/frontend-artifact/
+          cp frontend/nginx.conf.template frontend/docker-entrypoint.sh /tmp/frontend-artifact/
+
+      - name: Upload frontend artifact
+        if: contains(needs.detect.outputs.services, 'frontend')
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-frontend
+          path: /tmp/frontend-artifact
+          retention-days: 1
+
+  package:
+    name: Package / push / redeploy
+    needs: [detect, build]
+    if: needs.detect.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/procrush-${{ matrix.service }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve paths
+        id: paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          svc="${{ matrix.service }}"
+          case "$svc" in
+            api|personality|matching)
+              echo "download_path=backend/${svc}/build/install/${svc}" >> "$GITHUB_OUTPUT"
+              echo "artifact_dir=backend/${svc}/build/install/${svc}" >> "$GITHUB_OUTPUT"
+              echo "context=backend/${svc}/build/install/${svc}" >> "$GITHUB_OUTPUT"
+              ;;
+            frontend)
+              # Fingerprint matches kindUp: hash dist/ + Dockerfile (not whole frontend/)
+              echo "download_path=frontend" >> "$GITHUB_OUTPUT"
+              echo "artifact_dir=frontend/dist" >> "$GITHUB_OUTPUT"
+              echo "context=frontend" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+          echo "dockerfile=deploy/docker/Dockerfile.${svc}" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-${{ matrix.service }}
+          path: ${{ steps.paths.outputs.download_path }}
+
+      - name: Compute fingerprint
+        id: fp
+        shell: bash
+        run: |
+          set -euo pipefail
+          fp="$(python3 deploy/scripts/artifact-fingerprint.py \
+            "${{ steps.paths.outputs.artifact_dir }}" \
+            "${{ steps.paths.outputs.dockerfile }}")"
+          echo "fingerprint=$fp" >> "$GITHUB_OUTPUT"
+          echo "Fingerprint (${{ matrix.service }}): $fp"
+
+      - name: Restore fingerprint cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .deploy-fp/${{ matrix.service }}
+          key: deploy-fp-${{ matrix.service }}-${{ steps.fp.outputs.fingerprint }}
+
+      - name: Skip notice
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: echo "Fingerprint cache hit — skip image push and redeploy for ${{ matrix.service }}"
+
+      - name: Log in to GHCR
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push thin image
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.paths.outputs.context }}
+          file: ${{ steps.paths.outputs.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:master
+
+      - name: Redeploy Render
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          HOOK_API: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+          HOOK_PERSONALITY: ${{ secrets.RENDER_DEPLOY_HOOK_PERSONALITY }}
+          HOOK_MATCHING: ${{ secrets.RENDER_DEPLOY_HOOK_MATCHING }}
+          HOOK_FRONTEND: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
+        run: |
+          set -euo pipefail
+          case "${{ matrix.service }}" in
+            api) hook="$HOOK_API" ;;
+            personality) hook="$HOOK_PERSONALITY" ;;
+            matching) hook="$HOOK_MATCHING" ;;
+            frontend) hook="$HOOK_FRONTEND" ;;
+          esac
+          if [[ -z "${hook:-}" ]]; then
+            echo "Render deploy hook secret not set for ${{ matrix.service }}; skipping Render"
+            exit 0
+          fi
+          curl -fsS -X POST "$hook"
+          echo "Triggered Render deploy for ${{ matrix.service }}"
+
+      - name: Redeploy Railway
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          ID_API: ${{ secrets.RAILWAY_SERVICE_ID_API }}
+          ID_PERSONALITY: ${{ secrets.RAILWAY_SERVICE_ID_PERSONALITY }}
+          ID_MATCHING: ${{ secrets.RAILWAY_SERVICE_ID_MATCHING }}
+          ID_FRONTEND: ${{ secrets.RAILWAY_SERVICE_ID_FRONTEND }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${RAILWAY_TOKEN:-}" ]]; then
+            echo "RAILWAY_TOKEN not set; skipping Railway"
+            exit 0
+          fi
+          case "${{ matrix.service }}" in
+            api) sid="$ID_API" ;;
+            personality) sid="$ID_PERSONALITY" ;;
+            matching) sid="$ID_MATCHING" ;;
+            frontend) sid="$ID_FRONTEND" ;;
+          esac
+          if [[ -z "${sid:-}" ]]; then
+            echo "Railway service id secret not set for ${{ matrix.service }}; skipping Railway"
+            exit 0
+          fi
+          npx -y @railway/cli@latest redeploy --service "$sid" --yes
+          echo "Triggered Railway redeploy for ${{ matrix.service }}"
+
+      - name: Persist fingerprint marker
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ".deploy-fp/${{ matrix.service }}"
+          echo "${{ steps.fp.outputs.fingerprint }}" > ".deploy-fp/${{ matrix.service }}/fingerprint"

@@ -88,5 +88,5 @@ flowchart LR
 | [frontend/](./frontend/README.md) | React web client: development and build |
 | [openapi/](./openapi/README.md) | REST API contract (OpenAPI 3.1), codegen for backend and frontend |
 | [i18n/](./i18n/README.md) | API error codes and UI translations (ru/en) |
-| [deploy/](./deploy/README.md) | Deployment: Railway (cloud) and link to local Kubernetes |
+| [deploy/](./deploy/README.md) | Deployment: thin Docker images, GHCR, Render/Railway, and local Kubernetes |
 | [deploy/k8s/](./deploy/k8s/README.md) | Local full stack in kind (Kubernetes) |

@@ -1,184 +1,77 @@
 # ProCrush Deploy
 
-Dockerfiles, Kubernetes manifests, and Railway configs for deploying all ProCrush services.
-
-## Directory contents
+One packaging model for every environment: **host/CI builds artifacts, Docker only packages them**.
 
 | Path | Purpose |
 |------|---------|
-| [`Dockerfile.api`](./Dockerfile.api) | Ktor API image |
-| [`Dockerfile.personality`](./Dockerfile.personality) | Personality worker image |
-| [`Dockerfile.matching`](./Dockerfile.matching) | Matching service image |
-| [`Dockerfile.frontend`](./Dockerfile.frontend) | React + nginx |
-| [`Dockerfile.*.dev`](./Dockerfile.api.dev) | Thin local images for Gradle `kindUp` (kind) |
-| [`railway.*.toml`](./) | Railway configs for personality, matching, frontend |
+| [`docker/`](./docker/) | Thin Dockerfiles shared by kind, GHCR CI, Render, and Railway |
+| [`render/`](./render/README.md) | Render Blueprint (`runtime: image`) + secrets |
+| [`railway/`](./railway/README.md) | Railway image-backed services + infra notes |
 | [`k8s/`](./k8s/README.md) | Local full stack in kind (Kubernetes) |
 
-API config on Railway — [`railway.toml`](../railway.toml) at the repository root.
+## Packaging model
+
+```mermaid
+flowchart LR
+  push[Push_to_master] --> detect[Detect_changed_services]
+  detect --> build[Gradle_or_npm_artifacts]
+  build --> finger[Artifact_fingerprint]
+  finger -->|unchanged| skip[Skip_image_and_deploy]
+  finger -->|changed| image[Thin_docker_build]
+  image --> ghcr[Push_GHCR]
+  ghcr --> render[Redeploy_Render]
+  ghcr --> railway[Redeploy_Railway]
+  local[kindUp] --> buildLocal[Local_Gradle_npm]
+  buildLocal --> thinLocal[Same_thin_Dockerfiles]
+  thinLocal --> kind[kind_load_rollout]
+```
+
+- **Build outside Docker** — Gradle `installDist` / `frontendBuild` on the host or GitHub Actions runner.
+- **Thin images** — each `deploy/docker/Dockerfile.*` only copies a prebuilt artifact tree onto a runtime base image.
+- **Registry** — `ghcr.io/<owner>/procrush-<service>:<git-sha>` plus moving `:master`.
+- **Cloud** — Render and Railway pull those images (no platform Dockerfile build).
+- **Local** — `./gradlew kindUp` uses the same Dockerfiles with hash-gated rebuilds.
 
 ## Local development (kind)
-
-The recommended way to run the full stack locally is Kubernetes in Docker via [kind](https://kind.sigs.k8s.io/). Details — in [k8s/README.md](./k8s/README.md).
 
 ```bash
 ./gradlew kindUp
 ```
 
-Open http://127.10.0.10 — dev login (`AUTH_DEV_MODE=true`).
+Open http://127.10.0.10 — dev login (`AUTH_DEV_MODE=true`). Details: [k8s/README.md](./k8s/README.md).
 
-After the cluster is up, iterate with the same command (local build + smart redeploy): `./gradlew kindUp`. See [k8s/README.md](./k8s/README.md#iterative-development-gradle).
+## Cloud deploy (master)
 
-## Railway deployment (GitHub)
+Push to `master` runs [`.github/workflows/deploy-master.yml`](../.github/workflows/deploy-master.yml):
 
-One Railway project with nine services: **Postgres**, **Matching Postgres**, **Redis**, **RabbitMQ**, **Kafka**, **Backend** (Ktor API), **Personality**, **Matching**, **Frontend** (React + nginx). Users only open the frontend URL; nginx proxies `/api/*` to the backend over Railway private network.
+1. Detect changed services from the path map (fallback: all four).
+2. Build artifacts only for selected services.
+3. Fingerprint artifact tree + Dockerfile (same idea as `KindSupport.artifactFingerprint`); skip when Actions cache hits.
+4. Build/push thin images to GHCR with `GITHUB_TOKEN`.
+5. Redeploy each pushed service to Render (deploy hooks) and Railway (token + service IDs).
 
-### Service architecture
+GHCR packages are public with the public repo so platforms can pull without registry credentials.
 
-| Service | Root Directory | Config file (from repo root) |
-|---------|----------------|------------------------------|
-| Backend | **empty** (repo root) | `/railway.toml` |
-| Personality | **empty** | `/deploy/railway.personality.toml` |
-| Matching | **empty** | `/deploy/railway.matching.toml` |
-| Frontend | **empty** | `/deploy/railway.frontend.toml` |
-| Postgres | — | — |
-| Matching Postgres | — | — |
-| Redis | — | — |
-| RabbitMQ | — | — (Railway template / Docker image) |
-| Kafka | — | — (Railway template / Redpanda / Upstash) |
+### Required GitHub Actions secrets
 
-Images are built **from the repository root** (backend — `backend/`; frontend — `deploy/Dockerfile.frontend`).
+| Secret | Purpose |
+|--------|---------|
+| `RENDER_DEPLOY_HOOK_API` | Render deploy hook URL for api |
+| `RENDER_DEPLOY_HOOK_PERSONALITY` | Render deploy hook URL for personality |
+| `RENDER_DEPLOY_HOOK_MATCHING` | Render deploy hook URL for matching |
+| `RENDER_DEPLOY_HOOK_FRONTEND` | Render deploy hook URL for frontend |
+| `RAILWAY_TOKEN` | Railway project token (scoped environment) |
+| `RAILWAY_SERVICE_ID_API` | Railway service id for api |
+| `RAILWAY_SERVICE_ID_PERSONALITY` | Railway service id for personality |
+| `RAILWAY_SERVICE_ID_MATCHING` | Railway service id for matching |
+| `RAILWAY_SERVICE_ID_FRONTEND` | Railway service id for frontend |
 
-For backend **do not use** Railpack/Nixpacks auto-detect — only `builder = "DOCKERFILE"` in config.
-
-Service names in `${{...}}` are **case-sensitive** (e.g. `Backend`, `Frontend`, `Postgres`).
-
-### Connect GitHub
-
-1. Create an empty repository on GitHub (account linked to Railway).
-2. Push the project:
-
-```powershell
-cd C:\path\to\procrush
-git remote add origin https://github.com/<user>/<repo>.git
-git push -u origin master
-```
-
-Use `main` instead of `master` if that is the default branch on GitHub.
-
-### Railway setup (one-time)
-
-The project should already have **Postgres**. Add application services and connect each to the **same** GitHub repository and branch.
-
-#### Backend
-
-1. **+ New** → **Empty Service** → name `Backend`.
-2. **Settings → Source**: GitHub repo and branch.
-3. **Settings → Root Directory**: **empty**.
-4. **Settings → Config file**: `/railway.toml`.
-5. **Variables**:
-
-   | Variable | Value |
-   |----------|-------|
-   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-   | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
-   | `RABBITMQ_URL` | `${{RabbitMQ.RABBITMQ_URL}}` (or your RabbitMQ service URL) |
-   | `WEB_ORIGIN` | `https://${{Frontend.RAILWAY_PUBLIC_DOMAIN}}` (after frontend domain exists) |
-   | `FRONTEND_URL` | same as `WEB_ORIGIN` |
-   | `AUTH_DEV_MODE` | `false` (prod) or `true` (staging) |
-   | `KAFKA_BOOTSTRAP_SERVERS` | your Kafka service URL |
-   | `KAFKA_MATCHING_RESULTS_TOPIC` | `procrush.matching.results` (optional override) |
-   | `KAFKA_MATCHING_RESULTS_CONSUMER_GROUP` | `api-matching-results` (optional override) |
-
-6. Deploy (automatic on push or **Deploy** in dashboard).
-7. Public domain optional (health: `GET /health`).
-
-#### Personality
-
-1. **+ New** → **Empty Service** → name `Personality`.
-2. **Settings → Source**: **same** repo and branch.
-3. **Settings → Root Directory**: **empty**.
-4. **Settings → Config file**: `/deploy/railway.personality.toml`.
-5. **Variables**:
-
-   | Variable | Value |
-   |----------|-------|
-   | `RABBITMQ_URL` | `${{RabbitMQ.RABBITMQ_URL}}` |
-   | `LLM_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta/openai` |
-   | `LLM_MODEL` | `gemini-3.1-flash-lite` |
-   | `LLM_API_KEY` | provider key (Gemini / OpenRouter, etc.) |
-   | `WORKER_HEALTH_PORT` | `8091` locally; on Railway optional — `PORT` is used |
-
-6. **Networking → Public Networking**: optional (health: `GET /health` on worker port).
-7. Deploy.
-
-#### Matching
-
-1. **+ New** → **Empty Service** → name `Matching`.
-2. **Settings → Source**: **same** repo and branch.
-3. **Settings → Root Directory**: **empty**.
-4. **Settings → Config file**: `/deploy/railway.matching.toml`.
-5. **Variables**:
-
-   | Variable | Value |
-   |----------|-------|
-   | `MATCHING_DATABASE_URL` | `${{Matching Postgres.DATABASE_URL}}` |
-   | `KAFKA_BOOTSTRAP_SERVERS` | your Kafka service URL |
-   | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
-
-6. Deploy.
-
-#### Frontend
-
-1. **+ New** → **Empty Service** → name `Frontend`.
-2. **Settings → Source**: **same** repo and branch.
-3. **Settings → Root Directory**: **empty**.
-4. **Settings → Config file**: `/deploy/railway.frontend.toml`.
-5. **Variables**:
-
-   | Variable | Value |
-   |----------|-------|
-   | `BACKEND_UPSTREAM` | `${{Backend.RAILWAY_PRIVATE_DOMAIN}}:8080` |
-
-   Use exact service names. **Do not** use `${{Backend.PORT}}` — cross-service `PORT` references are often empty and nginx fails with `invalid port in upstream`.
-
-   API listens on port `8080` (`deploy/Dockerfile.api`, Ktor default without `PORT`).
-
-6. **Networking → Public Networking**: **Generate Domain** (required for users).
-7. Deploy.
-
-#### After frontend URL is available
-
-If `WEB_ORIGIN` / `FRONTEND_URL` were not set via `${{Frontend.RAILWAY_PUBLIC_DOMAIN}}` before the domain was created — set them and redeploy **Backend**.
-
-### Deployment order
-
-1. Postgres, Matching Postgres (if separate)
-2. Redis, RabbitMQ, Kafka
-3. Backend (`/health`, Flyway in logs)
-4. Personality (`/health`, consumer in logs)
-5. Matching (`/health`)
-6. Frontend (public domain + `BACKEND_UPSTREAM`)
-7. Redeploy Backend if `WEB_ORIGIN` / `FRONTEND_URL` need updating
-
-### Verification
-
-| Check | How |
-|-------|-----|
-| API health | `GET /health` → `{"status":"ok","redis":"ok","rabbitmq":"ok"}` |
-| Worker health | `GET http://<worker-domain>/health` (service port on Railway) |
-| Matching health | `GET http://<matching-domain>/health` |
-| Frontend | `https://<frontend-domain>/` |
-| API via proxy | Login with `AUTH_DEV_MODE=true` on backend |
-| Build | Deploy logs show **Dockerfile**, not **Railpack** |
-
-### Railway vs local
-
-- Containers have no `.env` — variables are set in the Railway dashboard.
-- Railway sets `PORT` for application services.
-- `DATABASE_URL` from Postgres is `postgresql://...`; the server adds JDBC `sslmode=require`.
+`GITHUB_TOKEN` is provided by Actions for GHCR push (`packages: write`).
 
 ## Related documentation
 
+- [render/README.md](./render/README.md) — Render Blueprint and deploy hooks
+- [railway/README.md](./railway/README.md) — Railway image sources and variables
 - [k8s/README.md](./k8s/README.md) — local Kubernetes (kind)
 - [backend/README.md](../backend/README.md) — backend and infrastructure dependencies
 - [frontend/README.md](../frontend/README.md) — web client

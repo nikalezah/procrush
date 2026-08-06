@@ -101,7 +101,7 @@ class ProcrushRootPlugin : Plugin<Project> {
                         image = "procrush-api",
                         deployment = "api",
                         artifactDir = layout.projectDirectory.dir("backend/api/build/install/api").asFile,
-                        dockerfile = layout.projectDirectory.file("deploy/Dockerfile.api.dev").asFile,
+                        dockerfile = layout.projectDirectory.file("deploy/docker/Dockerfile.api").asFile,
                         buildContext = layout.projectDirectory.dir("backend/api/build/install/api").asFile,
                     ),
                     KindServiceSpec(
@@ -109,7 +109,7 @@ class ProcrushRootPlugin : Plugin<Project> {
                         image = "procrush-personality",
                         deployment = "personality",
                         artifactDir = layout.projectDirectory.dir("backend/personality/build/install/personality").asFile,
-                        dockerfile = layout.projectDirectory.file("deploy/Dockerfile.personality.dev").asFile,
+                        dockerfile = layout.projectDirectory.file("deploy/docker/Dockerfile.personality").asFile,
                         buildContext = layout.projectDirectory.dir("backend/personality/build/install/personality").asFile,
                     ),
                     KindServiceSpec(
@@ -117,7 +117,7 @@ class ProcrushRootPlugin : Plugin<Project> {
                         image = "procrush-matching",
                         deployment = "matching",
                         artifactDir = layout.projectDirectory.dir("backend/matching/build/install/matching").asFile,
-                        dockerfile = layout.projectDirectory.file("deploy/Dockerfile.matching.dev").asFile,
+                        dockerfile = layout.projectDirectory.file("deploy/docker/Dockerfile.matching").asFile,
                         buildContext = layout.projectDirectory.dir("backend/matching/build/install/matching").asFile,
                     ),
                     KindServiceSpec(
@@ -125,7 +125,7 @@ class ProcrushRootPlugin : Plugin<Project> {
                         image = "procrush-frontend",
                         deployment = "frontend",
                         artifactDir = layout.projectDirectory.dir("frontend/dist").asFile,
-                        dockerfile = layout.projectDirectory.file("deploy/Dockerfile.frontend.dev").asFile,
+                        dockerfile = layout.projectDirectory.file("deploy/docker/Dockerfile.frontend").asFile,
                         buildContext = layout.projectDirectory.dir("frontend").asFile,
                     ),
                 )

@@ -1,4 +1,4 @@
-# Dev image: build context must be frontend/ (expects dist/ already built)
+# Thin image: build context must be frontend/ (expects dist/ already built)
 FROM nginx:alpine
 RUN apk add --no-cache gettext
 
