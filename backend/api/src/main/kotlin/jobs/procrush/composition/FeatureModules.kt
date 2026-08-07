@@ -1,7 +1,7 @@
 package jobs.procrush.composition
 
 import jobs.procrush.bootstrap.config.AppConfig
-import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
+import jobs.procrush.api.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.port.MatchingCachePort
