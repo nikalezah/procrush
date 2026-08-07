@@ -14,10 +14,15 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.backend.config)
             implementation(projects.backend.contracts)
-            implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.serialization.kotlinxJson)
             implementation(libs.kotlinx.serialization.json)
+        }
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.cio)
+        }
+        nativeMain.dependencies {
+            implementation(libs.ktor.client.curl)
         }
     }
 }

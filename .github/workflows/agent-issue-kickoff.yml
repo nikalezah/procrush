@@ -62,7 +62,7 @@ jobs:
 
           # Mention must be first in the body (UI autocomplete identity is cursoragent).
           body="@cursoragent Implement this issue and open a non-draft PR against the default branch.
-          Put \`Closes #N\` on its own line near the top of the PR body, where N is the triggering issue number.
+          Put \`Closes #N\` on its own line near the top of the PR body, where N is this issue's number.
           ${MARKER}"
 
           gh api "repos/${REPO}/issues/${ISSUE}/comments" -f body="${body}"

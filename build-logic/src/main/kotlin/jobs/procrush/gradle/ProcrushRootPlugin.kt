@@ -6,6 +6,7 @@ import jobs.procrush.gradle.i18n.NodeAvailableValueSource
 import jobs.procrush.gradle.kind.KindDownTask
 import jobs.procrush.gradle.kind.KindServiceSpec
 import jobs.procrush.gradle.kind.KindUpTask
+import jobs.procrush.gradle.personality.LinkPersonalityDockerTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
@@ -75,6 +76,33 @@ class ProcrushRootPlugin : Plugin<Project> {
             outputDir.set(layout.projectDirectory.dir("frontend/dist"))
         }
 
+        val personalityKexeDir =
+            layout.projectDirectory.dir("backend/personality/build/bin/linuxX64/releaseExecutable")
+        val linkPersonality =
+            if (isWindows) {
+                target.tasks.register("linkPersonalityExecutable", LinkPersonalityDockerTask::class.java) {
+                    projectRoot.set(layout.projectDirectory)
+                    outputKexe.set(personalityKexeDir.file("personality.kexe"))
+                    inputSources.from(
+                        layout.projectDirectory.dir("backend/personality/src"),
+                        layout.projectDirectory.dir("backend/platform/llm/src"),
+                        layout.projectDirectory.dir("backend/platform/rabbit/src"),
+                        layout.projectDirectory.dir("backend/domain/personality-messaging/src"),
+                        layout.projectDirectory.dir("backend/contracts/src"),
+                        layout.projectDirectory.dir("backend/config/src"),
+                        layout.projectDirectory.file("backend/personality/build.gradle.kts"),
+                        layout.projectDirectory.file("backend/platform/llm/build.gradle.kts"),
+                        layout.projectDirectory.file("gradle/libs.versions.toml"),
+                    )
+                }
+            } else {
+                target.tasks.register("linkPersonalityExecutable") {
+                    dependsOn(":backend:personality:linkReleaseExecutableLinuxX64")
+                    group = "build"
+                    description = "Link personality.kexe for linuxX64"
+                }
+            }
+
         val clusterName = providers.environmentVariable("KIND_CLUSTER_NAME")
             .orElse("procrush")
         val kindNamespace = "procrush"
@@ -88,7 +116,7 @@ class ProcrushRootPlugin : Plugin<Project> {
             dependsOn(
                 generateI18n,
                 ":backend:api:installDist",
-                ":backend:personality:linkReleaseExecutableLinuxX64",
+                linkPersonality,
                 ":backend:matching:installDist",
                 frontendBuild,
             )
@@ -114,13 +142,9 @@ class ProcrushRootPlugin : Plugin<Project> {
                         name = "personality",
                         image = "procrush-personality",
                         deployment = "personality",
-                        artifactDir = layout.projectDirectory
-                            .dir("backend/personality/build/bin/linuxX64/releaseExecutable")
-                            .asFile,
+                        artifactDir = personalityKexeDir.asFile,
                         dockerfile = layout.projectDirectory.file("deploy/docker/Dockerfile.personality").asFile,
-                        buildContext = layout.projectDirectory
-                            .dir("backend/personality/build/bin/linuxX64/releaseExecutable")
-                            .asFile,
+                        buildContext = personalityKexeDir.asFile,
                     ),
                     KindServiceSpec(
                         name = "matching",

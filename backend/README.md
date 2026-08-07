@@ -32,12 +32,17 @@ Health: `GET /health` (alias for `/health/ready`), `GET /health/live`, `GET /hea
 
 Consumes thick generation commands from `personality.generation`, calls the LLM, validates the output, and publishes a result to `personality.generation.results`. No Postgres, Redis, or Kafka.
 
-Kotlin/Native `linuxX64` executable (no JVM app target). Local runs go through kind:
+Kotlin/Native `linuxX64` executable (no JVM app target). Uses `ktor-client-curl` for HTTPS LLM calls.
+Local runs go through kind:
 
 ```bash
-./gradlew :backend:personality:linkReleaseExecutableLinuxX64
+./gradlew linkPersonalityExecutable
 ./gradlew kindUp
 ```
+
+`kindUp` depends on `linkPersonalityExecutable`. On **Windows** that task links inside
+Linux Docker (mingw `ld.gold` cannot resolve curl's static OpenSSL). On Linux/CI it runs
+`:backend:personality:linkReleaseExecutableLinuxX64` directly.
 
 Binary: `backend/personality/build/bin/linuxX64/releaseExecutable/personality.kexe`.
 

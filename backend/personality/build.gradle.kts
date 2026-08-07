@@ -25,7 +25,7 @@ kotlin {
             implementation(projects.backend.domain.personalityMessaging)
             implementation(libs.ktor.serverCore)
             implementation(libs.ktor.serverCio)
-            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.client.curl)
             implementation(libs.ktor.network)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)

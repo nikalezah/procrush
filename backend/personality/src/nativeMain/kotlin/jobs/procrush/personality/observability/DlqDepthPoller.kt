@@ -1,7 +1,7 @@
 package jobs.procrush.personality.observability
 
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.curl.Curl
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
@@ -26,7 +26,7 @@ class DlqDepthPoller(
     private val logger = Logger.get(DlqDepthPoller::class)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var job: Job? = null
-    private val httpClient = HttpClient(CIO) {
+    private val httpClient = HttpClient(Curl) {
         expectSuccess = false
     }
 

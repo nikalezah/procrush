@@ -1,7 +1,6 @@
 package jobs.procrush.llm
 
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
@@ -20,7 +19,7 @@ object LlmFactory {
 
     fun createHttpClient(config: LlmConfig): HttpClient {
         val timeoutMs = config.requestTimeoutSeconds * 1_000
-        return HttpClient(CIO) {
+        return HttpClient(createLlmHttpClientEngine()) {
             install(HttpTimeout) {
                 requestTimeoutMillis = timeoutMs
                 connectTimeoutMillis = 30_000
