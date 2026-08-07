@@ -193,6 +193,9 @@ internal object AmqpFrame {
     const val TYPE_HEARTBEAT: Byte = 8
     const val FRAME_END: Byte = 0xCE.toByte()
 
+    /** Wire overhead: type(1) + channel(2) + size(4) + frame-end(1). */
+    const val EMPTY_FRAME_SIZE: Int = 8
+
     val PROTOCOL_HEADER: ByteArray =
         byteArrayOf(
             'A'.code.toByte(),
@@ -204,6 +207,36 @@ internal object AmqpFrame {
             9,
             1,
         )
+
+    /**
+     * Max body-frame payload octets for a negotiated [frameMax]
+     * (total frame size including header and end byte).
+     * [frameMax] 0 means unlimited.
+     */
+    fun maxBodyPayloadSize(frameMax: Int): Int {
+        require(frameMax == 0 || frameMax > EMPTY_FRAME_SIZE) {
+            "frameMax too small for an AMQP frame: $frameMax"
+        }
+        return if (frameMax == 0) Int.MAX_VALUE else frameMax - EMPTY_FRAME_SIZE
+    }
+
+    /** Split [body] into body-frame payloads that each respect [frameMax]. */
+    fun bodyFramePayloads(
+        body: ByteArray,
+        frameMax: Int,
+    ): List<ByteArray> {
+        val maxPayload = maxBodyPayloadSize(frameMax)
+        if (body.isEmpty()) return listOf(ByteArray(0))
+        if (body.size <= maxPayload) return listOf(body)
+        val chunks = ArrayList<ByteArray>((body.size + maxPayload - 1) / maxPayload)
+        var offset = 0
+        while (offset < body.size) {
+            val end = minOf(offset + maxPayload, body.size)
+            chunks.add(body.copyOfRange(offset, end))
+            offset = end
+        }
+        return chunks
+    }
 }
 
 internal object AmqpClass {

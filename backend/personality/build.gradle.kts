@@ -25,4 +25,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.datetime)
+
+    testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinx.coroutines.core)
 }

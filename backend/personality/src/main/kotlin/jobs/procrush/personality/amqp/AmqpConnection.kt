@@ -37,6 +37,7 @@ internal class AmqpConnection private constructor(
     private val output: ByteWriteChannel,
     private val selectorManager: SelectorManager,
     private val scope: CoroutineScope,
+    private val frameMax: Int,
     private val heartbeatSeconds: Int,
 ) {
     private val writeMutex = Mutex()
@@ -49,6 +50,9 @@ internal class AmqpConnection private constructor(
     @Volatile private var open = true
     private var lastReadMark = TimeSource.Monotonic.markNow()
     private var lastWriteMark = TimeSource.Monotonic.markNow()
+
+    /** Negotiated AMQP frame-max (including frame header and end byte). */
+    fun negotiatedFrameMax(): Int = frameMax
 
     fun isOpen(): Boolean = open && socket.socketContext.isActive
 
@@ -119,9 +123,13 @@ internal class AmqpConnection private constructor(
                 .writeShort(0) // weight
                 .writeLongLong(body.size.toLong())
                 .toByteArray() + properties
+        require(header.size <= AmqpFrame.maxBodyPayloadSize(frameMax)) {
+            "Content header exceeds negotiated frameMax=$frameMax"
+        }
         writeFrame(AmqpFrame.TYPE_HEADER, channel, header)
-        // Single body frame is fine for our message sizes.
-        writeFrame(AmqpFrame.TYPE_BODY, channel, body)
+        for (chunk in AmqpFrame.bodyFramePayloads(body, frameMax)) {
+            writeFrame(AmqpFrame.TYPE_BODY, channel, chunk)
+        }
     }
 
     internal suspend fun writeFrame(
@@ -310,12 +318,13 @@ internal class AmqpConnection private constructor(
             val channelMax = tuneReader.readShort()
             val frameMax = tuneReader.readLong()
             val heartbeat = tuneReader.readShort()
+            val negotiatedFrameMax = if (frameMax == 0) 131072 else frameMax
             val negotiatedHeartbeat = if (heartbeat == 0) 0 else heartbeat.coerceAtMost(60)
 
             val tuneOkArgs =
                 AmqpBuffer()
                     .writeShort(if (channelMax == 0) 2047 else channelMax)
-                    .writeLong(if (frameMax == 0) 131072 else frameMax)
+                    .writeLong(negotiatedFrameMax)
                     .writeShort(negotiatedHeartbeat)
                     .toByteArray()
             writeFrameStatic(output, AmqpFrame.TYPE_METHOD, 0, methodPayload(AmqpClass.CONNECTION, AmqpMethod.TUNE_OK, tuneOkArgs))
@@ -336,6 +345,7 @@ internal class AmqpConnection private constructor(
                     output = output,
                     selectorManager = selectorManager,
                     scope = scope,
+                    frameMax = negotiatedFrameMax,
                     heartbeatSeconds = negotiatedHeartbeat,
                 )
             connection.startLoops()
