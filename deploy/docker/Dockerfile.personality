@@ -1,9 +1,14 @@
-# Thin image: build context must be backend/personality/build/install/personality
-FROM eclipse-temurin:25-jre
-WORKDIR /app
-COPY . ./
+# Thin image: build context must be
+# backend/personality/build/bin/linuxX64/releaseExecutable (contains personality.kexe)
+FROM debian:bookworm-slim AS libs
+FROM gcr.io/distroless/cc-debian12
+
+# Kotlin/Native linuxX64 binaries link libcrypt; distroless/cc does not ship it.
+COPY --from=libs /lib/x86_64-linux-gnu/libcrypt.so.1 /lib/x86_64-linux-gnu/libcrypt.so.1
+
+COPY personality.kexe /personality
 
 ENV WORKER_HEALTH_PORT=8091
 EXPOSE 8091
 
-CMD ["bin/personality"]
+CMD ["/personality"]

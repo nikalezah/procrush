@@ -32,9 +32,14 @@ Health: `GET /health` (alias for `/health/ready`), `GET /health/live`, `GET /hea
 
 Consumes thick generation commands from `personality.generation`, calls the LLM, validates the output, and publishes a result to `personality.generation.results`. No Postgres, Redis, or Kafka.
 
+Kotlin/Native `linuxX64` executable (no JVM app target). Local runs go through kind:
+
 ```bash
-./gradlew :backend:personality:run
+./gradlew :backend:personality:linkReleaseExecutableLinuxX64
+./gradlew kindUp
 ```
+
+Binary: `backend/personality/build/bin/linuxX64/releaseExecutable/personality.kexe`.
 
 | Criterion | Implementation |
 |-----------|------------------|
@@ -59,7 +64,7 @@ Health: `GET /health` (default port `8092`).
 
 ## Observability
 
-API and matching use the shared module [`platform/observability`](./platform/observability) (Logback JSON/text, Micrometer, OpenTelemetry). Personality uses a thin in-process layer under [`personality/.../observability`](./personality/src/main/kotlin/jobs/procrush/personality/observability) — no OTel/Tempo spans, no Logback/Micrometer. `OTEL_*` in the shared configmap is a no-op for personality.
+API and matching use the shared module [`platform/observability`](./platform/observability) (Logback JSON/text, Micrometer, OpenTelemetry). Personality uses a thin in-process layer under [`personality/.../observability`](./personality/src/nativeMain/kotlin/jobs/procrush/personality/observability) — no OTel/Tempo spans, no Logback/Micrometer. `OTEL_*` in the shared configmap is a no-op for personality.
 
 All three apps expose the same HTTP endpoints:
 
@@ -141,8 +146,8 @@ Environment variables — in [`deploy/k8s/base/configmap.yaml`](../deploy/k8s/ba
 
 ```bash
 ./gradlew :backend:api:run
-./gradlew :backend:personality:run
 ./gradlew :backend:matching:run
+# Personality is Native-only — run via kind (see above), not :backend:personality:run
 ```
 
 To verify changes **inside kind** (local build → thin image → conditional rollout), use `./gradlew kindUp`. Details — [deploy/k8s/README.md](../deploy/k8s/README.md#iterative-development-gradle).

@@ -214,7 +214,7 @@ Infrastructure is reachable from the host on loopback IPs immediately after `kin
 |-------------|---------|-----|
 | React | `cd frontend && npm run dev` | http://localhost:8081 |
 | API | `./gradlew :backend:api:run` | :8080 |
-| Personality | `./gradlew :backend:personality:run` | :8091 |
+| Personality | Native worker via `./gradlew kindUp` (no `:run`) | :8091 in cluster |
 | Matching | `./gradlew :backend:matching:run` | :8092 |
 
 More on backend modules — [backend/README.md](../../backend/README.md).
