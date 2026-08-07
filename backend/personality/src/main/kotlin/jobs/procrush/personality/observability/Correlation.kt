@@ -1,23 +1,42 @@
 package jobs.procrush.personality.observability
 
 import jobs.procrush.shared.CorrelationIds
+import kotlinx.coroutines.ThreadContextElement
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
+/**
+ * Delivery-scoped correlation. Implements [ThreadContextElement] so sync call sites
+ * (e.g. MessagingLog → Logger.infoBlocking) can reinstall this element into a nested
+ * `runBlocking` without a process-global active-delivery pointer.
+ */
 data class CorrelationElement(
     val values: MutableMap<String, String>,
-) : CoroutineContext.Element {
+) : ThreadContextElement<CorrelationElement?> {
     companion object Key : CoroutineContext.Key<CorrelationElement>
 
     override val key: CoroutineContext.Key<*> get() = Key
+
+    override fun updateThreadContext(context: CoroutineContext): CorrelationElement? {
+        val previous = correlationThreadBound.get()
+        correlationThreadBound.set(this)
+        return previous
+    }
+
+    override fun restoreThreadContext(
+        context: CoroutineContext,
+        oldState: CorrelationElement?,
+    ) {
+        correlationThreadBound.set(oldState)
+    }
 }
 
-object Correlation {
-    /** Active [runWith] element so sync bridges can reinstall it into nested `runBlocking`. */
-    private var syncBridge: CorrelationElement? = null
+/** Per-thread install of the coroutine's [CorrelationElement] while that coroutine is running. */
+private val correlationThreadBound = ThreadLocal<CorrelationElement?>()
 
+object Correlation {
     fun currentThreadName(): String = "worker"
 
     suspend fun get(key: String): String? = currentValues()?.get(key)
@@ -52,20 +71,17 @@ object Correlation {
                 map[key] = value
             }
         }
-        val element = CorrelationElement(map)
-        val previous = syncBridge
-        syncBridge = element
-        return try {
-            runBlocking(element) {
-                block()
-            }
-        } finally {
-            syncBridge = previous
+        return runBlocking(CorrelationElement(map)) {
+            block()
         }
     }
 
-    /** Context to pass into nested `runBlocking` from sync call sites under [runWith]. */
-    fun syncBridgeContext(): CoroutineContext = syncBridge ?: EmptyCoroutineContext
+    /**
+     * Context for nested `runBlocking` from sync call sites under an active delivery.
+     * Reads the thread-bound element installed by [CorrelationElement] as a
+     * [ThreadContextElement] — delivery-local, not a shared mutable slot.
+     */
+    fun syncBridgeContext(): CoroutineContext = correlationThreadBound.get() ?: EmptyCoroutineContext
 
     fun requestIdFromHeaders(headers: Map<String, Any?>): String? =
         headers[CorrelationIds.HEADER_REQUEST_ID]?.toString()

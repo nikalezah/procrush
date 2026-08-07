@@ -135,7 +135,8 @@ class Logger private constructor(
             format: String,
             vararg args: Any?,
         ) {
-            // Reinstall the active delivery CorrelationElement; a bare runBlocking would drop it.
+            // Reinstall this thread's delivery CorrelationElement (via ThreadContextElement).
+            // A bare runBlocking would drop it; a process-global slot would race across deliveries.
             runBlocking(Correlation.syncBridgeContext()) { logger.info(format, *args) }
         }
 
