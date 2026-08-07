@@ -279,8 +279,8 @@ internal class AmqpConnection private constructor(
 
     companion object {
         suspend fun connect(url: AmqpUrl): AmqpConnection {
-            val selectorManager = SelectorManager(Dispatchers.IO)
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val selectorManager = SelectorManager(Dispatchers.Default)
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             val socket =
                 aSocket(selectorManager).tcp().connect(url.host, url.port)
             val input = socket.openReadChannel()

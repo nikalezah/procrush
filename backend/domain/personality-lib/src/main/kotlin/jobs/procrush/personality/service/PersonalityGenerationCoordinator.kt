@@ -15,6 +15,8 @@ import jobs.procrush.shared.repository.ReferenceRepository
 import jobs.procrush.survey.service.SurveyService
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class PersonalityGenerationCoordinator(
     private val seekerRepository: SeekerRepository,
@@ -73,6 +75,7 @@ class PersonalityGenerationCoordinator(
         enqueueGeneration(seeker.id, userId)
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     private fun enqueueGeneration(seekerId: Long, userId: UUID) {
         if (!lockGuard.tryAcquire(seekerId)) {
             throw GenerationInProgressException()
@@ -86,7 +89,7 @@ class PersonalityGenerationCoordinator(
             profileRepository.markProcessing(seekerId)
             publisher.enqueue(
                 seekerId = seekerId,
-                userId = userId,
+                userId = Uuid.parse(userId.toString()),
                 surveyContext = surveyContext,
                 catalog = catalog,
                 correlationId = MdcContext.currentRequestId(),

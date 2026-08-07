@@ -37,7 +37,7 @@ class PersonalityAmqpModule private constructor(
             runBlocking {
                 val url = AmqpUrl.parse(config.url)
                 val connection = AmqpConnection.connect(url)
-                val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+                val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
                 val publishChannel = connection.openChannel()
                 AmqpTopology.declare(publishChannel, config)
                 val publisher = KtorMessagePublisher(publishChannel, scope)

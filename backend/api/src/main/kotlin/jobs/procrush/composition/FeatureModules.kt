@@ -6,6 +6,7 @@ import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
+import jobs.procrush.personality.messaging.MessagingLog
 import jobs.procrush.personality.messaging.PersonalityCommandPublisher
 import jobs.procrush.personality.messaging.PersonalityResultConsumer
 import jobs.procrush.personality.messaging.PersonalityResultDedup
@@ -21,6 +22,7 @@ import jobs.procrush.seeker.repository.SeekerSuperpowersAndTalentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import org.slf4j.LoggerFactory
 
 data class SurveyModule(
     val surveyService: jobs.procrush.survey.service.SurveyService,
@@ -67,7 +69,13 @@ data class PersonalityModule(
             val profileRepository = SeekerPersonalProfileRepository()
             val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
             val lockGuard = PersonalityGenerationLockGuard(redis.distributedLock, config.redis)
-            val publisher = PersonalityCommandPublisher(rabbitMq.publisher, rabbitMq.config)
+            val commandLog = LoggerFactory.getLogger(PersonalityCommandPublisher::class.java)
+            val publisher =
+                PersonalityCommandPublisher(
+                    rabbitMq.publisher,
+                    rabbitMq.config,
+                    MessagingLog { message, args -> commandLog.info(message, *args) },
+                )
             val personalityStatusNotifier =
                 RedisPersonalityStatusNotifier(
                     redis = redis.client,

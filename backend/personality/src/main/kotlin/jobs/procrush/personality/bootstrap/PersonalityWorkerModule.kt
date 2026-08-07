@@ -5,9 +5,11 @@ import jobs.procrush.llm.LlmFactory
 import jobs.procrush.personality.amqp.PersonalityAmqpModule
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
+import jobs.procrush.personality.messaging.MessagingLog
 import jobs.procrush.personality.messaging.PersonalityCommandConsumer
 import jobs.procrush.personality.messaging.PersonalityCommandPublisher
 import jobs.procrush.personality.messaging.PersonalityResultPublisher
+import jobs.procrush.personality.observability.Logger
 import jobs.procrush.personality.service.PersonalityGenerationHandler
 
 data class PersonalityWorkerModule(
@@ -33,8 +35,20 @@ data class PersonalityWorkerModule(
                     promptBuilder = PersonalityPromptBuilder(),
                     validator = PersonalityProfileValidator(),
                 )
-            val commandPublisher = PersonalityCommandPublisher(rabbitMq.publisher, rabbitMq.config)
-            val resultPublisher = PersonalityResultPublisher(rabbitMq.publisher, rabbitMq.config)
+            val commandLogger = Logger.get(PersonalityCommandPublisher::class)
+            val resultLogger = Logger.get(PersonalityResultPublisher::class)
+            val commandPublisher =
+                PersonalityCommandPublisher(
+                    rabbitMq.publisher,
+                    rabbitMq.config,
+                    MessagingLog { message, args -> Logger.infoBlocking(commandLogger, message, *args) },
+                )
+            val resultPublisher =
+                PersonalityResultPublisher(
+                    rabbitMq.publisher,
+                    rabbitMq.config,
+                    MessagingLog { message, args -> Logger.infoBlocking(resultLogger, message, *args) },
+                )
             val consumer =
                 PersonalityCommandConsumer(
                     messageConsumer = rabbitMq.createConsumer(),

@@ -2,6 +2,9 @@ package jobs.procrush.personality.observability
 
 import jobs.procrush.bootstrap.config.LogFormat
 import jobs.procrush.shared.CorrelationIds
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.reflect.KClass
@@ -11,32 +14,32 @@ import kotlin.time.Instant
 class Logger private constructor(
     private val name: String,
 ) {
-    fun info(
+    suspend fun info(
         message: String,
         throwable: Throwable? = null,
     ) = log("INFO", message, throwable)
 
-    fun warn(
+    suspend fun warn(
         message: String,
         throwable: Throwable? = null,
     ) = log("WARN", message, throwable)
 
-    fun error(
+    suspend fun error(
         message: String,
         throwable: Throwable? = null,
     ) = log("ERROR", message, throwable)
 
-    fun debug(
+    suspend fun debug(
         message: String,
         throwable: Throwable? = null,
     ) = log("DEBUG", message, throwable)
 
-    fun info(
+    suspend fun info(
         format: String,
         vararg args: Any?,
     ) = info(formatMessage(format, args))
 
-    fun error(
+    suspend fun error(
         format: String,
         vararg args: Any?,
     ) {
@@ -45,7 +48,7 @@ class Logger private constructor(
         error(formatMessage(format, messageArgs), throwable)
     }
 
-    fun debug(
+    suspend fun debug(
         format: String,
         vararg args: Any?,
     ) {
@@ -54,7 +57,7 @@ class Logger private constructor(
         debug(formatMessage(format, messageArgs), throwable)
     }
 
-    private fun log(
+    private suspend fun log(
         level: String,
         message: String,
         throwable: Throwable?,
@@ -65,7 +68,7 @@ class Logger private constructor(
                 LogFormat.JSON -> formatJson(level, message, throwable, config)
                 LogFormat.TEXT -> formatText(level, message, throwable)
             }
-        synchronized(stdoutLock) {
+        stdoutMutex.withLock {
             println(line)
             if (config.logFormat == LogFormat.TEXT && throwable != null) {
                 println(throwable.stackTraceToString())
@@ -73,7 +76,7 @@ class Logger private constructor(
         }
     }
 
-    private fun formatText(
+    private suspend fun formatText(
         level: String,
         message: String,
         throwable: Throwable?,
@@ -84,21 +87,22 @@ class Logger private constructor(
         return "$timestamp [${Correlation.currentThreadName()}] $level $name [$requestId] - $message$suffix"
     }
 
-    private fun formatJson(
+    private suspend fun formatJson(
         level: String,
         message: String,
         throwable: Throwable?,
         config: WorkerLogConfig,
     ): String {
-        val fields = linkedMapOf<String, Any?>(
-            "@timestamp" to Clock.System.now().toString(),
-            "level" to level,
-            "logger_name" to name,
-            "message" to message,
-            "service" to config.serviceName,
-            "environment" to config.environment,
-            "thread_name" to Correlation.currentThreadName(),
-        )
+        val fields =
+            linkedMapOf<String, Any?>(
+                "@timestamp" to Clock.System.now().toString(),
+                "level" to level,
+                "logger_name" to name,
+                "message" to message,
+                "service" to config.serviceName,
+                "environment" to config.environment,
+                "thread_name" to Correlation.currentThreadName(),
+            )
         val correlation = Correlation.snapshot()
         listOf(
             CorrelationIds.REQUEST_ID,
@@ -120,10 +124,19 @@ class Logger private constructor(
     }
 
     companion object {
-        private val stdoutLock = Any()
+        private val stdoutMutex = Mutex()
 
         fun get(kClass: KClass<*>): Logger =
             Logger(kClass.qualifiedName ?: kClass.simpleName!!)
+
+        /** Sync bridge for non-coroutine call sites (e.g. MessagingLog adapters). */
+        fun infoBlocking(
+            logger: Logger,
+            format: String,
+            vararg args: Any?,
+        ) {
+            runBlocking { logger.info(format, *args) }
+        }
 
         private fun formatTextTimestamp(instant: Instant): String {
             val local = instant.toLocalDateTime(TimeZone.UTC)

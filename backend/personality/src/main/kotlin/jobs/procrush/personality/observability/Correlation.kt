@@ -1,22 +1,30 @@
 package jobs.procrush.personality.observability
 
 import jobs.procrush.shared.CorrelationIds
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.runBlocking
+import kotlin.coroutines.CoroutineContext
+
+data class CorrelationElement(
+    val values: MutableMap<String, String>,
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<CorrelationElement>
+
+    override val key: CoroutineContext.Key<*> get() = Key
+}
 
 object Correlation {
-    private val values = ThreadLocal.withInitial { mutableMapOf<String, String>() }
+    fun currentThreadName(): String = "worker"
 
-    fun get(key: String): String? = values.get()[key]
+    suspend fun get(key: String): String? = currentValues()?.get(key)
 
-    fun currentRequestId(): String? = get(CorrelationIds.REQUEST_ID)
+    suspend fun currentRequestId(): String? = get(CorrelationIds.REQUEST_ID)
 
-    /** Isolated JVM island (alongside ThreadLocal) so Logger avoids direct Thread APIs. */
-    fun currentThreadName(): String = Thread.currentThread().name
-
-    fun put(
+    suspend fun put(
         key: String,
         value: String?,
     ) {
-        val map = values.get()
+        val map = currentValues() ?: return
         if (value.isNullOrBlank()) {
             map.remove(key)
         } else {
@@ -24,27 +32,31 @@ object Correlation {
         }
     }
 
-    fun putAll(entries: Map<String, String?>) {
+    suspend fun putAll(entries: Map<String, String?>) {
         entries.forEach { (key, value) -> put(key, value) }
     }
 
-    fun snapshot(): Map<String, String> = values.get().toMap()
+    suspend fun snapshot(): Map<String, String> = currentValues()?.toMap().orEmpty()
 
     fun <T> runWith(
         entries: Map<String, String?>,
-        block: () -> T,
+        block: suspend () -> T,
     ): T {
-        val previous = snapshot()
-        putAll(entries)
-        return try {
+        val map = mutableMapOf<String, String>()
+        entries.forEach { (key, value) ->
+            if (!value.isNullOrBlank()) {
+                map[key] = value
+            }
+        }
+        return runBlocking(CorrelationElement(map)) {
             block()
-        } finally {
-            values.get().clear()
-            values.get().putAll(previous)
         }
     }
 
     fun requestIdFromHeaders(headers: Map<String, Any?>): String? =
         headers[CorrelationIds.HEADER_REQUEST_ID]?.toString()
             ?: headers["x-request-id"]?.toString()
+
+    private suspend fun currentValues(): MutableMap<String, String>? =
+        currentCoroutineContext()[CorrelationElement]?.values
 }
