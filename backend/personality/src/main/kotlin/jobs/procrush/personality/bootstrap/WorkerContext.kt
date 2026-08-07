@@ -1,12 +1,12 @@
 package jobs.procrush.personality.bootstrap
 
 import jobs.procrush.bootstrap.config.WorkerAppConfig
-import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
+import jobs.procrush.personality.amqp.PersonalityAmqpModule
 import jobs.procrush.personality.messaging.PersonalityCommandConsumer
 
 data class WorkerContext(
     val config: WorkerAppConfig,
-    val rabbitMqModule: RabbitMqModule,
+    val rabbitMqModule: PersonalityAmqpModule,
     val personalityCommandConsumer: PersonalityCommandConsumer,
     private val workerModule: PersonalityWorkerModule,
 ) {
@@ -17,7 +17,7 @@ data class WorkerContext(
 
     companion object {
         fun create(config: WorkerAppConfig): WorkerContext {
-            val rabbitMq = RabbitMqModule.create(config.rabbitMq)
+            val rabbitMq = PersonalityAmqpModule.create(config.rabbitMq)
             val workerModule =
                 PersonalityWorkerModule.create(
                     config = config,

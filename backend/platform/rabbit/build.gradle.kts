@@ -6,6 +6,5 @@ group = "jobs.procrush"
 version = "1.0.0"
 
 dependencies {
-    implementation(projects.backend.config)
-    implementation(libs.amqp.client)
+    // Port types only — no AMQP transport dependency.
 }

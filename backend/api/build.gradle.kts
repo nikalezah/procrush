@@ -42,6 +42,7 @@ dependencies {
     implementation(projects.backend.domain.matching)
     implementation(projects.backend.domain.personalityMessaging)
     implementation(projects.backend.domain.personalityLib)
+    implementation(libs.amqp.client)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)

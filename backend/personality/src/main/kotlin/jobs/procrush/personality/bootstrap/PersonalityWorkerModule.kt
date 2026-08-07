@@ -1,8 +1,8 @@
 package jobs.procrush.personality.bootstrap
 
 import jobs.procrush.bootstrap.config.WorkerAppConfig
-import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
 import jobs.procrush.llm.LlmFactory
+import jobs.procrush.personality.amqp.PersonalityAmqpModule
 import jobs.procrush.personality.llm.PersonalityProfileValidator
 import jobs.procrush.personality.llm.PersonalityPromptBuilder
 import jobs.procrush.personality.messaging.PersonalityCommandConsumer
@@ -24,7 +24,7 @@ data class PersonalityWorkerModule(
     companion object {
         fun create(
             config: WorkerAppConfig,
-            rabbitMq: RabbitMqModule,
+            rabbitMq: PersonalityAmqpModule,
         ): PersonalityWorkerModule {
             val handler =
                 PersonalityGenerationHandler(

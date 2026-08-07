@@ -11,7 +11,7 @@ import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.UserAuthService
 import jobs.procrush.auth.service.SessionService
 import jobs.procrush.bootstrap.config.AppConfig
-import jobs.procrush.bootstrap.rabbitmq.RabbitMqModule
+import jobs.procrush.api.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.service.EmployerProfileService
 import jobs.procrush.matching.kafka.MatchingEventsRuntime

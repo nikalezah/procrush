@@ -1,8 +1,10 @@
-package jobs.procrush.bootstrap.rabbitmq
+package jobs.procrush.api.rabbitmq
 
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import jobs.procrush.bootstrap.config.RabbitMqConfig
+import jobs.procrush.bootstrap.rabbitmq.MessageConsumer
+import jobs.procrush.bootstrap.rabbitmq.MessagePublisher
 
 class RabbitMqModule private constructor(
     private val connection: Connection,

@@ -21,7 +21,11 @@ dependencies {
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverCio)
     implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.network)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.datetime)
+
+    testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinx.coroutines.core)
 }

@@ -1,4 +1,4 @@
-package jobs.procrush.bootstrap.rabbitmq
+package jobs.procrush.api.rabbitmq
 
 import com.rabbitmq.client.ConnectionFactory
 import java.net.URI
