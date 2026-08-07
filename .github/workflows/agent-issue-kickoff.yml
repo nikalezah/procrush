@@ -1,16 +1,13 @@
-# Bridge: issue opened / label "agent" → human-authored keyword comment.
-# Cursor Automations ignore bot comments; this comment is from your PAT user.
-#
+# Bridge: issue → human-authored @cursor comment (Cursor ignores bot comments).
 # Requires repo secret CURSOR_BRIDGE_PAT (fine-grained or classic PAT with issues:write).
 #
 # Triggers:
 #   - issue opened → kickoff once
 #   - label "agent" → re-kickoff (even if already kicked off)
 #
-# Cursor side (Issue Kickoff Automation):
-#   Trigger: Comment added (Issue)
-#   Keyword / filter: "Trigger Issue Kickoff Automation"
-#   Instructions: implement the issue, open a PR with `Closes #<issue>` in the body.
+# Cursor side: Cloud Agent picks up @cursoragent on the issue (no Automation required).
+# Put the mention first; HTML markers after — Cursor may ignore API comments where
+# @cursoragent is not at the start of the body.
 
 name: Agent kickoff from issue
 
@@ -27,7 +24,7 @@ concurrency:
 
 jobs:
   kickoff:
-    name: Comment Trigger Issue Kickoff Automation
+    name: Comment @cursor on issue
     if: >
       github.event.action == 'opened' ||
       (github.event.action == 'labeled' && github.event.label.name == 'agent')
@@ -43,7 +40,7 @@ jobs:
             exit 1
           fi
 
-      - name: Post kickoff-bridge comment as user
+      - name: Post kickoff comment as user
         env:
           GH_TOKEN: ${{ secrets.CURSOR_BRIDGE_PAT }}
           REPO: ${{ github.repository }}
@@ -53,8 +50,6 @@ jobs:
           set -euo pipefail
 
           MARKER='<!-- cursor-bridge: kickoff -->'
-          KEYWORD='Trigger Issue Kickoff Automation'
-
           existing="$(
             gh api "repos/${REPO}/issues/${ISSUE}/comments" --paginate \
               --jq "[.[] | select(.body | contains(\"${MARKER}\"))] | length"
@@ -65,8 +60,10 @@ jobs:
             exit 0
           fi
 
-          body="${MARKER}
-          ${KEYWORD}"
+          # Mention must be first in the body (UI autocomplete identity is cursoragent).
+          body="@cursoragent Implement this issue and open a non-draft PR against the default branch.
+          Put \`Closes #N\` on its own line near the top of the PR body, where N is the triggering issue number.
+          ${MARKER}"
 
           gh api "repos/${REPO}/issues/${ISSUE}/comments" -f body="${body}"
-          echo "Posted kickoff-bridge comment on issue #${ISSUE}."
+          echo "Posted kickoff @cursoragent comment on issue #${ISSUE}."
