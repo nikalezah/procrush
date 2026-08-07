@@ -4,6 +4,7 @@ import jobs.procrush.shared.CorrelationIds
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 data class CorrelationElement(
     val values: MutableMap<String, String>,
@@ -14,6 +15,9 @@ data class CorrelationElement(
 }
 
 object Correlation {
+    /** Active [runWith] element so sync bridges can reinstall it into nested `runBlocking`. */
+    private var syncBridge: CorrelationElement? = null
+
     fun currentThreadName(): String = "worker"
 
     suspend fun get(key: String): String? = currentValues()?.get(key)
@@ -48,10 +52,20 @@ object Correlation {
                 map[key] = value
             }
         }
-        return runBlocking(CorrelationElement(map)) {
-            block()
+        val element = CorrelationElement(map)
+        val previous = syncBridge
+        syncBridge = element
+        return try {
+            runBlocking(element) {
+                block()
+            }
+        } finally {
+            syncBridge = previous
         }
     }
+
+    /** Context to pass into nested `runBlocking` from sync call sites under [runWith]. */
+    fun syncBridgeContext(): CoroutineContext = syncBridge ?: EmptyCoroutineContext
 
     fun requestIdFromHeaders(headers: Map<String, Any?>): String? =
         headers[CorrelationIds.HEADER_REQUEST_ID]?.toString()

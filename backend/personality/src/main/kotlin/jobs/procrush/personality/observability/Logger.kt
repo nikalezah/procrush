@@ -135,7 +135,8 @@ class Logger private constructor(
             format: String,
             vararg args: Any?,
         ) {
-            runBlocking { logger.info(format, *args) }
+            // Reinstall the active delivery CorrelationElement; a bare runBlocking would drop it.
+            runBlocking(Correlation.syncBridgeContext()) { logger.info(format, *args) }
         }
 
         private fun formatTextTimestamp(instant: Instant): String {
