@@ -11,5 +11,4 @@ dependencies {
     implementation(projects.backend.contracts)
     implementation(projects.backend.platform.rabbit)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.logback)
 }

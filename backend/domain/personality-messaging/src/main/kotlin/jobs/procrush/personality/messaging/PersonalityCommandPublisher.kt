@@ -7,26 +7,27 @@ import jobs.procrush.shared.CorrelationIds
 import jobs.procrush.shared.dto.SuperpowerAndTalentDto
 import jobs.procrush.survey.dto.SurveyLlmContextDto
 import kotlinx.serialization.json.Json
-import org.slf4j.LoggerFactory
-import java.time.OffsetDateTime
-import java.util.UUID
+import kotlin.time.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class PersonalityCommandPublisher(
     private val publisher: MessagePublisher,
     private val config: RabbitMqConfig,
+    private val log: MessagingLog,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
-    private val logger = LoggerFactory.getLogger(PersonalityCommandPublisher::class.java)
-
+    @OptIn(ExperimentalUuidApi::class)
     fun enqueue(
         seekerId: Long,
-        userId: UUID,
+        userId: Uuid,
         surveyContext: SurveyLlmContextDto,
         catalog: List<SuperpowerAndTalentDto>,
         attempt: Int = 1,
         correlationId: String? = null,
+        log: MessagingLog = this.log,
     ) {
-        val messageId = UUID.randomUUID().toString()
+        val messageId = Uuid.random().toString()
         val resolvedCorrelationId = correlationId ?: messageId
         val command =
             PersonalityGenerationCommand(
@@ -34,26 +35,29 @@ class PersonalityCommandPublisher(
                 userId = userId.toString(),
                 surveyContext = surveyContext,
                 catalog = catalog,
-                enqueuedAt = OffsetDateTime.now().toString(),
+                enqueuedAt = Clock.System.now().toString(),
                 attempt = attempt,
                 correlationId = resolvedCorrelationId,
             )
-        publish(command, messageId, resolvedCorrelationId)
+        publish(command, messageId, resolvedCorrelationId, log)
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     fun enqueue(
         command: PersonalityGenerationCommand,
         correlationId: String? = command.correlationId,
+        log: MessagingLog = this.log,
     ) {
-        val messageId = UUID.randomUUID().toString()
+        val messageId = Uuid.random().toString()
         val resolvedCorrelationId = correlationId ?: messageId
-        publish(command, messageId, resolvedCorrelationId)
+        publish(command, messageId, resolvedCorrelationId, log)
     }
 
     private fun publish(
         command: PersonalityGenerationCommand,
         messageId: String,
         correlationId: String,
+        log: MessagingLog = this.log,
     ) {
         val body = json.encodeToString(command)
         publisher.publish(
@@ -65,7 +69,7 @@ class PersonalityCommandPublisher(
                 headers = mapOf(CorrelationIds.HEADER_REQUEST_ID to correlationId),
             ),
         )
-        logger.info(
+        log.info(
             "Enqueued personality generation command seekerId={} userId={} attempt={} messageId={} correlationId={}",
             command.seekerId,
             command.userId,

@@ -1,10 +1,13 @@
 package jobs.procrush.personality.observability
 
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 object Metrics {
-    private val lock = Any()
+    private val mutex = Mutex()
     private var initialized = false
     private var serviceName: String = "personality"
     private var environment: String = "local"
@@ -18,41 +21,51 @@ object Metrics {
     private val queueDepths = mutableMapOf<String, Double>()
 
     fun initialize(config: WorkerLogConfig) {
-        synchronized(lock) {
-            if (initialized) return
-            serviceName = config.serviceName
-            environment = config.environment
-            initialized = true
+        runBlocking {
+            mutex.withLock {
+                if (initialized) return@withLock
+                serviceName = config.serviceName
+                environment = config.environment
+                initialized = true
+            }
         }
     }
 
     fun setPersonalityConsumerRunning(running: Boolean) {
-        synchronized(lock) {
-            consumerRunning = if (running) 1 else 0
+        runBlocking {
+            mutex.withLock {
+                consumerRunning = if (running) 1 else 0
+            }
         }
     }
 
     fun personalityJobProcessed(outcome: String) {
-        synchronized(lock) {
-            if (!initialized) return
-            jobProcessed[outcome] = (jobProcessed[outcome] ?: 0L) + 1L
+        runBlocking {
+            mutex.withLock {
+                if (!initialized) return@withLock
+                jobProcessed[outcome] = (jobProcessed[outcome] ?: 0L) + 1L
+            }
         }
     }
 
     fun personalityJobDlq() {
-        synchronized(lock) {
-            if (!initialized) return
-            jobDlq += 1L
+        runBlocking {
+            mutex.withLock {
+                if (!initialized) return@withLock
+                jobDlq += 1L
+            }
         }
     }
 
     fun recordPersonalityLlmDuration(elapsed: Duration) {
-        synchronized(lock) {
-            if (!initialized) return
-            val elapsedNanos = elapsed.inWholeNanoseconds.coerceAtLeast(0)
-            llmDurationCount += 1L
-            llmDurationSumNanos += elapsedNanos
-            llmDurationMaxNanos = maxOf(llmDurationMaxNanos, elapsedNanos)
+        runBlocking {
+            mutex.withLock {
+                if (!initialized) return@withLock
+                val elapsedNanos = elapsed.inWholeNanoseconds.coerceAtLeast(0)
+                llmDurationCount += 1L
+                llmDurationSumNanos += elapsedNanos
+                llmDurationMaxNanos = maxOf(llmDurationMaxNanos, elapsedNanos)
+            }
         }
     }
 
@@ -69,60 +82,63 @@ object Metrics {
         queue: String,
         depth: Double,
     ) {
-        synchronized(lock) {
-            if (!initialized) return
-            queueDepths[queue] = depth
+        runBlocking {
+            mutex.withLock {
+                if (!initialized) return@withLock
+                queueDepths[queue] = depth
+            }
         }
     }
 
-    fun scrape(): String {
-        synchronized(lock) {
-            if (!initialized) return ""
-            val common = labels("service" to serviceName, "environment" to environment)
-            val builder = StringBuilder()
+    fun scrape(): String =
+        runBlocking {
+            mutex.withLock {
+                if (!initialized) return@withLock ""
+                val common = labels("service" to serviceName, "environment" to environment)
+                val builder = StringBuilder()
 
-            builder.appendLine("# HELP personality_rabbit_consumer_running Whether the personality RabbitMQ consumer is running")
-            builder.appendLine("# TYPE personality_rabbit_consumer_running gauge")
-            builder.appendLine("personality_rabbit_consumer_running$common $consumerRunning")
+                builder.appendLine("# HELP personality_rabbit_consumer_running Whether the personality RabbitMQ consumer is running")
+                builder.appendLine("# TYPE personality_rabbit_consumer_running gauge")
+                builder.appendLine("personality_rabbit_consumer_running$common $consumerRunning")
 
-            builder.appendLine("# HELP personality_job_processed_total Personality generation jobs processed")
-            builder.appendLine("# TYPE personality_job_processed_total counter")
-            if (jobProcessed.isEmpty()) {
-                builder.appendLine(
-                    "personality_job_processed_total${labels("outcome" to "success", "service" to serviceName, "environment" to environment)} 0",
-                )
-            } else {
-                jobProcessed.entries.sortedBy { it.key }.forEach { (outcome, count) ->
+                builder.appendLine("# HELP personality_job_processed_total Personality generation jobs processed")
+                builder.appendLine("# TYPE personality_job_processed_total counter")
+                if (jobProcessed.isEmpty()) {
                     builder.appendLine(
-                        "personality_job_processed_total${labels("outcome" to outcome, "service" to serviceName, "environment" to environment)} $count",
+                        "personality_job_processed_total${labels("outcome" to "success", "service" to serviceName, "environment" to environment)} 0",
+                    )
+                } else {
+                    jobProcessed.entries.sortedBy { it.key }.forEach { (outcome, count) ->
+                        builder.appendLine(
+                            "personality_job_processed_total${labels("outcome" to outcome, "service" to serviceName, "environment" to environment)} $count",
+                        )
+                    }
+                }
+
+                builder.appendLine("# HELP personality_job_dlq_total Personality generation jobs sent to DLQ")
+                builder.appendLine("# TYPE personality_job_dlq_total counter")
+                builder.appendLine("personality_job_dlq_total$common $jobDlq")
+
+                val count = llmDurationCount
+                val sumSeconds = llmDurationSumNanos.toDouble() / 1_000_000_000.0
+                val maxSeconds = llmDurationMaxNanos.toDouble() / 1_000_000_000.0
+                builder.appendLine("# HELP personality_llm_duration_seconds Personality LLM call duration")
+                builder.appendLine("# TYPE personality_llm_duration_seconds summary")
+                builder.appendLine("personality_llm_duration_seconds_count$common $count")
+                builder.appendLine("personality_llm_duration_seconds_sum$common $sumSeconds")
+                builder.appendLine("personality_llm_duration_seconds_max$common $maxSeconds")
+
+                builder.appendLine("# HELP rabbitmq_queue_messages RabbitMQ queue depth")
+                builder.appendLine("# TYPE rabbitmq_queue_messages gauge")
+                queueDepths.entries.sortedBy { it.key }.forEach { (queue, depth) ->
+                    builder.appendLine(
+                        "rabbitmq_queue_messages${labels("queue" to queue, "service" to serviceName, "environment" to environment)} $depth",
                     )
                 }
+
+                builder.toString()
             }
-
-            builder.appendLine("# HELP personality_job_dlq_total Personality generation jobs sent to DLQ")
-            builder.appendLine("# TYPE personality_job_dlq_total counter")
-            builder.appendLine("personality_job_dlq_total$common $jobDlq")
-
-            val count = llmDurationCount
-            val sumSeconds = llmDurationSumNanos.toDouble() / 1_000_000_000.0
-            val maxSeconds = llmDurationMaxNanos.toDouble() / 1_000_000_000.0
-            builder.appendLine("# HELP personality_llm_duration_seconds Personality LLM call duration")
-            builder.appendLine("# TYPE personality_llm_duration_seconds summary")
-            builder.appendLine("personality_llm_duration_seconds_count$common $count")
-            builder.appendLine("personality_llm_duration_seconds_sum$common $sumSeconds")
-            builder.appendLine("personality_llm_duration_seconds_max$common $maxSeconds")
-
-            builder.appendLine("# HELP rabbitmq_queue_messages RabbitMQ queue depth")
-            builder.appendLine("# TYPE rabbitmq_queue_messages gauge")
-            queueDepths.entries.sortedBy { it.key }.forEach { (queue, depth) ->
-                builder.appendLine(
-                    "rabbitmq_queue_messages${labels("queue" to queue, "service" to serviceName, "environment" to environment)} $depth",
-                )
-            }
-
-            return builder.toString()
         }
-    }
 
     private fun labels(vararg pairs: Pair<String, String>): String =
         pairs.joinToString(prefix = "{", postfix = "}", separator = ",") { (key, value) ->

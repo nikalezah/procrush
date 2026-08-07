@@ -1,5 +1,6 @@
 package jobs.procrush.personality.messaging
 
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.rabbitmq.DeliveryResult
 import jobs.procrush.bootstrap.rabbitmq.InboundMessage
@@ -9,9 +10,9 @@ import jobs.procrush.personality.observability.Logger
 import jobs.procrush.personality.observability.Metrics
 import jobs.procrush.personality.service.PersonalityGenerationHandler
 import jobs.procrush.shared.CorrelationIds
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import kotlin.reflect.KClass
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -21,6 +22,8 @@ class PersonalityCommandConsumer(
     private val commandPublisher: PersonalityCommandPublisher,
     private val resultPublisher: PersonalityResultPublisher,
     private val rabbitMqConfig: RabbitMqConfig,
+    private val commandLogger: Logger = Logger.get(PersonalityCommandPublisher::class),
+    private val resultLogger: Logger = Logger.get(PersonalityResultPublisher::class),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     private val logger = Logger.get(PersonalityCommandConsumer::class)
@@ -29,14 +32,18 @@ class PersonalityCommandConsumer(
         if (messageConsumer.isRunning()) return
         messageConsumer.start(rabbitMqConfig.queue) { inbound -> processDelivery(inbound) }
         Metrics.setPersonalityConsumerRunning(true)
-        logger.info("Personality command consumer started on queue {}", rabbitMqConfig.queue)
+        runBlocking {
+            logger.info("Personality command consumer started on queue {}", rabbitMqConfig.queue)
+        }
     }
 
     fun stop() {
         if (!messageConsumer.isRunning()) return
         messageConsumer.stop()
         Metrics.setPersonalityConsumerRunning(false)
-        logger.info("Personality command consumer stopped")
+        runBlocking {
+            logger.info("Personality command consumer stopped")
+        }
     }
 
     fun isRunning(): Boolean = messageConsumer.isRunning()
@@ -55,7 +62,7 @@ class PersonalityCommandConsumer(
         }
     }
 
-    private fun processDeliveryInternal(
+    private suspend fun processDeliveryInternal(
         body: ByteArray,
         messageId: String,
         correlationId: String,
@@ -72,12 +79,19 @@ class PersonalityCommandConsumer(
         Correlation.put(CorrelationIds.USER_ID, command.userId)
         Correlation.put(CorrelationIds.REQUEST_ID, command.correlationId ?: correlationId)
 
+        val commandLog = deliveryMessagingLog(commandLogger)
+        val resultLog = deliveryMessagingLog(resultLogger)
+
         return try {
             val result =
-                runBlocking {
+                runBlocking(currentCoroutineContext()) {
                     handler.generate(command)
                 }.copy(commandMessageId = messageId)
-            resultPublisher.publish(result, correlationId = command.correlationId ?: correlationId)
+            resultPublisher.publish(
+                result,
+                correlationId = command.correlationId ?: correlationId,
+                log = resultLog,
+            )
             Metrics.personalityJobProcessed("success")
             DeliveryResult.Ack
         } catch (error: Exception) {
@@ -91,6 +105,7 @@ class PersonalityCommandConsumer(
                 commandPublisher.enqueue(
                     command.copy(attempt = command.attempt + 1),
                     correlationId = command.correlationId ?: correlationId,
+                    log = commandLog,
                 )
                 Metrics.personalityJobProcessed("retry")
                 DeliveryResult.Ack
@@ -98,6 +113,7 @@ class PersonalityCommandConsumer(
                 resultPublisher.publish(
                     handler.failureResult(command, error, messageId),
                     correlationId = command.correlationId ?: correlationId,
+                    log = resultLog,
                 )
                 Metrics.personalityJobDlq()
                 Metrics.personalityJobProcessed("dlq")
@@ -106,19 +122,25 @@ class PersonalityCommandConsumer(
         }
     }
 
-    private fun isTransient(error: Throwable): Boolean =
-        error is io.ktor.client.plugins.HttpRequestTimeoutException ||
-            isIoException(error) ||
-            error.cause?.let { isTransient(it) } == true
+    /** Capture this delivery's coroutine context for sync MessagingLog → Logger bridges. */
+    private suspend fun deliveryMessagingLog(logger: Logger): MessagingLog {
+        val context = currentCoroutineContext()
+        return MessagingLog { message, args ->
+            Logger.infoBlocking(logger, context, message, *args)
+        }
+    }
 
-    private fun isIoException(error: Throwable): Boolean {
-        var classifier: KClass<*>? = error::class
-        while (classifier != null) {
-            if (classifier.simpleName == "IOException") return true
-            classifier =
-                classifier.supertypes
-                    .mapNotNull { it.classifier as? KClass<*> }
-                    .firstOrNull { it != classifier }
+    private fun isTransient(error: Throwable): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            if (current is HttpRequestTimeoutException) return true
+            when (current::class.simpleName) {
+                "IOException", "SocketException", "SocketTimeoutException",
+                "ConnectException", "ClosedChannelException", "EOFException",
+                "UnknownHostException", "HttpRequestTimeoutException",
+                -> return true
+            }
+            current = current.cause
         }
         return false
     }

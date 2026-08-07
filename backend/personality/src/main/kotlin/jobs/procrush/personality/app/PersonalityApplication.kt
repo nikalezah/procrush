@@ -3,6 +3,7 @@ package jobs.procrush.personality.app
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import jobs.procrush.bootstrap.config.WorkerAppConfig
+import jobs.procrush.personality.bootstrap.PlatformLifecycle
 import jobs.procrush.personality.bootstrap.WorkerContext
 import jobs.procrush.personality.observability.DlqDepthPoller
 import jobs.procrush.personality.observability.WorkerObservability
@@ -34,13 +35,13 @@ fun main() {
             )
         }
 
-    Runtime.getRuntime().addShutdownHook(
-        Thread {
-            dlqPoller.stop()
-            context.close()
-            server.stop(gracePeriodMillis = 1_000, timeoutMillis = 5_000)
-        },
-    )
-
-    server.start(wait = true)
+    PlatformLifecycle.onShutdown {
+        server.stop(gracePeriodMillis = 1_000, timeoutMillis = 5_000)
+    }
+    try {
+        server.start(wait = true)
+    } finally {
+        dlqPoller.stop()
+        context.close()
+    }
 }
