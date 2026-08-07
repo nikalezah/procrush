@@ -1,31 +1,35 @@
 plugins {
-    alias(libs.plugins.kotlinJvm)
+    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinSerialization)
-    application
 }
 
 group = "jobs.procrush"
 version = "1.0.0"
 
-application {
-    mainClass = "jobs.procrush.personality.app.PersonalityApplicationKt"
-    applicationName = "personality"
-}
+kotlin {
+    linuxX64 {
+        binaries {
+            executable {
+                entryPoint = "jobs.procrush.personality.app.main"
+                baseName = "personality"
+            }
+        }
+    }
 
-dependencies {
-    implementation(projects.backend.config)
-    implementation(projects.backend.platform.rabbit)
-    implementation(projects.backend.platform.llm)
-    implementation(projects.backend.contracts)
-    implementation(projects.backend.domain.personalityMessaging)
-    implementation(libs.ktor.serverCore)
-    implementation(libs.ktor.serverCio)
-    implementation(libs.ktor.client.cio)
-    implementation(libs.ktor.network)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.datetime)
-
-    testImplementation(kotlin("test"))
-    testImplementation(libs.kotlinx.coroutines.core)
+    sourceSets {
+        nativeMain.dependencies {
+            implementation(projects.backend.config)
+            implementation(projects.backend.platform.rabbit)
+            implementation(projects.backend.platform.llm)
+            implementation(projects.backend.contracts)
+            implementation(projects.backend.domain.personalityMessaging)
+            implementation(libs.ktor.serverCore)
+            implementation(libs.ktor.serverCio)
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.network)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.datetime)
+        }
+    }
 }

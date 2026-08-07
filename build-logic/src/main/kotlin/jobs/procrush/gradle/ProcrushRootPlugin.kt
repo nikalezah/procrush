@@ -9,6 +9,7 @@ import jobs.procrush.gradle.kind.KindUpTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 class ProcrushRootPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -20,6 +21,11 @@ class ProcrushRootPlugin : Plugin<Project> {
         target.subprojects {
             pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
                 extensions.configure<KotlinJvmProjectExtension>("kotlin") {
+                    jvmToolchain(25)
+                }
+            }
+            pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+                extensions.configure<KotlinMultiplatformExtension>("kotlin") {
                     jvmToolchain(25)
                 }
             }
@@ -82,7 +88,7 @@ class ProcrushRootPlugin : Plugin<Project> {
             dependsOn(
                 generateI18n,
                 ":backend:api:installDist",
-                ":backend:personality:installDist",
+                ":backend:personality:linkReleaseExecutableLinuxX64",
                 ":backend:matching:installDist",
                 frontendBuild,
             )
@@ -108,9 +114,13 @@ class ProcrushRootPlugin : Plugin<Project> {
                         name = "personality",
                         image = "procrush-personality",
                         deployment = "personality",
-                        artifactDir = layout.projectDirectory.dir("backend/personality/build/install/personality").asFile,
+                        artifactDir = layout.projectDirectory
+                            .dir("backend/personality/build/bin/linuxX64/releaseExecutable")
+                            .asFile,
                         dockerfile = layout.projectDirectory.file("deploy/docker/Dockerfile.personality").asFile,
-                        buildContext = layout.projectDirectory.dir("backend/personality/build/install/personality").asFile,
+                        buildContext = layout.projectDirectory
+                            .dir("backend/personality/build/bin/linuxX64/releaseExecutable")
+                            .asFile,
                     ),
                     KindServiceSpec(
                         name = "matching",

@@ -167,7 +167,7 @@ jobs:
           while read -r svc; do
             case "$svc" in
               api) tasks+=(':backend:api:installDist') ;;
-              personality) tasks+=(':backend:personality:installDist') ;;
+              personality) tasks+=(':backend:personality:linkReleaseExecutableLinuxX64') ;;
               matching) tasks+=(':backend:matching:installDist') ;;
             esac
           done < <(echo '${{ needs.detect.outputs.services }}' | jq -r '.[]')
@@ -197,7 +197,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: artifact-personality
-          path: backend/personality/build/install/personality
+          path: backend/personality/build/bin/linuxX64/releaseExecutable
           retention-days: 1
 
       - name: Upload matching artifact
@@ -247,10 +247,15 @@ jobs:
           set -euo pipefail
           svc="${{ matrix.service }}"
           case "$svc" in
-            api|personality|matching)
+            api|matching)
               echo "download_path=backend/${svc}/build/install/${svc}" >> "$GITHUB_OUTPUT"
               echo "artifact_dir=backend/${svc}/build/install/${svc}" >> "$GITHUB_OUTPUT"
               echo "context=backend/${svc}/build/install/${svc}" >> "$GITHUB_OUTPUT"
+              ;;
+            personality)
+              echo "download_path=backend/personality/build/bin/linuxX64/releaseExecutable" >> "$GITHUB_OUTPUT"
+              echo "artifact_dir=backend/personality/build/bin/linuxX64/releaseExecutable" >> "$GITHUB_OUTPUT"
+              echo "context=backend/personality/build/bin/linuxX64/releaseExecutable" >> "$GITHUB_OUTPUT"
               ;;
             frontend)
               # Fingerprint matches kindUp: hash dist/ + Dockerfile (not whole frontend/)

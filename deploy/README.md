@@ -26,7 +26,7 @@ flowchart LR
   thinLocal --> kind[kind_load_rollout]
 ```
 
-- **Build outside Docker** — Gradle `installDist` / `frontendBuild` on the host or GitHub Actions runner.
+- **Build outside Docker** — Gradle `installDist` (api/matching), `linkReleaseExecutableLinuxX64` (personality Native `.kexe`), / `frontendBuild` on the host or GitHub Actions runner.
 - **Thin images** — each `deploy/docker/Dockerfile.*` only copies a prebuilt artifact tree onto a runtime base image.
 - **Registry** — `ghcr.io/<owner>/procrush-<service>:<git-sha>` plus moving `:master`.
 - **Cloud** — Render and Railway pull those images (no platform Dockerfile build).
