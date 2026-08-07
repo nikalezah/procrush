@@ -25,6 +25,7 @@ class PersonalityCommandPublisher(
         catalog: List<SuperpowerAndTalentDto>,
         attempt: Int = 1,
         correlationId: String? = null,
+        log: MessagingLog = this.log,
     ) {
         val messageId = Uuid.random().toString()
         val resolvedCorrelationId = correlationId ?: messageId
@@ -38,23 +39,25 @@ class PersonalityCommandPublisher(
                 attempt = attempt,
                 correlationId = resolvedCorrelationId,
             )
-        publish(command, messageId, resolvedCorrelationId)
+        publish(command, messageId, resolvedCorrelationId, log)
     }
 
     @OptIn(ExperimentalUuidApi::class)
     fun enqueue(
         command: PersonalityGenerationCommand,
         correlationId: String? = command.correlationId,
+        log: MessagingLog = this.log,
     ) {
         val messageId = Uuid.random().toString()
         val resolvedCorrelationId = correlationId ?: messageId
-        publish(command, messageId, resolvedCorrelationId)
+        publish(command, messageId, resolvedCorrelationId, log)
     }
 
     private fun publish(
         command: PersonalityGenerationCommand,
         messageId: String,
         correlationId: String,
+        log: MessagingLog = this.log,
     ) {
         val body = json.encodeToString(command)
         publisher.publish(

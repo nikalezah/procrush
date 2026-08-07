@@ -7,6 +7,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.reflect.KClass
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -129,15 +131,27 @@ class Logger private constructor(
         fun get(kClass: KClass<*>): Logger =
             Logger(kClass.qualifiedName ?: kClass.simpleName!!)
 
-        /** Sync bridge for non-coroutine call sites (e.g. MessagingLog adapters). */
+        /**
+         * Sync bridge for non-coroutine call sites (e.g. MessagingLog adapters).
+         * Pass the caller's [CoroutineContext] (with [CorrelationElement]) so nested
+         * `runBlocking` preserves delivery-local correlation without ThreadLocal state.
+         */
+        fun infoBlocking(
+            logger: Logger,
+            context: CoroutineContext,
+            format: String,
+            vararg args: Any?,
+        ) {
+            runBlocking(context) { logger.info(format, *args) }
+        }
+
+        /** Sync bridge when no delivery correlation context is available. */
         fun infoBlocking(
             logger: Logger,
             format: String,
             vararg args: Any?,
         ) {
-            // Reinstall this thread's delivery CorrelationElement (via ThreadContextElement).
-            // A bare runBlocking would drop it; a process-global slot would race across deliveries.
-            runBlocking(Correlation.syncBridgeContext()) { logger.info(format, *args) }
+            infoBlocking(logger, EmptyCoroutineContext, format, *args)
         }
 
         private fun formatTextTimestamp(instant: Instant): String {

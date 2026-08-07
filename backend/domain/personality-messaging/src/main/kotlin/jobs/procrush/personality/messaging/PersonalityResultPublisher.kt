@@ -18,6 +18,7 @@ class PersonalityResultPublisher(
     fun publish(
         result: PersonalityGenerationResult,
         correlationId: String? = result.correlationId,
+        log: MessagingLog = this.log,
     ) {
         val messageId = Uuid.random().toString()
         val resolvedCorrelationId = correlationId ?: messageId

@@ -22,6 +22,8 @@ class PersonalityCommandConsumer(
     private val commandPublisher: PersonalityCommandPublisher,
     private val resultPublisher: PersonalityResultPublisher,
     private val rabbitMqConfig: RabbitMqConfig,
+    private val commandLogger: Logger = Logger.get(PersonalityCommandPublisher::class),
+    private val resultLogger: Logger = Logger.get(PersonalityResultPublisher::class),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     private val logger = Logger.get(PersonalityCommandConsumer::class)
@@ -77,12 +79,19 @@ class PersonalityCommandConsumer(
         Correlation.put(CorrelationIds.USER_ID, command.userId)
         Correlation.put(CorrelationIds.REQUEST_ID, command.correlationId ?: correlationId)
 
+        val commandLog = deliveryMessagingLog(commandLogger)
+        val resultLog = deliveryMessagingLog(resultLogger)
+
         return try {
             val result =
                 runBlocking(currentCoroutineContext()) {
                     handler.generate(command)
                 }.copy(commandMessageId = messageId)
-            resultPublisher.publish(result, correlationId = command.correlationId ?: correlationId)
+            resultPublisher.publish(
+                result,
+                correlationId = command.correlationId ?: correlationId,
+                log = resultLog,
+            )
             Metrics.personalityJobProcessed("success")
             DeliveryResult.Ack
         } catch (error: Exception) {
@@ -96,6 +105,7 @@ class PersonalityCommandConsumer(
                 commandPublisher.enqueue(
                     command.copy(attempt = command.attempt + 1),
                     correlationId = command.correlationId ?: correlationId,
+                    log = commandLog,
                 )
                 Metrics.personalityJobProcessed("retry")
                 DeliveryResult.Ack
@@ -103,11 +113,20 @@ class PersonalityCommandConsumer(
                 resultPublisher.publish(
                     handler.failureResult(command, error, messageId),
                     correlationId = command.correlationId ?: correlationId,
+                    log = resultLog,
                 )
                 Metrics.personalityJobDlq()
                 Metrics.personalityJobProcessed("dlq")
                 DeliveryResult.NackToDlq
             }
+        }
+    }
+
+    /** Capture this delivery's coroutine context for sync MessagingLog → Logger bridges. */
+    private suspend fun deliveryMessagingLog(logger: Logger): MessagingLog {
+        val context = currentCoroutineContext()
+        return MessagingLog { message, args ->
+            Logger.infoBlocking(logger, context, message, *args)
         }
     }
 
