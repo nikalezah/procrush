@@ -2,7 +2,11 @@
     <property name="ROOT_LEVEL" value="${LOG_LEVEL:-INFO}" />
     <property name="LOG_FORMAT" value="${LOG_FORMAT:-text}" />
 
-    <if condition='property("LOG_FORMAT").equalsIgnoreCase("json")'>
+    <!-- Logback 1.5.37+ removed Janino conditionals; use PropertyCondition + if/then/else. -->
+    <condition class="ch.qos.logback.core.boolex.ExpressionPropertyCondition">
+        <expression>propertyEquals("LOG_FORMAT", "json") || propertyEquals("LOG_FORMAT", "JSON")</expression>
+    </condition>
+    <if>
         <then>
             <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
                 <encoder class="net.logstash.logback.encoder.LogstashEncoder">

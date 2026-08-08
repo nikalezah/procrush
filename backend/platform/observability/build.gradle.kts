@@ -11,7 +11,6 @@ dependencies {
     implementation(projects.backend.contracts)
     implementation(libs.logback)
     implementation(libs.logstash.logback.encoder)
-    implementation(libs.janino)
     implementation(libs.micrometer.core)
     implementation(libs.micrometer.registry.prometheus)
     implementation(libs.ktor.serverCore)
