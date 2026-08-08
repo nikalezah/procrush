@@ -1,6 +1,5 @@
 package jobs.procrush.composition
 
-import jobs.procrush.api.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.config.AppConfig
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.service.EmployerProfileService
@@ -8,7 +7,6 @@ import jobs.procrush.matching.cache.CachedMatchingService
 import jobs.procrush.matching.cache.MatchingCacheInvalidator
 import jobs.procrush.matching.messaging.MatchResultsConsumer
 import jobs.procrush.matching.messaging.MatchResultsEventDedup
-import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
 import jobs.procrush.matching.repository.MatchInterestRepository
 import jobs.procrush.matching.repository.MatchScoreRepository
@@ -19,26 +17,13 @@ import jobs.procrush.matching.service.MatchResultsApplyService
 import jobs.procrush.matching.service.RecommendationsEventService
 import jobs.procrush.matching.service.RedisMatchInterestNotifier
 import jobs.procrush.matching.service.RedisRecommendationsNotifier
-import jobs.procrush.personality.messaging.MessagingLog
-import jobs.procrush.personality.messaging.PersonalityCommandPublisher
-import jobs.procrush.personality.messaging.PersonalityResultConsumer
-import jobs.procrush.personality.messaging.PersonalityResultDedup
 import jobs.procrush.personality.port.PersonalitySurveyCoordinator
-import jobs.procrush.personality.service.PersonalityGenerationCoordinator
-import jobs.procrush.personality.service.PersonalityGenerationLockGuard
-import jobs.procrush.personality.service.PersonalityProfileReader
-import jobs.procrush.personality.service.PersonalityProfileService
-import jobs.procrush.personality.service.PersonalityResultApplyService
-import jobs.procrush.personality.service.RedisPersonalityStatusNotifier
-import jobs.procrush.seeker.repository.SeekerPersonalProfileRepository
-import jobs.procrush.seeker.repository.SeekerSuperpowersAndTalentsRepository
 import jobs.procrush.seeker.service.SeekerProfileService
 import jobs.procrush.survey.repository.SurveyRepository
 import jobs.procrush.survey.service.SurveyService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.slf4j.LoggerFactory
 
 data class SurveyModule(
     val surveyService: SurveyService,
@@ -56,103 +41,6 @@ data class SurveyModule(
                     personalityCoordinator,
                 )
             return SurveyModule(surveyService = surveyService)
-        }
-    }
-}
-
-data class PersonalityModule(
-    val coordinator: PersonalityGenerationCoordinator,
-    val personalityProfileService: PersonalityProfileService,
-    val personalityStatusNotifier: RedisPersonalityStatusNotifier,
-    private val resultConsumer: PersonalityResultConsumer,
-) {
-    fun close() {
-        resultConsumer.stop()
-        personalityStatusNotifier.close()
-    }
-
-    companion object {
-        fun create(
-            config: AppConfig,
-            auth: AuthModule,
-            survey: SurveyModule,
-            redis: RedisModule,
-            rabbitMq: RabbitMqModule,
-            matchingCache: MatchingCachePort,
-            matchingEvents: MatchingEventPort,
-            scope: CoroutineScope,
-        ): PersonalityModule {
-            val profileRepository = SeekerPersonalProfileRepository()
-            val superpowersRepository = SeekerSuperpowersAndTalentsRepository()
-            val lockGuard = PersonalityGenerationLockGuard(redis.distributedLock, config.redis)
-            val commandLog = LoggerFactory.getLogger(PersonalityCommandPublisher::class.java)
-            val publisher =
-                PersonalityCommandPublisher(
-                    rabbitMq.publisher,
-                    rabbitMq.config,
-                    MessagingLog { message, args -> commandLog.info(message, *args) },
-                )
-            val personalityStatusNotifier =
-                RedisPersonalityStatusNotifier(
-                    redis = redis.client,
-                    config = config.redis,
-                    scope = scope,
-                )
-            val coordinator =
-                PersonalityGenerationCoordinator(
-                    seekerRepository = auth.seekerRepository,
-                    profileRepository = profileRepository,
-                    referenceRepository = auth.referenceRepository,
-                    surveyService = survey.surveyService,
-                    lockGuard = lockGuard,
-                    publisher = publisher,
-                    matchingCache = matchingCache,
-                    matchingEvents = matchingEvents,
-                )
-            val reader =
-                PersonalityProfileReader(
-                    seekerRepository = auth.seekerRepository,
-                    profileRepository = profileRepository,
-                    superpowersRepository = superpowersRepository,
-                    surveyService = survey.surveyService,
-                    lockGuard = lockGuard,
-                )
-            val personalityProfileService =
-                PersonalityProfileService(
-                    reader = reader,
-                    coordinator = coordinator,
-                    surveyService = survey.surveyService,
-                    notifier = personalityStatusNotifier,
-                )
-            val applyService =
-                PersonalityResultApplyService(
-                    profileRepository = profileRepository,
-                    referenceRepository = auth.referenceRepository,
-                    lockGuard = lockGuard,
-                    statusNotifier = personalityStatusNotifier,
-                    matchingCache = matchingCache,
-                    matchingEvents = matchingEvents,
-                )
-            val resultConsumer =
-                PersonalityResultConsumer(
-                    messageConsumer = rabbitMq.createConsumer(),
-                    applyService = applyService,
-                    dedup =
-                        PersonalityResultDedup(
-                            redis = redis.client,
-                            config = config.redis,
-                            rabbitMqConfig = rabbitMq.config,
-                        ),
-                    rabbitMqConfig = rabbitMq.config,
-                )
-            personalityStatusNotifier.start()
-            resultConsumer.start()
-            return PersonalityModule(
-                coordinator = coordinator,
-                personalityProfileService = personalityProfileService,
-                personalityStatusNotifier = personalityStatusNotifier,
-                resultConsumer = resultConsumer,
-            )
         }
     }
 }

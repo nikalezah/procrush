@@ -4,11 +4,11 @@ import jobs.procrush.bootstrap.config.RabbitMqConfig
 import jobs.procrush.bootstrap.rabbitmq.DeliveryResult
 import jobs.procrush.bootstrap.rabbitmq.InboundMessage
 import jobs.procrush.bootstrap.rabbitmq.MessageConsumer
-import jobs.procrush.shared.CorrelationIds
 import jobs.procrush.observability.MdcContext
 import jobs.procrush.observability.ObservabilityHolder
 import jobs.procrush.observability.TracePropagation
 import jobs.procrush.personality.service.PersonalityResultApplyService
+import jobs.procrush.shared.CorrelationIds
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.util.UUID

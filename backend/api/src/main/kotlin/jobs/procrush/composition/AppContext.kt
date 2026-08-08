@@ -18,6 +18,7 @@ import jobs.procrush.matching.kafka.MatchingEventsRuntime
 import jobs.procrush.matching.repository.MatchingRepository
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.matching.service.RecommendationsEventService
+import jobs.procrush.personality.PersonalityRuntime
 import jobs.procrush.personality.service.PersonalityProfileService
 import jobs.procrush.seeker.service.SeekerProfileService
 import jobs.procrush.shared.repository.ReferenceRepository
@@ -43,10 +44,10 @@ data class AppContext(
     val recommendationsEventService: RecommendationsEventService,
     val referenceRepository: ReferenceRepository,
     val handlers: ApiHandlers,
-    private val personalityModule: PersonalityModule,
+    private val personalityRuntime: PersonalityRuntime,
 ) {
     fun close() {
-        personalityModule.close()
+        personalityRuntime.close()
         matchingModule.close()
         matchingEventsRuntime.close()
         rabbitMqModule.close()
@@ -70,12 +71,16 @@ data class AppContext(
                 )
             val matching = MatchingModule.create(auth, survey, redis, config)
             val personality =
-                PersonalityModule.create(
-                    config = config,
-                    auth = auth,
-                    survey = survey,
-                    redis = redis,
-                    rabbitMq = rabbitMq,
+                PersonalityRuntime.create(
+                    redisConfig = config.redis,
+                    rabbitMqConfig = config.rabbitMq,
+                    distributedLock = redis.distributedLock,
+                    redis = redis.client,
+                    messagePublisher = rabbitMq.publisher,
+                    messageConsumer = rabbitMq.createConsumer(),
+                    seekerRepository = auth.seekerRepository,
+                    referenceRepository = auth.referenceRepository,
+                    surveyService = survey.surveyService,
                     matchingCache = matching.cacheInvalidator,
                     matchingEvents = matchingEvents.eventPort,
                     scope = coroutineScope,
@@ -110,7 +115,7 @@ data class AppContext(
                 matchInterestService = matching.matchInterestService,
                 recommendationsEventService = matching.recommendationsEventService,
                 referenceRepository = auth.referenceRepository,
-                personalityModule = personality,
+                personalityRuntime = personality,
                 matchingEventsRuntime = matchingEvents,
                 matchingModule = matching,
                 handlers = handlers,
