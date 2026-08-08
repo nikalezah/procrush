@@ -11,6 +11,7 @@ import jobs.procrush.personality.service.PersonalityProfileService
 import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.ResourceNotFoundException
 import jobs.procrush.shared.SurveyAlreadyCompletedException
+import jobs.procrush.survey.dto.CompleteSurveyResponseDto
 import jobs.procrush.survey.dto.SurveyStatus
 import jobs.procrush.survey.service.SurveyService
 
@@ -109,7 +110,7 @@ class SeekerSurveyHandler(
             try {
                 val result = surveyService.completeSurvey(user.id, id, request.toContract())
                 SeekerSurveyServerApi.CompleteSurveyResponse.ok(
-                    jobs.procrush.survey.dto.CompleteSurveyResponseDto(
+                    CompleteSurveyResponseDto(
                         resultId = result.result.id,
                         surveyId = result.result.surveyId,
                         status = SurveyStatus.COMPLETED,

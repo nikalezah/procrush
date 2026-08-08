@@ -1,5 +1,6 @@
 package jobs.procrush.api.rabbitmq
 
+import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import jobs.procrush.bootstrap.config.RabbitMqConfig
@@ -8,7 +9,7 @@ import jobs.procrush.bootstrap.rabbitmq.MessagePublisher
 
 class RabbitMqModule private constructor(
     private val connection: Connection,
-    private val publishChannel: com.rabbitmq.client.Channel,
+    private val publishChannel: Channel,
     val publisher: MessagePublisher,
     val config: RabbitMqConfig,
 ) {

@@ -8,6 +8,7 @@ import jobs.procrush.employer.dto.UpdateJobProfileRequest
 import jobs.procrush.employer.repository.EmployerRepository
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.cache.CachedMatchingService
+import jobs.procrush.matching.dto.CandidateRecommendationDto
 import jobs.procrush.matching.dto.EmployerCandidatesOverviewDto
 import jobs.procrush.matching.dto.EmployerInterestsResponseDto
 import jobs.procrush.matching.port.MatchingCachePort
@@ -96,7 +97,7 @@ class EmployerProfileService(
         )
     }
 
-    fun candidates(userId: UUID, jobProfileId: Long): List<jobs.procrush.matching.dto.CandidateRecommendationDto> {
+    fun candidates(userId: UUID, jobProfileId: Long): List<CandidateRecommendationDto> {
         val jobProfile = findJobProfile(userId, jobProfileId)
         val candidates =
             matchingService.candidateRecommendationsForJob(jobProfile.occupationId, jobProfileId)

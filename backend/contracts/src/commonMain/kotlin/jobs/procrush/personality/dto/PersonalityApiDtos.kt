@@ -1,5 +1,7 @@
 package jobs.procrush.personality.dto
 
+import jobs.procrush.shared.dto.SuperpowerAndTalentDto
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -46,7 +48,7 @@ data class PersonalitySectionDto(
 @Serializable
 data class SuperpowerAndTalentLlmItem(
     val name: String,
-    @kotlinx.serialization.SerialName("is_pronounced") val isPronounced: Boolean,
+    @SerialName("is_pronounced") val isPronounced: Boolean,
 )
 
 @Serializable
@@ -84,25 +86,25 @@ data class SeekerPersonalProfileLlmOutput(
     val description: String,
     val profile: String,
     val autonomy: String? = null,
-    @kotlinx.serialization.SerialName("thinking_style") val thinkingStyle: String? = null,
-    @kotlinx.serialization.SerialName("burnout_risk") val burnoutRisk: String? = null,
+    @SerialName("thinking_style") val thinkingStyle: String? = null,
+    @SerialName("burnout_risk") val burnoutRisk: String? = null,
     val connections: ConnectionsCategory,
     val creativity: CreativityCategory,
     val drive: DriveCategory,
     val thinking: ThinkingCategory,
-    @kotlinx.serialization.SerialName("axis_dominance") val axisDominance: Double,
-    @kotlinx.serialization.SerialName("axis_influence") val axisInfluence: Double,
-    @kotlinx.serialization.SerialName("axis_stability") val axisStability: Double,
-    @kotlinx.serialization.SerialName("axis_integrity") val axisIntegrity: Double,
-    @kotlinx.serialization.SerialName("axis_autonomy") val axisAutonomy: Double,
-    @kotlinx.serialization.SerialName("axis_pace") val axisPace: Double,
-    @kotlinx.serialization.SerialName("burnout_risk_overload") val burnoutRiskOverload: Double? = null,
-    @kotlinx.serialization.SerialName("burnout_risk_conflicts") val burnoutRiskConflicts: Double? = null,
-    @kotlinx.serialization.SerialName("burnout_risk_demotivation") val burnoutRiskDemotivation: Double? = null,
-    @kotlinx.serialization.SerialName("burnout_risk_stress") val burnoutRiskStress: Double? = null,
-    @kotlinx.serialization.SerialName("energy_sources") val energySources: EnergySourcesSection,
-    @kotlinx.serialization.SerialName("stop_factors") val stopFactors: StopFactorsSection,
-    @kotlinx.serialization.SerialName("superpowers_and_talents") val superpowersAndTalents: List<SuperpowerAndTalentLlmItem>,
+    @SerialName("axis_dominance") val axisDominance: Double,
+    @SerialName("axis_influence") val axisInfluence: Double,
+    @SerialName("axis_stability") val axisStability: Double,
+    @SerialName("axis_integrity") val axisIntegrity: Double,
+    @SerialName("axis_autonomy") val axisAutonomy: Double,
+    @SerialName("axis_pace") val axisPace: Double,
+    @SerialName("burnout_risk_overload") val burnoutRiskOverload: Double? = null,
+    @SerialName("burnout_risk_conflicts") val burnoutRiskConflicts: Double? = null,
+    @SerialName("burnout_risk_demotivation") val burnoutRiskDemotivation: Double? = null,
+    @SerialName("burnout_risk_stress") val burnoutRiskStress: Double? = null,
+    @SerialName("energy_sources") val energySources: EnergySourcesSection,
+    @SerialName("stop_factors") val stopFactors: StopFactorsSection,
+    @SerialName("superpowers_and_talents") val superpowersAndTalents: List<SuperpowerAndTalentLlmItem>,
 )
 
 @Serializable
@@ -135,7 +137,7 @@ data class PersonalityTraitDto(
 data class PersonalityCategoryDto(
     val key: String,
     val description: String,
-    @kotlinx.serialization.SerialName("top_strength_index") val topStrengthIndex: Int,
+    @SerialName("top_strength_index") val topStrengthIndex: Int,
     val traits: List<PersonalityTraitDto>,
 )
 
@@ -160,5 +162,5 @@ data class PersonalityPreviewDto(
     val categories: List<PersonalityCategoryDto>? = null,
     val energySources: PersonalitySectionDto? = null,
     val stopFactors: PersonalitySectionDto? = null,
-    val superpowersAndTalents: List<jobs.procrush.shared.dto.SuperpowerAndTalentDto>? = null,
+    val superpowersAndTalents: List<SuperpowerAndTalentDto>? = null,
 )

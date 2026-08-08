@@ -11,6 +11,7 @@ import jobs.procrush.personality.messaging.PersonalityGenerationResult
 import jobs.procrush.personality.messaging.PersonalityGenerationResultStatus
 import jobs.procrush.personality.observability.Logger
 import jobs.procrush.personality.observability.Metrics
+import jobs.procrush.shared.CodedException
 import jobs.procrush.shared.raise
 
 class PersonalityGenerationHandler(
@@ -67,7 +68,7 @@ class PersonalityGenerationHandler(
     fun failureCode(error: Throwable): String =
         when (error) {
             is HttpRequestTimeoutException -> ErrorCode.LLM_TIMEOUT.name
-            is jobs.procrush.shared.CodedException -> error.errorCode.name
+            is CodedException -> error.errorCode.name
             else -> ErrorCode.UNKNOWN_ERROR.name
         }
 }

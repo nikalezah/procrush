@@ -6,6 +6,7 @@ import jobs.procrush.api.generated.auth_models_yaml.auth_models.DevLoginRequest
 import jobs.procrush.api.generated.auth_paths_yaml.auth_paths.AuthServerApi
 import jobs.procrush.api.mapper.toApi
 import jobs.procrush.api.mapper.toContract
+import jobs.procrush.auth.MeResponse
 import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.UserAuthService
 import jobs.procrush.auth.clearSessionCookie
@@ -42,7 +43,7 @@ class AuthHandler(
         val token = call.request.cookies[config.sessionCookieName]
         val user = sessionService.resolveUser(token)
         return AuthServerApi.GetMeResponse.ok(
-            jobs.procrush.auth.MeResponse(user = user).toApi(),
+            MeResponse(user = user).toApi(),
         )
     }
 

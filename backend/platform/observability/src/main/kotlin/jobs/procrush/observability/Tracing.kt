@@ -1,9 +1,11 @@
 package jobs.procrush.observability
 
-import jobs.procrush.shared.CorrelationIds
-
 import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
+import io.opentelemetry.context.Context
 import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 import io.opentelemetry.sdk.OpenTelemetrySdk
@@ -11,6 +13,8 @@ import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import jobs.procrush.bootstrap.config.ObservabilityConfig
+import jobs.procrush.shared.CorrelationIds
+import org.apache.kafka.clients.consumer.ConsumerRecord
 
 object OpenTelemetryFactory {
     private var sdk: OpenTelemetrySdk? = null
@@ -40,7 +44,7 @@ object OpenTelemetryFactory {
                 .build()
         val propagators =
             ContextPropagators.create(
-                io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator.getInstance(),
+                W3CTraceContextPropagator.getInstance(),
             )
         val openTelemetry =
             OpenTelemetrySdk.builder()
@@ -63,8 +67,8 @@ class Tracing(
 ) {
     fun startSpan(
         name: String,
-        parentContext: io.opentelemetry.context.Context = io.opentelemetry.context.Context.current(),
-    ): io.opentelemetry.api.trace.Span {
+        parentContext: Context = Context.current(),
+    ): Span {
         val span = tracer.spanBuilder(name).setParent(parentContext).startSpan()
         span.makeCurrent()
         MdcContext.put(CorrelationIds.TRACE_ID, span.spanContext.traceId)
@@ -72,22 +76,22 @@ class Tracing(
         return span
     }
 
-    fun endSpan(span: io.opentelemetry.api.trace.Span) {
+    fun endSpan(span: Span) {
         span.end()
         MdcContext.clearKeys(CorrelationIds.TRACE_ID, CorrelationIds.SPAN_ID)
     }
 
     fun <T> span(
         name: String,
-        parentContext: io.opentelemetry.context.Context = io.opentelemetry.context.Context.current(),
-        block: (io.opentelemetry.api.trace.Span) -> T,
+        parentContext: Context = Context.current(),
+        block: (Span) -> T,
     ): T {
         val span = startSpan(name, parentContext)
         return try {
             block(span)
         } catch (error: Throwable) {
             span.recordException(error)
-            span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR)
+            span.setStatus(StatusCode.ERROR)
             throw error
         } finally {
             endSpan(span)
@@ -112,7 +116,7 @@ class Tracing(
             block()
         } catch (error: Throwable) {
             span.recordException(error)
-            span.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR)
+            span.setStatus(StatusCode.ERROR)
             throw error
         } finally {
             endSpan(span)
@@ -120,7 +124,7 @@ class Tracing(
     }
 
     fun <T> withKafkaRecord(
-        record: org.apache.kafka.clients.consumer.ConsumerRecord<*, *>,
+        record: ConsumerRecord<*, *>,
         block: () -> T,
     ): T {
         val parentContext = TracePropagation.extractFromKafka(record)

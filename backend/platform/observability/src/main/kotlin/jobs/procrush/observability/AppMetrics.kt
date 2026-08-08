@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import jobs.procrush.bootstrap.config.ObservabilityConfig
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -85,8 +86,8 @@ object AppMetrics {
 
     fun recordPersonalityLlmDurationFromNanos(startedNanos: Long) {
         if (!initialized) return
-        val durationMs = java.time.Duration.ofNanos(System.nanoTime() - startedNanos).toMillis()
-        registry.timer("personality.llm.duration").record(java.time.Duration.ofMillis(durationMs))
+        val durationMs = Duration.ofNanos(System.nanoTime() - startedNanos).toMillis()
+        registry.timer("personality.llm.duration").record(Duration.ofMillis(durationMs))
     }
 
     suspend fun <T> recordPersonalityLlm(block: suspend () -> T): T {
@@ -126,8 +127,8 @@ object AppMetrics {
 
     fun recordMatchingRecalculationDurationFromNanos(startedNanos: Long) {
         if (!initialized) return
-        val durationMs = java.time.Duration.ofNanos(System.nanoTime() - startedNanos).toMillis()
-        registry.timer("matching.recalculation.duration").record(java.time.Duration.ofMillis(durationMs))
+        val durationMs = Duration.ofNanos(System.nanoTime() - startedNanos).toMillis()
+        registry.timer("matching.recalculation.duration").record(Duration.ofMillis(durationMs))
     }
 
     fun setMatchingConsumerRunning(running: Boolean) {

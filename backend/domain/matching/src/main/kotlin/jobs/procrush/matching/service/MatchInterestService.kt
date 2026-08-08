@@ -13,6 +13,7 @@ import jobs.procrush.matching.dto.JobCardDto
 import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.dto.MatchInterestCountDto
 import jobs.procrush.matching.dto.MatchInterestEventDto
+import jobs.procrush.matching.dto.SeekerContactDto
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
 import jobs.procrush.matching.dto.toCard
 import jobs.procrush.matching.model.MatchInterestRecord
@@ -318,7 +319,7 @@ class MatchInterestService(
         jobProfileId: Long,
         seekerId: Long,
         interest: MatchInterestRecord?,
-    ): Pair<InterestStatus, jobs.procrush.matching.dto.SeekerContactDto?> {
+    ): Pair<InterestStatus, SeekerContactDto?> {
         val resolvedInterest =
             interest
                 ?: matchInterestRepository

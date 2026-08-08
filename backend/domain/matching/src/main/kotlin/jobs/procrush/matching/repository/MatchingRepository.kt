@@ -146,7 +146,7 @@ class MatchingRepository(
         if (personalityRow == null) return null to false
 
         val status =
-            personalityRow[SeekerPersonalProfilesTable.generationStatus]?.let {
+            personalityRow[SeekerPersonalProfilesTable.generationStatus].let {
                 runCatching { PersonalityProfileStatus.valueOf(it) }.getOrNull()
             }
         val axesFromRow =

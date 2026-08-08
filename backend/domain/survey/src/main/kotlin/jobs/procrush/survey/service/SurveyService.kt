@@ -21,6 +21,7 @@ import jobs.procrush.survey.scoring.SurveyAnswerValidator
 import jobs.procrush.survey.scoring.SurveyFlowRules
 import jobs.procrush.survey.scoring.SurveyScoringService
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import java.util.UUID
 
 class SurveyService(
@@ -139,7 +140,7 @@ class SurveyService(
     fun saveAnswers(userId: UUID, surveyId: Long, request: SaveSurveyAnswersRequest): SurveyDetailDto {
         val context = loadContext(userId)
         val survey = surveyRepository.findSurveyById(surveyId) ?: ErrorCode.SURVEY_NOT_FOUND.raise()
-        val answersJson = json.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), request.answers)
+        val answersJson = json.encodeToString(JsonElement.serializer(), request.answers)
         val result =
             surveyRepository.findInProgressResult(context.seeker.id, surveyId)
                 ?: editableCompletedResult(context, survey)
@@ -157,7 +158,7 @@ class SurveyService(
         val coreGroupComplete = SurveyFlowRules.isCoreGroupComplete(coreSurveys, context.statusBySurvey)
 
         SurveyAnswerValidator.validate(survey.code, survey.questionsJson, request.answers)
-        val answersJson = json.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), request.answers)
+        val answersJson = json.encodeToString(JsonElement.serializer(), request.answers)
         val key = surveyRepository.findSurveyKey(surveyId) ?: ErrorCode.SURVEY_SCORING_KEYS_NOT_FOUND.raise()
         val calculated =
             SurveyScoringService.calculate(

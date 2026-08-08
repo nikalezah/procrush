@@ -3,6 +3,7 @@ package jobs.procrush.gradle
 import jobs.procrush.gradle.spektor.NormalizeSpektorPackagesTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 class ProcrushApiPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -27,7 +28,7 @@ class ProcrushApiPlugin : Plugin<Project> {
             target.tasks.named("compileKotlin") {
                 dependsOn(normalize)
             }
-            target.extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+            target.extensions.configure<KotlinJvmProjectExtension>("kotlin") {
                 sourceSets.named("main") {
                     kotlin.srcDir(normalizedDir)
                 }
@@ -39,7 +40,7 @@ class ProcrushApiPlugin : Plugin<Project> {
             // "Redeclaration" errors. Drop the raw tree so only the normalized copy
             // is compiled on every platform.
             target.afterEvaluate {
-                target.extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>("kotlin") {
+                target.extensions.configure<KotlinJvmProjectExtension>("kotlin") {
                     sourceSets.named("main") {
                         val kept =
                             kotlin.srcDirs.filterNot { dir ->

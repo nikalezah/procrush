@@ -3,6 +3,7 @@ package jobs.procrush.matching.runtime.repository
 import jobs.procrush.matching.runtime.bootstrap.MatchingDatabaseRegistry
 import jobs.procrush.matching.runtime.model.StoredMatchResult
 import jobs.procrush.matching.runtime.tables.MatchResultsTable
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -114,7 +115,7 @@ class MatchResultsRepository {
         }
     }
 
-    private fun org.jetbrains.exposed.v1.core.ResultRow.toStored(): StoredMatchResult =
+    private fun ResultRow.toStored(): StoredMatchResult =
         StoredMatchResult(
             seekerId = this[MatchResultsTable.seekerId],
             jobProfileId = this[MatchResultsTable.jobProfileId],

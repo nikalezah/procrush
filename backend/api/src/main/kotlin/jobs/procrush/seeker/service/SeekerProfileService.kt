@@ -2,6 +2,7 @@ package jobs.procrush.seeker.service
 
 import jobs.procrush.i18n.ErrorCode
 import jobs.procrush.matching.cache.CachedMatchingService
+import jobs.procrush.matching.dto.JobRecommendationDto
 import jobs.procrush.matching.dto.SeekerInterestsResponseDto
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
@@ -140,7 +141,7 @@ class SeekerProfileService(
         )
     }
 
-    fun recommendations(userId: UUID): List<jobs.procrush.matching.dto.JobRecommendationDto> {
+    fun recommendations(userId: UUID): List<JobRecommendationDto> {
         val seeker = getOrCreateSeeker(userId)
         val recommendations = matchingService.jobRecommendationsForSeeker(userId)
         return matchInterestService.enrichJobRecommendations(seeker.id, recommendations)

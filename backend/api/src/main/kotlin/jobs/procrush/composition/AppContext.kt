@@ -7,14 +7,15 @@ import jobs.procrush.api.handler.ReferenceHandler
 import jobs.procrush.api.handler.SeekerPersonalityHandler
 import jobs.procrush.api.handler.SeekerProfileHandler
 import jobs.procrush.api.handler.SeekerSurveyHandler
+import jobs.procrush.api.rabbitmq.RabbitMqModule
 import jobs.procrush.auth.RoleGuard
 import jobs.procrush.auth.UserAuthService
 import jobs.procrush.auth.service.SessionService
 import jobs.procrush.bootstrap.config.AppConfig
-import jobs.procrush.api.rabbitmq.RabbitMqModule
 import jobs.procrush.bootstrap.redis.RedisModule
 import jobs.procrush.employer.service.EmployerProfileService
 import jobs.procrush.matching.kafka.MatchingEventsRuntime
+import jobs.procrush.matching.repository.MatchingRepository
 import jobs.procrush.matching.service.MatchInterestService
 import jobs.procrush.matching.service.RecommendationsEventService
 import jobs.procrush.personality.service.PersonalityProfileService
@@ -60,7 +61,7 @@ data class AppContext(
             val auth = AuthModule.create(config, redis)
             val deferredCoordinator = DeferredPersonalitySurveyCoordinator()
             val survey = SurveyModule.create(auth, deferredCoordinator)
-            val matchingRepository = jobs.procrush.matching.repository.MatchingRepository(auth.referenceRepository)
+            val matchingRepository = MatchingRepository(auth.referenceRepository)
             val matchingEvents =
                 MatchingEventsRuntime.create(
                     kafka = config.kafka,

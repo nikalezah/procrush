@@ -1,6 +1,7 @@
 package jobs.procrush
 
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
@@ -41,7 +42,7 @@ fun Application.module() {
             rabbitMqUrl = config.rabbitMq.url,
             queueName = config.rabbitMq.deadLetterQueue,
         ).also { it.start() }
-    monitor.subscribe(io.ktor.server.application.ApplicationStopped) {
+    monitor.subscribe(ApplicationStopped) {
         dlqPoller.stop()
         app.close()
         OpenTelemetryFactory.shutdown()

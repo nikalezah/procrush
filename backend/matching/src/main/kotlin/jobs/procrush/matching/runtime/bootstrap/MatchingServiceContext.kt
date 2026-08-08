@@ -8,6 +8,7 @@ import jobs.procrush.matching.runtime.messaging.MatchingEventDedup
 import jobs.procrush.matching.runtime.repository.MatchResultsRepository
 import jobs.procrush.matching.runtime.repository.MatchingProjectionRepository
 import jobs.procrush.matching.runtime.service.MatchingEventProcessor
+import org.apache.kafka.clients.producer.KafkaProducer
 
 class MatchingServiceContext private constructor(
     val config: MatchingServiceAppConfig,
@@ -16,7 +17,7 @@ class MatchingServiceContext private constructor(
     val eventConsumer: MatchingEventConsumer,
     val matchResultsRepository: MatchResultsRepository,
     val projectionRepository: MatchingProjectionRepository,
-    private val dlqProducer: org.apache.kafka.clients.producer.KafkaProducer<String, String>,
+    private val dlqProducer: KafkaProducer<String, String>,
     private val resultsPublisher: KafkaStringPublisher,
 ) {
     fun close() {

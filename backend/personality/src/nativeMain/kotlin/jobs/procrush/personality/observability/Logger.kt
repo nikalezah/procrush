@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -160,9 +161,9 @@ class Logger private constructor(
             return buildString {
                 append(local.year.toString().padStart(4, '0'))
                 append('-')
-                append(local.monthNumber.toString().padStart(2, '0'))
+                append(local.month.number.toString().padStart(2, '0'))
                 append('-')
-                append(local.dayOfMonth.toString().padStart(2, '0'))
+                append(local.day.toString().padStart(2, '0'))
                 append(' ')
                 append(local.hour.toString().padStart(2, '0'))
                 append(':')

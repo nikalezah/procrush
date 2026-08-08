@@ -5,6 +5,7 @@ import jobs.procrush.matching.events.MatchScorePairDto
 import jobs.procrush.matching.model.MatchScoreApplyResult
 import jobs.procrush.matching.model.StoredMatchScore
 import jobs.procrush.matching.tables.MatchScoresTable
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -143,7 +144,7 @@ class MatchScoreRepository {
         }
     }
 
-    private fun org.jetbrains.exposed.v1.core.ResultRow.toStored(): StoredMatchScore =
+    private fun ResultRow.toStored(): StoredMatchScore =
         StoredMatchScore(
             seekerId = this[MatchScoresTable.seekerId],
             jobProfileId = this[MatchScoresTable.jobProfileId],

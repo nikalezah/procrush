@@ -9,6 +9,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import jobs.procrush.bootstrap.config.LlmConfig
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 class OllamaLlmClient(
     private val config: LlmConfig,
@@ -37,9 +38,12 @@ class OllamaLlmClient(
         if (!httpResponse.status.isSuccess()) {
             error("Ollama HTTP ${httpResponse.status.value}: ${rawBody.take(500)}")
         }
-        val response = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-            .decodeFromString<OllamaChatResponse>(rawBody)
+        val response = json.decodeFromString<OllamaChatResponse>(rawBody)
         return response.message?.content ?: error("Empty Ollama response")
+    }
+
+    companion object {
+        private val json = Json { ignoreUnknownKeys = true }
     }
 }
 

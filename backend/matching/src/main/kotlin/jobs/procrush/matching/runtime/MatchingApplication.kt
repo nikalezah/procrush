@@ -1,5 +1,6 @@
 package jobs.procrush.matching.runtime
 
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
@@ -37,7 +38,7 @@ fun main() {
                 exception<Throwable> { call, cause ->
                     matchingStatusLogger.error("Unhandled matching error", cause)
                     call.respond(
-                        io.ktor.http.HttpStatusCode.InternalServerError,
+                        HttpStatusCode.InternalServerError,
                         ErrorCode.UNKNOWN_ERROR.toResponseBody(),
                     )
                 }
