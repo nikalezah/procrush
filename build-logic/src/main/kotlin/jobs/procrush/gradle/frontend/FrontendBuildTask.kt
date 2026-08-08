@@ -62,6 +62,7 @@ abstract class FrontendBuildTask
     fun build() {
         execOperations.exec {
             workingDir(this@FrontendBuildTask.workingDir.get().asFile)
+            environment("PROCRUSH_SKIP_GENERATE_I18N", "1")
             commandLine(npmCommand.get(), "run", "build")
         }
     }

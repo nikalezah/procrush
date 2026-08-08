@@ -8,9 +8,12 @@ Single source for API error codes and user-facing translations. Lives at the rep
 i18n/
   error-codes.yaml       # error codes + HTTP status + English technical message
   locales/ru|en/         # errors.json (by code) and ui.json (full UI)
-  generated/             # ErrorCode.kt (backend) and errorCodes.ts (frontend)
-  scripts/generate.mjs   # codegen + validation
 ```
+
+Generated artifacts (not committed):
+
+- Kotlin: `backend/contracts/build/generated/i18n/kotlin/.../ErrorCode.kt`
+- TypeScript: `frontend/src/generated/i18n/errorCodes.ts`
 
 ## How it works
 
@@ -26,21 +29,18 @@ Locale: auto from browser → fallback `ru`; **ru / en** switcher in Account (`l
 ## Commands
 
 ```bash
-cd i18n
-npm install
-npm run generate   # validate + write generated/kotlin and generated/typescript
-npm run validate   # check locales match error-codes.yaml
+# From repo root — validates locales/*/errors.json against error-codes.yaml, then generates Kotlin + TypeScript
+./gradlew generateI18n
 ```
 
-The frontend runs `validate:i18n` before `dev`/`build` (`npm run prebuild` in `frontend/`).
+Frontend `predev` / `prebuild` call the same Gradle task. Backend `compileKotlin*` depends on it via `:backend:contracts`.
 
 ## Workflow: new error code or UI string
 
-1. Add code to `error-codes.yaml` and translations in `locales/ru/errors.json` and `locales/en/errors.json`.
+1. Add code to `error-codes.yaml` and translations in `locales/ru/errors.json` and `locales/en/errors.json` (manual — missing keys fail the build).
 2. For UI — keys in `locales/ru/ui.json` and `locales/en/ui.json`.
-3. Regenerate: `npm run generate`
-4. Backend: `./gradlew :backend:api:compileKotlin` — the `contracts` module includes `i18n/generated/kotlin`.
-5. Commit `generated/` together with yaml/json.
+3. Regenerate: `./gradlew generateI18n` (or `npm run dev` / compile — runs generate automatically).
+4. Commit yaml/json only — do **not** commit generated sources.
 
 ## API contract
 

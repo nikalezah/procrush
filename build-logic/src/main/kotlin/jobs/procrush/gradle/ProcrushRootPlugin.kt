@@ -2,7 +2,6 @@ package jobs.procrush.gradle
 
 import jobs.procrush.gradle.frontend.FrontendBuildTask
 import jobs.procrush.gradle.i18n.GenerateI18nTask
-import jobs.procrush.gradle.i18n.NodeAvailableValueSource
 import jobs.procrush.gradle.kind.KindDownTask
 import jobs.procrush.gradle.kind.KindServiceSpec
 import jobs.procrush.gradle.kind.KindUpTask
@@ -35,24 +34,18 @@ class ProcrushRootPlugin : Plugin<Project> {
         val layout = target.layout
         val providers = target.providers
         val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-        val nodeCmd = if (isWindows) "node.exe" else "node"
         val npmCmd = if (isWindows) "npm.cmd" else "npm"
 
-        val nodeAvailable = providers.of(NodeAvailableValueSource::class.java) {}
-
         val generateI18n = target.tasks.register("generateI18n", GenerateI18nTask::class.java) {
-            nodeCommand.set(nodeCmd)
-            this.nodeAvailable.set(nodeAvailable)
-            workingDir.set(layout.projectDirectory.dir("i18n"))
             errorCodesYaml.set(layout.projectDirectory.file("i18n/error-codes.yaml"))
             localesDir.set(layout.projectDirectory.dir("i18n/locales"))
-            generateScript.set(layout.projectDirectory.file("i18n/scripts/generate.mjs"))
-            validateScript.set(layout.projectDirectory.file("i18n/scripts/validate.mjs"))
             generatedKotlin.set(
-                layout.projectDirectory.file("i18n/generated/kotlin/jobs/procrush/i18n/ErrorCode.kt"),
+                layout.projectDirectory.file(
+                    "backend/contracts/build/generated/i18n/kotlin/jobs/procrush/i18n/ErrorCode.kt",
+                ),
             )
             generatedTypescript.set(
-                layout.projectDirectory.file("i18n/generated/typescript/errorCodes.ts"),
+                layout.projectDirectory.file("frontend/src/generated/i18n/errorCodes.ts"),
             )
         }
 
@@ -62,11 +55,11 @@ class ProcrushRootPlugin : Plugin<Project> {
             workingDir.set(layout.projectDirectory.dir("frontend"))
             frontendSources.from(
                 target.fileTree("frontend") {
-                    exclude("node_modules/**", "dist/**", ".vite/**")
+                    exclude("node_modules/**", "dist/**", ".vite/**", "src/generated/**")
                 },
             )
             localesDir.set(layout.projectDirectory.dir("i18n/locales"))
-            generatedTypescriptDir.set(layout.projectDirectory.dir("i18n/generated/typescript"))
+            generatedTypescriptDir.set(layout.projectDirectory.dir("frontend/src/generated/i18n"))
             errorCodesYaml.set(layout.projectDirectory.file("i18n/error-codes.yaml"))
             openapiSources.from(
                 target.fileTree("openapi") {

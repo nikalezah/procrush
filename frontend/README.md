@@ -23,7 +23,7 @@ npm run dev
 npm run build
 ```
 
-Before `dev`/`build`, `validate:i18n` runs automatically (`prebuild`). API types are generated from OpenAPI — see [openapi/README.md](../openapi/README.md).
+Before `dev`/`build`, `generate:i18n` runs (invokes the root Gradle wrapper for `generateI18n`). When building via Gradle `frontendBuild`, i18n is generated first and npm skips a nested Gradle call (`PROCRUSH_SKIP_GENERATE_I18N=1`). API types are generated from OpenAPI — see [openapi/README.md](../openapi/README.md).
 
 ## Internationalization
 

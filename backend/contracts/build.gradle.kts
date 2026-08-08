@@ -12,7 +12,7 @@ kotlin {
 
     sourceSets {
         commonMain {
-            kotlin.srcDir(rootProject.layout.projectDirectory.dir("i18n/generated/kotlin"))
+            kotlin.srcDir(layout.buildDirectory.dir("generated/i18n/kotlin"))
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)

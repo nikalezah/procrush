@@ -9,10 +9,9 @@
   "scripts": {
     "bundle:openapi": "redocly bundle ../openapi/bundle.yaml -o ../openapi/dist/openapi.yaml",
     "generate:api": "openapi-typescript ../openapi/dist/openapi.yaml -o src/api/generated/schema.d.ts",
-    "validate:i18n": "node ../i18n/scripts/validate.mjs",
-    "generate:i18n": "node ../i18n/scripts/generate.mjs",
-    "predev": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api && npm run validate:i18n",
-    "prebuild": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api && npm run validate:i18n",
+    "generate:i18n": "node -e \"if(process.env.PROCRUSH_SKIP_GENERATE_I18N==='1')process.exit(0);const{spawnSync}=require('child_process');const{join}=require('path');const cmd=process.platform==='win32'?'gradlew.bat':'./gradlew';const r=spawnSync(cmd,['generateI18n'],{cwd:join(__dirname,'..'),stdio:'inherit',shell:true});process.exit(r.status??1)\"",
+    "predev": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api && npm run generate:i18n",
+    "prebuild": "node scripts/check-node.mjs && npm run bundle:openapi && npm run generate:api && npm run generate:i18n",
     "prepreview": "node scripts/check-node.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",

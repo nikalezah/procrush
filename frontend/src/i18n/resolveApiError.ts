@@ -1,5 +1,5 @@
 import i18n from './config'
-import {isErrorCode} from '../../../i18n/generated/typescript/errorCodes'
+import {isErrorCode} from '../generated/i18n/errorCodes'
 
 export function resolveApiError(
   code: string | undefined,
