@@ -1,5 +1,6 @@
 .kind-deploy-cache/
-.workspace
+.codebase-memory/
+.workspace/
 .DS_Store
 .kotlin
 .gradle
