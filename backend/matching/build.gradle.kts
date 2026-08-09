@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.ktor.serverStatusPages)
     implementation(libs.ktor.serialization.kotlinxJson)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.koin.core)
     implementation(libs.kafka.clients)
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)

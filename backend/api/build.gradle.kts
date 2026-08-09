@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.ktor.serverStatusPages)
     implementation(libs.ktor.serverSse)
     implementation(libs.ktor.serialization.kotlinxJson)
+    implementation(libs.koin.core)
+    implementation(libs.koin.ktor)
     implementation(libs.kafka.clients)
     implementation(libs.kotlinx.coroutines.core)
 }

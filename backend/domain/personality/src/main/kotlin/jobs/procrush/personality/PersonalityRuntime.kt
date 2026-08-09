@@ -8,7 +8,6 @@ import jobs.procrush.bootstrap.redis.RedisClient
 import jobs.procrush.bootstrap.redis.RedisDistributedLock
 import jobs.procrush.matching.port.MatchingCachePort
 import jobs.procrush.matching.port.MatchingEventPort
-import jobs.procrush.personality.messaging.MessagingLog
 import jobs.procrush.personality.messaging.PersonalityCommandPublisher
 import jobs.procrush.personality.messaging.PersonalityResultConsumer
 import jobs.procrush.personality.messaging.PersonalityResultDedup
@@ -32,6 +31,11 @@ data class PersonalityRuntime(
     private val personalityStatusNotifier: RedisPersonalityStatusNotifier,
     private val resultConsumer: PersonalityResultConsumer,
 ) {
+    fun start() {
+        personalityStatusNotifier.start()
+        resultConsumer.start()
+    }
+
     fun close() {
         resultConsumer.stop()
         personalityStatusNotifier.close()
@@ -60,7 +64,7 @@ data class PersonalityRuntime(
                 PersonalityCommandPublisher(
                     messagePublisher,
                     rabbitMqConfig,
-                    MessagingLog { message, args -> commandLog.info(message, *args) },
+                    { message, args -> commandLog.info(message, *args) },
                 )
             val personalityStatusNotifier =
                 RedisPersonalityStatusNotifier(
@@ -115,8 +119,6 @@ data class PersonalityRuntime(
                         ),
                     rabbitMqConfig = rabbitMqConfig,
                 )
-            personalityStatusNotifier.start()
-            resultConsumer.start()
             return PersonalityRuntime(
                 coordinator = coordinator,
                 personalityProfileService = personalityProfileService,

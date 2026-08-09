@@ -3,17 +3,25 @@ package jobs.procrush.personality.app
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import jobs.procrush.bootstrap.config.WorkerAppConfig
+import jobs.procrush.personality.amqp.PersonalityAmqpModule
+import jobs.procrush.personality.bootstrap.PersonalityWorkerRuntime
 import jobs.procrush.personality.bootstrap.PlatformLifecycle
-import jobs.procrush.personality.bootstrap.WorkerContext
+import jobs.procrush.personality.bootstrap.personalityKoinModules
+import jobs.procrush.personality.messaging.PersonalityCommandConsumer
 import jobs.procrush.personality.observability.DlqDepthPoller
 import jobs.procrush.personality.observability.WorkerObservability
 import jobs.procrush.personality.observability.configureHealthRoutes
 import jobs.procrush.personality.observability.simpleCheck
+import org.koin.dsl.koinApplication
 
 fun main() {
     val config = WorkerAppConfig.fromEnvironment()
     val observability = WorkerObservability.initialize("personality")
-    val context = WorkerContext.create(config)
+    val koin = koinApplication { modules(personalityKoinModules(config)) }
+    val runtime = koin.koin.get<PersonalityWorkerRuntime>()
+    runtime.start()
+    val rabbitMqModule = koin.koin.get<PersonalityAmqpModule>()
+    val personalityCommandConsumer = koin.koin.get<PersonalityCommandConsumer>()
     val dlqPoller =
         DlqDepthPoller(
             rabbitMqUrl = config.rabbitMq.url,
@@ -26,10 +34,10 @@ fun main() {
                 readinessChecks =
                     listOf(
                         simpleCheck("rabbitmq") {
-                            runCatching { context.rabbitMqModule.isConnected() }.getOrDefault(false)
+                            runCatching { rabbitMqModule.isConnected() }.getOrDefault(false)
                         },
                         simpleCheck("consumer") {
-                            context.personalityCommandConsumer.isRunning()
+                            personalityCommandConsumer.isRunning()
                         },
                     ),
             )
@@ -44,6 +52,7 @@ fun main() {
         PlatformLifecycle.awaitShutdown()
     } finally {
         dlqPoller.stop()
-        context.close()
+        runtime.close()
+        koin.close()
     }
 }
